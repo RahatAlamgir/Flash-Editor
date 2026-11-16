@@ -1,0 +1,38 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.CanvasSizeDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Canvas Size" Width="400" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}">
+    <StackPanel Margin="20,16,20,18">
+        <TextBlock x:Name="CurrentSizeText" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,4" />
+        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,14"
+                   Text="Adds or removes space around the picture without scaling it. New space is transparent. Parts outside a smaller canvas are kept on their layers." />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Width (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="WidthBox" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Height (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="HeightBox" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Text="Keep the picture at" Margin="0,14,0,6" Foreground="{StaticResource SubtleTextBrush}" />
+        <UniformGrid x:Name="AnchorGrid" Rows="3" Columns="3" Width="120" Height="120" HorizontalAlignment="Left" />
+
+        <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap" />
+
+        <DockPanel Margin="0,18,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+            <Button DockPanel.Dock="Right" Content="OK" IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
+        </DockPanel>
+    </StackPanel>
+</Window>

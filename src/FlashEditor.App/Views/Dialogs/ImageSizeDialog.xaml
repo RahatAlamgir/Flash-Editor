@@ -1,0 +1,22 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.ImageSizeDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:FlashEditor.App.Views.Dialogs.Controls"
+        Title="Resize Image (Resolution)" Width="470" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}">
+    <StackPanel Margin="20,16,20,18">
+        <TextBlock x:Name="CurrentSizeText" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,4" />
+        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,14" FontSize="12"
+                   Text="Scales the whole picture (all layers). To only make the saved file smaller, use File > Export instead." />
+
+        <controls:SizeEditor x:Name="Editor" />
+
+        <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap" />
+
+        <DockPanel Margin="0,18,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+            <Button DockPanel.Dock="Right" Content="Resize" IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
+        </DockPanel>
+    </StackPanel>
+</Window>

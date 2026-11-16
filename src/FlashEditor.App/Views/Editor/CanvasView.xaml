@@ -1,0 +1,60 @@
+<UserControl x:Class="FlashEditor.App.Views.Editor.CanvasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        Viewport = the visible area (receives all mouse input).
+        World    = image space; its transform does zoom + pan, so children use image pixel coordinates.
+    -->
+    <Grid x:Name="Viewport" Background="{StaticResource CanvasAreaBrush}" ClipToBounds="True" Focusable="True"
+          FocusVisualStyle="{x:Null}" AllowDrop="True"
+          MouseDown="OnMouseDown" MouseMove="OnMouseMove" MouseUp="OnMouseUp" MouseWheel="OnMouseWheel"
+          MouseLeave="OnMouseLeave" LostMouseCapture="OnLostMouseCapture" SizeChanged="OnViewportSizeChanged">
+        <Canvas x:Name="World" HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False">
+            <Canvas.RenderTransform>
+                <MatrixTransform x:Name="WorldTransform" />
+            </Canvas.RenderTransform>
+
+            <!-- Checkerboard behind transparent pixels -->
+            <Rectangle x:Name="PageBackground" />
+
+            <!-- One Image per layer, bottom to top -->
+            <ItemsControl x:Name="LayersHost" ItemsSource="{Binding Layers}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Grid />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Image Source="{Binding Bitmap}" Width="{Binding Width}" Height="{Binding Height}"
+                               Stretch="Fill" Opacity="{Binding Opacity}"
+                               Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}"
+                               HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Previews, selection outline, brush cursor -->
+            <Canvas x:Name="OverlayCanvas">
+                <Rectangle x:Name="PageBorder" Stroke="#FF000000" />
+                <!-- Selection: light tint inside, thick dark line, animated white dashes on top -->
+                <Canvas x:Name="SelectionLayer">
+                    <Path x:Name="SelectionFill" Fill="{StaticResource SelectionTintBrush}" />
+                    <Path x:Name="SelectionDark" Stroke="#E6000000" StrokeLineJoin="Round" />
+                    <Path x:Name="SelectionLight" Stroke="White" StrokeLineJoin="Round" />
+                </Canvas>
+                <!-- Outline shown while dragging a rectangle or lasso selection -->
+                <Canvas x:Name="SelectionPreviewLayer">
+                    <Path x:Name="PreviewFill" Fill="{StaticResource SelectionTintBrush}" />
+                    <Path x:Name="PreviewDark" Stroke="#E6000000" StrokeLineJoin="Round" />
+                    <Path x:Name="PreviewLight" Stroke="{StaticResource SelectionAccentBrush}" StrokeLineJoin="Round" />
+                </Canvas>
+                <!-- Box with handles around the selected layer (Move tool) -->
+                <Path x:Name="FrameOutline" Stroke="{StaticResource SelectionAccentBrush}" />
+                <Path x:Name="FrameHandles" Fill="White" Stroke="{StaticResource SelectionAccentBrush}" />
+                <Ellipse x:Name="BrushCursorOuter" Stroke="#B0000000" Visibility="Collapsed" />
+                <Ellipse x:Name="BrushCursorInner" Stroke="White" Visibility="Collapsed" />
+            </Canvas>
+        </Canvas>
+    </Grid>
+</UserControl>

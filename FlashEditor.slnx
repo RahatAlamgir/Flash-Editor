@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FlashEditor.AI/FlashEditor.AI.csproj" />
+    <Project Path="src/FlashEditor.App/FlashEditor.App.csproj" />
+    <Project Path="src/FlashEditor.Core/FlashEditor.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FlashEditor.Core.Tests/FlashEditor.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,33 @@
+<UserControl x:Class="FlashEditor.App.Views.Controls.ColorGraph"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Color graph: saturation (left to right) x brightness (top to bottom) square, plus a hue strip. -->
+    <StackPanel Orientation="Horizontal">
+        <Grid x:Name="SvArea" Width="240" Height="240" Cursor="Cross" ClipToBounds="True" Background="Transparent"
+              MouseLeftButtonDown="OnSvMouseDown" MouseMove="OnSvMouseMove" MouseLeftButtonUp="OnMouseUp">
+            <Image x:Name="SvImage" Stretch="Fill" />
+            <Canvas IsHitTestVisible="False">
+                <Ellipse x:Name="SvMarker" Width="14" Height="14" Stroke="White" StrokeThickness="2" />
+            </Canvas>
+        </Grid>
+        <Grid x:Name="HueArea" Width="22" Height="240" Margin="10,0,0,0" Cursor="Hand" Background="Transparent"
+              MouseLeftButtonDown="OnHueMouseDown" MouseMove="OnHueMouseMove" MouseLeftButtonUp="OnMouseUp">
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FF0000" Offset="0" />
+                        <GradientStop Color="#FFFF00" Offset="0.1667" />
+                        <GradientStop Color="#00FF00" Offset="0.3333" />
+                        <GradientStop Color="#00FFFF" Offset="0.5" />
+                        <GradientStop Color="#0000FF" Offset="0.6667" />
+                        <GradientStop Color="#FF00FF" Offset="0.8333" />
+                        <GradientStop Color="#FF0000" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Canvas IsHitTestVisible="False">
+                <Rectangle x:Name="HueMarker" Width="26" Height="5" Canvas.Left="-2" Stroke="White" StrokeThickness="1.5" />
+            </Canvas>
+        </Grid>
+    </StackPanel>
+</UserControl>

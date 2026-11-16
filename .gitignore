@@ -1,0 +1,80 @@
+# =============================================================================
+# Flash Editor - files git should NOT track
+# (C# / .NET 10 / WPF project, built with Visual Studio, VS Code or Rider)
+# =============================================================================
+
+# ---- Build output ----------------------------------------------------------
+# Created by every build; can always be rebuilt from the source code.
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]64/
+publish/
+artifacts/
+*.pdb
+
+# ---- AI models (downloaded, very large) -------------------------------------
+# The app downloads these itself on first use (170 MB background remover,
+# 62 MB upscaler). Never commit them: GitHub refuses files over 100 MB.
+models/
+*.onnx
+*.onnx.part
+*.data
+*.zip.part
+
+# ---- Tests ------------------------------------------------------------------
+[Tt]est[Rr]esult*/
+coverage*/
+*.coverage
+*.coveragexml
+*.trx
+
+# ---- NuGet packages (restored automatically) --------------------------------
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# ---- Visual Studio ----------------------------------------------------------
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.vspscc
+*.vssscc
+_ReSharper*/
+*.DotSettings.user
+
+# ---- VS Code ----------------------------------------------------------------
+# Keep shared settings, ignore personal ones.
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ---- JetBrains Rider ----------------------------------------------------------
+.idea/
+*.sln.iml
+
+# ---- Claude Code (personal, per-machine) ------------------------------------
+.claude/
+
+# ---- Windows / macOS clutter ------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# ---- Temporary files ---------------------------------------------------------
+*.tmp
+*.temp
+*.log
+*.bak
+*~

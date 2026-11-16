@@ -1,0 +1,300 @@
+<Window x:Class="FlashEditor.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:panels="clr-namespace:FlashEditor.App.Views.Panels"
+        xmlns:editor="clr-namespace:FlashEditor.App.Views.Editor"
+        Title="{Binding Title}" Width="1440" Height="900" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource WindowBrush}" AllowDrop="True">
+
+    <Window.InputBindings>
+        <!-- File -->
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding File.NewCommand}" />
+        <KeyBinding Gesture="Ctrl+O" Command="{Binding File.OpenCommand}" />
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding File.SaveCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding File.SaveAsCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+S" Command="{Binding File.ExportCommand}" />
+        <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
+        <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseDocumentCommand}" />
+        <KeyBinding Gesture="Ctrl+Tab" Command="{Binding NextDocumentCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding PreviousDocumentCommand}" />
+        <!-- Image -->
+        <KeyBinding Gesture="Ctrl+Alt+I" Command="{Binding Image.ImageSizeCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+C" Command="{Binding Image.CanvasSizeCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+B" Command="{Binding Effects.RemoveBackgroundCommand}" />
+        <!-- Edit -->
+        <KeyBinding Gesture="Ctrl+Z" Command="{Binding Edit.UndoCommand}" />
+        <KeyBinding Gesture="Ctrl+Y" Command="{Binding Edit.RedoCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding Edit.RedoCommand}" />
+        <KeyBinding Gesture="Ctrl+C" Command="{Binding Edit.CopyCommand}" />
+        <KeyBinding Gesture="Ctrl+X" Command="{Binding Edit.CutCommand}" />
+        <KeyBinding Gesture="Ctrl+V" Command="{Binding Edit.PasteCommand}" />
+        <KeyBinding Gesture="Ctrl+A" Command="{Binding Edit.SelectAllCommand}" />
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding Edit.DeselectCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+I" Command="{Binding Edit.InvertSelectionCommand}" />
+        <!-- Layer -->
+        <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding Layers.NewLayerCommand}" />
+        <KeyBinding Gesture="Ctrl+J" Command="{Binding Layers.DuplicateCommand}" />
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding Layers.MergeDownCommand}" />
+        <KeyBinding Gesture="Ctrl+L" Command="{Binding Layers.ToggleLockCommand}" />
+        <KeyBinding Gesture="Ctrl+G" Command="{Binding Layers.GroupCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+G" Command="{Binding Layers.UngroupCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+R" Command="{Binding Effects.RecolorCommand}" />
+        <KeyBinding Gesture="Ctrl+OemCloseBrackets" Command="{Binding Layers.MoveUpCommand}" />
+        <KeyBinding Gesture="Ctrl+OemOpenBrackets" Command="{Binding Layers.MoveDownCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+OemCloseBrackets" Command="{Binding Layers.BringToFrontCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+OemOpenBrackets" Command="{Binding Layers.SendToBackCommand}" />
+        <!-- View -->
+        <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding View.ZoomInCommand}" />
+        <KeyBinding Gesture="Ctrl+Add" Command="{Binding View.ZoomInCommand}" />
+        <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding View.ZoomOutCommand}" />
+        <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding View.ZoomOutCommand}" />
+        <KeyBinding Gesture="Ctrl+D0" Command="{Binding View.FitCommand}" />
+        <KeyBinding Gesture="Ctrl+D1" Command="{Binding View.ActualSizeCommand}" />
+        <KeyBinding Gesture="F1" Command="{Binding View.ShortcutsCommand}" />
+    </Window.InputBindings>
+
+    <DockPanel>
+        <!-- ===== Menu ===== -->
+        <Menu DockPanel.Dock="Top" Background="{StaticResource PanelBrush}">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New..." InputGestureText="Ctrl+N" Command="{Binding File.NewCommand}" />
+                <MenuItem Header="_Open..." InputGestureText="Ctrl+O" Command="{Binding File.OpenCommand}" />
+                <MenuItem Header="_Place Image as Layer..." Command="{Binding File.PlaceCommand}" />
+                <Separator />
+                <MenuItem Header="_Save" InputGestureText="Ctrl+S" Command="{Binding File.SaveCommand}" />
+                <MenuItem Header="Save _As..." InputGestureText="Ctrl+Shift+S" Command="{Binding File.SaveAsCommand}" />
+                <MenuItem Header="_Export (choose quality and size)..." InputGestureText="Ctrl+Alt+S" Command="{Binding File.ExportCommand}" />
+                <Separator />
+                <MenuItem Header="_Close" InputGestureText="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
+                <MenuItem Header="Next Picture" InputGestureText="Ctrl+Tab" Command="{Binding NextDocumentCommand}" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="OnExit" />
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" Command="{Binding Edit.UndoCommand}" />
+                <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" Command="{Binding Edit.RedoCommand}" />
+                <Separator />
+                <MenuItem Header="Cu_t" InputGestureText="Ctrl+X" Command="{Binding Edit.CutCommand}" />
+                <MenuItem Header="_Copy" InputGestureText="Ctrl+C" Command="{Binding Edit.CopyCommand}" />
+                <MenuItem Header="_Paste" InputGestureText="Ctrl+V" Command="{Binding Edit.PasteCommand}" />
+                <MenuItem Header="_Delete Selected Pixels" InputGestureText="Delete" Command="{Binding Edit.DeleteCommand}" />
+                <MenuItem Header="_Fill with Foreground Color" Command="{Binding Edit.FillCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Select">
+                <MenuItem Header="Select _All" InputGestureText="Ctrl+A" Command="{Binding Edit.SelectAllCommand}" />
+                <MenuItem Header="_Deselect" InputGestureText="Ctrl+D" Command="{Binding Edit.DeselectCommand}" />
+                <MenuItem Header="_Invert Selection" InputGestureText="Ctrl+Shift+I" Command="{Binding Edit.InvertSelectionCommand}" />
+                <Separator />
+                <MenuItem Header="Select _Subject (AI)" Command="{Binding Effects.SelectSubjectCommand}" />
+                <MenuItem Header="Select _Layer Content" Command="{Binding Edit.SelectLayerContentCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Image">
+                <MenuItem Header="Image _Size / Resolution..." InputGestureText="Ctrl+Alt+I" Command="{Binding Image.ImageSizeCommand}" />
+                <MenuItem Header="AI _Upscale / Clean Up..." Command="{Binding Upscale.AiUpscaleCommand}" />
+                <MenuItem Header="_Upscale 2x (quick, no AI)" Command="{Binding Image.Upscale2xCommand}" />
+                <MenuItem Header="Split Asset Sheet into _Pieces..." Command="{Binding Image.SplitSheetCommand}" />
+                <MenuItem Header="Ca_nvas Size..." InputGestureText="Ctrl+Alt+C" Command="{Binding Image.CanvasSizeCommand}" />
+                <MenuItem Header="Reveal _All (show pixels outside the canvas)" Command="{Binding Image.RevealAllCommand}" />
+                <MenuItem Header="_Trim Transparent Edges" Command="{Binding Image.TrimCommand}" />
+                <Separator />
+                <MenuItem Header="_Crop to Selection" Command="{Binding Image.CropToSelectionCommand}" />
+                <Separator />
+                <MenuItem Header="Rotate 90° Clock_wise" Command="{Binding Image.Rotate90ClockwiseCommand}" />
+                <MenuItem Header="Rotate 90° Counter-Clockwise" Command="{Binding Image.Rotate90CounterClockwiseCommand}" />
+                <MenuItem Header="Rotate 180°" Command="{Binding Image.Rotate180Command}" />
+                <MenuItem Header="Rotate by _Angle..." Command="{Binding Image.RotateCustomCommand}" />
+                <Separator />
+                <MenuItem Header="Flip _Horizontal" Command="{Binding Image.FlipHorizontalCommand}" />
+                <MenuItem Header="Flip _Vertical" Command="{Binding Image.FlipVerticalCommand}" />
+                <Separator />
+                <MenuItem Header="_Remove Background (AI)..." InputGestureText="Ctrl+Alt+B" Command="{Binding Effects.RemoveBackgroundCommand}" />
+                <MenuItem Header="Remove Background by Co_lor..." Command="{Binding Effects.RemoveBackgroundByColorCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Layer">
+                <MenuItem Header="_New Layer" InputGestureText="Ctrl+Shift+N" Command="{Binding Layers.NewLayerCommand}" />
+                <MenuItem Header="_Duplicate Layer" InputGestureText="Ctrl+J" Command="{Binding Layers.DuplicateCommand}" />
+                <MenuItem Header="De_lete Layer" Command="{Binding Layers.DeleteCommand}" />
+                <MenuItem Header="_Rename Layer" Command="{Binding Layers.RenameCommand}" />
+                <MenuItem Header="Lock / Unloc_k" InputGestureText="Ctrl+L" Command="{Binding Layers.ToggleLockCommand}" />
+                <MenuItem Header="Crop This _Object..." Command="{Binding Layers.CropObjectCommand}" />
+                <MenuItem Header="Crop Layer to _Selection" Command="{Binding Layers.CropToSelectionCommand}" />
+                <MenuItem Header="_Group" InputGestureText="Ctrl+G" Command="{Binding Layers.GroupCommand}" />
+                <MenuItem Header="U_ngroup" InputGestureText="Ctrl+Shift+G" Command="{Binding Layers.UngroupCommand}" />
+                <Separator />
+                <MenuItem Header="Remove _Background (AI)..." InputGestureText="Ctrl+Alt+B" Command="{Binding Effects.RemoveBackgroundCommand}" />
+                <Separator />
+                <MenuItem Header="Bring to _Front" InputGestureText="Ctrl+Shift+]" Command="{Binding Layers.BringToFrontCommand}" />
+                <MenuItem Header="Bring Forward (Move _Up)" InputGestureText="Ctrl+]" Command="{Binding Layers.MoveUpCommand}" />
+                <MenuItem Header="Send Backward (Move D_own)" InputGestureText="Ctrl+[" Command="{Binding Layers.MoveDownCommand}" />
+                <MenuItem Header="Send to Bac_k" InputGestureText="Ctrl+Shift+[" Command="{Binding Layers.SendToBackCommand}" />
+                <Separator />
+                <MenuItem Header="_Merge Down" InputGestureText="Ctrl+E" Command="{Binding Layers.MergeDownCommand}" />
+                <MenuItem Header="_Flatten Image" Command="{Binding Layers.FlattenCommand}" />
+                <MenuItem Header="Convert to _Pixels" Command="{Binding Layers.ConvertToPixelsCommand}" />
+                <Separator />
+                <MenuItem Header="Flip Layer _Horizontal" Command="{Binding Layers.FlipLayerHorizontalCommand}" />
+                <MenuItem Header="Flip Layer _Vertical" Command="{Binding Layers.FlipLayerVerticalCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Adjust">
+                <MenuItem Header="_Auto Levels..." Command="{Binding Effects.AutoLevelsCommand}" />
+                <MenuItem Header="_Brightness / Contrast..." Command="{Binding Effects.BrightnessContrastCommand}" />
+                <MenuItem Header="_Exposure / Gamma..." Command="{Binding Effects.ExposureCommand}" />
+                <Separator />
+                <MenuItem Header="_Recolor (color graph, keeps shading)..." InputGestureText="Ctrl+Shift+R" Command="{Binding Effects.RecolorCommand}" />
+                <MenuItem Header="_Hue / Saturation..." Command="{Binding Effects.HueSaturationCommand}" />
+                <MenuItem Header="_Vibrance..." Command="{Binding Effects.VibranceCommand}" />
+                <MenuItem Header="_Temperature / Tint..." Command="{Binding Effects.TemperatureCommand}" />
+                <Separator />
+                <MenuItem Header="_Grayscale" Command="{Binding Effects.GrayscaleCommand}" />
+                <MenuItem Header="_Invert Colors" Command="{Binding Effects.InvertCommand}" />
+                <MenuItem Header="_Sepia" Command="{Binding Effects.SepiaCommand}" />
+                <MenuItem Header="_Posterize..." Command="{Binding Effects.PosterizeCommand}" />
+                <MenuItem Header="T_hreshold (black and white)..." Command="{Binding Effects.ThresholdCommand}" />
+            </MenuItem>
+            <MenuItem Header="Filte_r">
+                <MenuItem Header="AI Clean Up / _Upscale..." Command="{Binding Upscale.AiUpscaleCommand}" />
+                <MenuItem Header="E_nhance (clean up blur, no AI)..." Command="{Binding Effects.EnhanceCommand}" />
+                <Separator />
+                <MenuItem Header="_Blur..." Command="{Binding Effects.BlurCommand}" />
+                <MenuItem Header="_Motion Blur..." Command="{Binding Effects.MotionBlurCommand}" />
+                <MenuItem Header="_Sharpen..." Command="{Binding Effects.SharpenCommand}" />
+                <Separator />
+                <MenuItem Header="_Reduce Noise..." Command="{Binding Effects.ReduceNoiseCommand}" />
+                <MenuItem Header="Add _Noise..." Command="{Binding Effects.NoiseCommand}" />
+                <Separator />
+                <MenuItem Header="_Pixelate..." Command="{Binding Effects.PixelateCommand}" />
+                <MenuItem Header="_Vignette..." Command="{Binding Effects.VignetteCommand}" />
+                <MenuItem Header="_Emboss..." Command="{Binding Effects.EmbossCommand}" />
+                <MenuItem Header="_Find Edges (sketch)..." Command="{Binding Effects.FindEdgesCommand}" />
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="Zoom _In" InputGestureText="Ctrl++" Command="{Binding View.ZoomInCommand}" />
+                <MenuItem Header="Zoom _Out" InputGestureText="Ctrl+-" Command="{Binding View.ZoomOutCommand}" />
+                <MenuItem Header="_Fit on Screen" InputGestureText="Ctrl+0" Command="{Binding View.FitCommand}" />
+                <MenuItem Header="_Actual Size (100%)" InputGestureText="Ctrl+1" Command="{Binding View.ActualSizeCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Keyboard Shortcuts" InputGestureText="F1" Command="{Binding View.ShortcutsCommand}" />
+                <MenuItem Header="_About Flash Editor" Command="{Binding View.AboutCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- ===== Tool options ===== -->
+        <panels:OptionsBar DockPanel.Dock="Top" />
+
+        <!-- ===== Status bar ===== -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}"
+                BorderThickness="0,1,0,0" Height="26">
+            <DockPanel Margin="10,0">
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ZoomText}" VerticalAlignment="Center" MinWidth="60" TextAlignment="Right" />
+                <Button DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,16,0" Padding="6,0" MinHeight="0"
+                        Background="Transparent" BorderThickness="0" Cursor="Hand" Command="{Binding Image.ImageSizeCommand}"
+                        ToolTip="Click to change the image size / resolution">
+                    <TextBlock Foreground="{StaticResource SubtleTextBrush}" TextDecorations="Underline">
+                        <Run Text="{Binding Document.Width, Mode=OneWay}" /><Run Text=" x " /><Run Text="{Binding Document.Height, Mode=OneWay}" /><Run Text=" px" />
+                    </TextBlock>
+                </Button>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding CursorText}" VerticalAlignment="Center" Margin="0,0,24,0"
+                           Foreground="{StaticResource SubtleTextBrush}" MinWidth="110" />
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- ===== Left toolbox ===== -->
+        <panels:ToolboxPanel DockPanel.Dock="Left" />
+
+        <!-- ===== Right panels ===== -->
+        <Border DockPanel.Dock="Right" Width="290" Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1,0,0,0">
+            <Grid x:Name="RightPanels">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="3*" MinHeight="160" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition x:Name="HistoryRow" Height="Auto" />
+                </Grid.RowDefinitions>
+                <panels:PropertiesPanel />
+                <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource DividerBrush}" />
+                <panels:LayersPanel Grid.Row="2" />
+                <GridSplitter x:Name="HistorySplitter" Grid.Row="3" Height="5" HorizontalAlignment="Stretch"
+                              Background="{StaticResource DividerBrush}" Visibility="Collapsed" />
+                <Rectangle Grid.Row="3" Height="1" Fill="{StaticResource DividerBrush}" VerticalAlignment="Top" />
+                <panels:HistoryPanel Grid.Row="4" />
+            </Grid>
+        </Border>
+
+        <!-- ===== Open pictures (tabs) + canvas ===== -->
+        <DockPanel>
+            <Border DockPanel.Dock="Top" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.OpenCommand}" ToolTip="Open another image (Ctrl+O)" Margin="0,0,4,0">
+                        <Path Style="{StaticResource IconPath}" Data="M3,6 L8,6 L10,8 L17,8 L17,16 L3,16 Z" />
+                    </Button>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.NewCommand}" ToolTip="New image (Ctrl+N)">
+                        <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Add}" />
+                    </Button>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Documents}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="12,6,6,6" Cursor="Hand" ToolTip="{Binding TabToolTip}" BorderThickness="0,0,1,0"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            BorderBrush="{StaticResource DividerBrush}">
+                                        <Border.InputBindings>
+                                            <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.SelectDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                            <MouseBinding Gesture="LeftDoubleClick" Command="{Binding DataContext.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                            <MouseBinding Gesture="MiddleClick" Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                        </Border.InputBindings>
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                                                    </Trigger>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource EqualsConverter}">
+                                                                <Binding />
+                                                                <Binding Path="DataContext.Document" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Background" Value="{StaticResource CanvasAreaBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Rename" Command="{Binding PlacementTarget.Tag.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Close" Command="{Binding PlacementTarget.Tag.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center" MaxWidth="220" TextTrimming="CharacterEllipsis"
+                                                       Visibility="{Binding IsRenaming, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <TextBox Text="{Binding EditableName, UpdateSourceTrigger=Explicit}" Width="170" Padding="4,1" VerticalAlignment="Center"
+                                                     Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisibility}}"
+                                                     IsVisibleChanged="OnTabRenameVisible" KeyDown="OnTabRenameKeyDown" LostKeyboardFocus="OnTabRenameLostFocus" />
+                                            <Button Content="✕" FontSize="10" Width="20" Height="20" Padding="0" Margin="8,0,0,0" MinWidth="0" MinHeight="0"
+                                                    Background="Transparent" BorderThickness="0" ToolTip="Close (Ctrl+W)"
+                                                    Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+            <editor:CanvasView x:Name="CanvasArea" />
+        </DockPanel>
+    </DockPanel>
+</Window>

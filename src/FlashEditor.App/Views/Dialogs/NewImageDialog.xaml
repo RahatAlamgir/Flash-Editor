@@ -1,0 +1,39 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.NewImageDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="New Image" Width="380" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}">
+    <StackPanel Margin="20,16,20,18">
+        <TextBlock Text="Preset" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+        <ComboBox x:Name="PresetBox" SelectionChanged="OnPresetChanged" />
+
+        <Grid Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Width (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="WidthBox" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Height (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="HeightBox" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Text="Background" Margin="0,14,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+        <RadioButton x:Name="WhiteOption" Content="White" IsChecked="True" GroupName="Bg" />
+        <RadioButton x:Name="TransparentOption" Content="Transparent" GroupName="Bg" />
+        <RadioButton x:Name="BackgroundColorOption" Content="Background color" GroupName="Bg" />
+
+        <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap" />
+
+        <DockPanel Margin="0,18,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+            <Button DockPanel.Dock="Right" Content="Create" IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
+        </DockPanel>
+    </StackPanel>
+</Window>

@@ -1,0 +1,54 @@
+<UserControl x:Class="FlashEditor.App.Views.Panels.ToolboxPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,1,0" Width="52">
+        <DockPanel>
+            <!-- Foreground / background color swatches -->
+            <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,12" HorizontalAlignment="Center">
+                <Grid Width="42" Height="42">
+                    <Border Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Background="{Binding Colors.Background, Converter={StaticResource ColorToBrush}}"
+                            BorderBrush="#FFBBBBBB" BorderThickness="1" Cursor="Hand" ToolTip="Background color (click to change)">
+                        <Border.InputBindings>
+                            <MouseBinding Gesture="LeftClick" Command="{Binding Colors.PickBackgroundCommand}" />
+                        </Border.InputBindings>
+                    </Border>
+                    <Border Width="26" Height="26" HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Background="{Binding Colors.Foreground, Converter={StaticResource ColorToBrush}}"
+                            BorderBrush="#FFEEEEEE" BorderThickness="1" Cursor="Hand" ToolTip="Foreground color (click to change)">
+                        <Border.InputBindings>
+                            <MouseBinding Gesture="LeftClick" Command="{Binding Colors.PickForegroundCommand}" />
+                        </Border.InputBindings>
+                    </Border>
+                </Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                    <Button Style="{StaticResource IconButton}" Padding="1" Command="{Binding Colors.SwapCommand}" ToolTip="Swap colors (X)">
+                        <Viewbox Width="16" Height="16">
+                            <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Swap}" />
+                        </Viewbox>
+                    </Button>
+                    <Button Style="{StaticResource IconButton}" Padding="1" Command="{Binding Colors.ResetCommand}" ToolTip="Default colors: black / white (D)">
+                        <Grid Width="16" Height="16">
+                            <Rectangle Width="9" Height="9" Fill="White" Stroke="#FF888888" StrokeThickness="0.5" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                            <Rectangle Width="9" Height="9" Fill="Black" Stroke="#FF888888" StrokeThickness="0.5" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Tools -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
+                <ListBox ItemsSource="{Binding Tools.Tools}" SelectedItem="{Binding Tools.ActiveTool}"
+                         ItemContainerStyle="{StaticResource ToolboxItem}" Background="Transparent"
+                         BorderThickness="0" Padding="0" HorizontalAlignment="Center" Focusable="False"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Path Style="{StaticResource IconPath}" Data="{Binding IconKey, Converter={StaticResource IconGeometry}}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

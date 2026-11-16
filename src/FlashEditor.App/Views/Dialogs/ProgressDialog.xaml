@@ -1,0 +1,18 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.ProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="440" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}">
+    <!-- Shown while a long job (AI) runs: progress, time left, Cancel. The picture cannot be edited meanwhile. -->
+    <StackPanel Margin="20,16,20,18">
+        <TextBlock x:Name="MessageText" TextWrapping="Wrap" Margin="0,0,0,12" />
+        <ProgressBar x:Name="Bar" Height="8" Minimum="0" Maximum="1" />
+        <DockPanel Margin="0,6,0,0">
+            <TextBlock x:Name="PercentText" DockPanel.Dock="Right" Foreground="{StaticResource SubtleTextBrush}" />
+            <TextBlock x:Name="DetailText" Foreground="{StaticResource SubtleTextBrush}" TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+        <Button x:Name="CancelButton" Content="Cancel" HorizontalAlignment="Right" Margin="0,16,0,0" Click="OnCancel"
+                Style="{StaticResource DialogButton}" />
+    </StackPanel>
+</Window>

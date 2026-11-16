@@ -1,0 +1,266 @@
+using FlashEditor.App.ViewModels.Infrastructure;
+using FlashEditor.Core.Documents;
+using FlashEditor.Core.History;
+using FlashEditor.Core.Objects;
+using FlashEditor.Core.Painting;
+using FlashEditor.Core.Transforms;
+
+namespace FlashEditor.App.ViewModels.Commands;
+
+/// <summary>Layer menu and Layers panel buttons.</summary>
+public sealed class LayerCommands
+{
+    private readonly MainViewModel _main;
+
+    public LayerCommands(MainViewModel main)
+    {
+        _main = main;
+        NewLayerCommand = new RelayCommand(NewLayer);
+        DuplicateCommand = new RelayCommand(Duplicate, () => Doc.ActiveLayer != null);
+        DeleteCommand = new RelayCommand(Delete, () => Doc.ActiveLayer is { IsLocked: false } && Doc.Layers.Count > 1);
+        ToggleLockCommand = new RelayCommand(ToggleLock, () => Doc.ActiveLayer != null);
+        CropToSelectionCommand = new RelayCommand(CropToSelection, () => Doc.Selection != null && Doc.ActiveLayer is { IsLocked: false });
+        CropObjectCommand = new RelayCommand(CropObject, () => Doc.ActiveLayer is { IsLocked: false });
+        GroupCommand = new RelayCommand(Group, () => _main.SelectedLayers.Count >= 2 && _main.SelectedLayers.All(l => !l.IsLocked));
+        UngroupCommand = new RelayCommand(Ungroup, () => Doc.ActiveLayer is { Object: GroupObject, IsLocked: false });
+        MoveUpCommand = new RelayCommand(() => Move(+1), () => Doc.ActiveLayer != null && Doc.ActiveLayerIndex < Doc.Layers.Count - 1);
+        MoveDownCommand = new RelayCommand(() => Move(-1), () => Doc.ActiveLayerIndex > 0);
+        BringToFrontCommand = new RelayCommand(() => MoveTo(Doc.Layers.Count - 1, "Bring to Front"),
+            () => Doc.ActiveLayer != null && Doc.ActiveLayerIndex < Doc.Layers.Count - 1);
+        SendToBackCommand = new RelayCommand(() => MoveTo(0, "Send to Back"), () => Doc.ActiveLayerIndex > 0);
+        ConvertToPixelsCommand = new RelayCommand(() => { if (Doc.ActiveLayer is { } l) _main.ConvertToPixels(l, announce: false); },
+            () => Doc.ActiveLayer?.Object != null);
+        MergeDownCommand = new RelayCommand(MergeDown, () => Doc.ActiveLayerIndex > 0
+            && !Doc.ActiveLayer!.IsLocked && !Doc.Layers[Doc.ActiveLayerIndex - 1].IsLocked);
+        FlattenCommand = new RelayCommand(Flatten, () => Doc.Layers.Count > 1);
+        FlipLayerHorizontalCommand = new RelayCommand(() => FlipLayer(true), () => Doc.ActiveLayer != null);
+        FlipLayerVerticalCommand = new RelayCommand(() => FlipLayer(false), () => Doc.ActiveLayer != null);
+        RenameCommand = new RelayCommand(p =>
+        {
+            if (p is LayerViewModel vm) vm.IsEditingName = true;
+            else if (_main.Document.ActiveLayer is { } active) active.IsEditingName = true;
+        });
+    }
+
+    public RelayCommand NewLayerCommand { get; }
+    public RelayCommand DuplicateCommand { get; }
+    public RelayCommand DeleteCommand { get; }
+    public RelayCommand MoveUpCommand { get; }
+    public RelayCommand MoveDownCommand { get; }
+    public RelayCommand MergeDownCommand { get; }
+    public RelayCommand ToggleLockCommand { get; }
+    public RelayCommand GroupCommand { get; }
+    public RelayCommand CropToSelectionCommand { get; }
+    public RelayCommand CropObjectCommand { get; }
+    public RelayCommand UngroupCommand { get; }
+    public RelayCommand BringToFrontCommand { get; }
+    public RelayCommand SendToBackCommand { get; }
+    public RelayCommand ConvertToPixelsCommand { get; }
+    public RelayCommand FlattenCommand { get; }
+    public RelayCommand FlipLayerHorizontalCommand { get; }
+    public RelayCommand FlipLayerVerticalCommand { get; }
+    public RelayCommand RenameCommand { get; }
+
+    private Document Doc => _main.Document.Model;
+
+    private void NewLayer()
+    {
+        var layer = new Layer(Doc.NextLayerName(), Doc.Width, Doc.Height);
+        InsertAboveActive("New Layer", layer);
+    }
+
+    private void Duplicate()
+    {
+        if (Doc.ActiveLayer is not { } active) return;
+        InsertAboveActive("Duplicate Layer", active.Duplicate(active.Name + " copy"));
+    }
+
+    private void InsertAboveActive(string actionName, Layer layer)
+    {
+        _main.Push(LayerStructureAction.Record(actionName, Doc, () =>
+        {
+            var layers = Doc.Layers.ToList();
+            layers.Insert(Doc.ActiveLayerIndex + 1, layer);
+            Doc.SetLayers(layers, layer);
+        }));
+    }
+
+    private void Delete()
+    {
+        // Several selected: delete them all (locked ones stay; at least one layer must remain).
+        var selected = _main.SelectedLayers.Where(l => !l.IsLocked).ToList();
+        if (selected.Count > 1)
+        {
+            if (selected.Count >= Doc.Layers.Count) selected.RemoveAt(0);
+            _main.Push(LayerStructureAction.Record("Delete Layers", Doc, () =>
+            {
+                var rest = Doc.Layers.Where(l => !selected.Contains(l)).ToList();
+                Doc.SetLayers(rest, rest.LastOrDefault());
+            }));
+            return;
+        }
+        if (Doc.ActiveLayer is not { } active || Doc.Layers.Count <= 1) return;
+        int index = Doc.ActiveLayerIndex;
+        _main.Push(LayerStructureAction.Record("Delete Layer", Doc, () =>
+        {
+            var layers = Doc.Layers.Where(l => l != active).ToList();
+            Doc.SetLayers(layers, layers[Math.Max(0, index - 1)]);
+        }));
+    }
+
+    /// <param name="direction">+1 = up (towards the top), -1 = down.</param>
+    private void Move(int direction)
+    {
+        if (Doc.ActiveLayer is not { } active) return;
+        int index = Doc.ActiveLayerIndex, target = index + direction;
+        if (target < 0 || target >= Doc.Layers.Count) return;
+
+        _main.Push(LayerStructureAction.Record(direction > 0 ? "Move Layer Up" : "Move Layer Down", Doc, () =>
+        {
+            var layers = Doc.Layers.ToList();
+            (layers[index], layers[target]) = (layers[target], layers[index]);
+            Doc.SetLayers(layers, active);
+        }));
+    }
+
+    /// <summary>Keeps only the selected part of the active layer (any selection shape); the rest of the picture stays.</summary>
+    private void CropToSelection()
+    {
+        if (Doc.Selection is not { } selection || Doc.ActiveLayer is not { } layer) return;
+        var before = layer.SaveState();
+        layer.RestoreState(LayerCrop.ToSelection(layer, selection));
+        _main.Push(new LayerContentAction("Crop Layer to Selection", layer, before, layer.SaveState()));
+        Doc.Selection = null;
+        _main.SelectTool<Tools.Selecting.MoveTool>();
+        _main.SetStatus($"Kept only the selected part of \"{layer.Name}\". It is now a movable, resizable picture.");
+    }
+
+    /// <summary>Opens the Crop tool for just the selected object.</summary>
+    private void CropObject()
+    {
+        _main.SelectTool<Tools.Transform.CropTool>();
+        _main.Tools.Get<Tools.Transform.CropTool>().CropActiveLayer();
+    }
+
+    /// <summary>Puts the selected layers into one group layer (where the top one was).</summary>
+    private void Group()
+    {
+        var layers = _main.SelectedLayers.Where(l => l.IsVisible).ToList(); // bottom to top
+        var members = new List<GroupMember>();
+        foreach (var layer in layers)
+        {
+            var obj = layer.Object ?? AsImage(layer);
+            if (obj != null) members.Add(new GroupMember(obj, layer.Name, layer.Opacity));
+        }
+        if (members.Count < 2)
+        {
+            _main.SetStatus("Select at least two visible, non-empty layers to group (Shift+click on the canvas, or Ctrl+click in the Layers panel).");
+            return;
+        }
+
+        var group = new Layer($"Group ({members.Count})", Doc.Width, Doc.Height);
+        group.SetObject(GroupObject.Create(members));
+        int top = Doc.Layers.IndexOf(layers[^1]);
+        _main.Push(LayerStructureAction.Record("Group", Doc, () =>
+        {
+            var list = Doc.Layers.ToList();
+            list.Insert(top + 1, group);
+            list.RemoveAll(l => layers.Contains(l));
+            Doc.SetLayers(list, group);
+        }));
+        _main.SelectOnly(group);
+        _main.SetStatus($"Grouped {members.Count} layers. They now move, resize and rotate together. Ctrl+Shift+G ungroups.");
+    }
+
+    /// <summary>A painted layer as an image object (its visible area), or null when it is empty.</summary>
+    private static LayerObject? AsImage(Layer layer)
+    {
+        var bounds = layer.VisibleBounds();
+        if (bounds.IsEmpty) return null;
+        var (content, x, y) = layer.GetFullContent();
+        return new ImageObject(new ObjectBox(bounds.X, bounds.Y, bounds.Width, bounds.Height), content.Crop(bounds.Offset(-x, -y)), layer.Name);
+    }
+
+    /// <summary>Turns a group back into separate layers, exactly where its parts are now.</summary>
+    private void Ungroup()
+    {
+        if (Doc.ActiveLayer is not { Object: GroupObject group } groupLayer) return;
+        var parts = group.CurrentMembers().Select(m =>
+        {
+            var layer = new Layer(m.Name, Doc.Width, Doc.Height) { Opacity = m.Opacity };
+            layer.SetObject(m.Object);
+            return layer;
+        }).ToList();
+
+        _main.Push(LayerStructureAction.Record("Ungroup", Doc, () =>
+        {
+            var list = Doc.Layers.ToList();
+            int index = list.IndexOf(groupLayer);
+            list.RemoveAt(index);
+            list.InsertRange(index, parts);
+            Doc.SetLayers(list, parts[^1]);
+        }));
+        _main.SetSelection(parts, parts[^1]);
+        _main.SetStatus($"Ungrouped into {parts.Count} layers (still selected together).");
+    }
+
+    private void ToggleLock()
+    {
+        if (_main.Document.ActiveLayer is not { } layer) return;
+        layer.IsLocked = !layer.IsLocked; // recorded as an undo step by the layer view model
+        _main.SetStatus(layer.IsLocked ? $"Locked \"{layer.Name}\"." : $"Unlocked \"{layer.Name}\".");
+    }
+
+    /// <summary>Moves the active layer to the given position in the stack (0 = bottom).</summary>
+    private void MoveTo(int target, string name)
+    {
+        if (Doc.ActiveLayer is not { } active) return;
+        _main.Push(LayerStructureAction.Record(name, Doc, () =>
+        {
+            var layers = Doc.Layers.Where(l => l != active).ToList();
+            layers.Insert(Math.Clamp(target, 0, layers.Count), active);
+            Doc.SetLayers(layers, active);
+        }));
+    }
+
+    /// <summary>Paints the active layer onto the layer below it, then removes it.</summary>
+    private void MergeDown()
+    {
+        int index = Doc.ActiveLayerIndex;
+        if (index <= 0) return;
+        var upper = Doc.Layers[index];
+        var lower = Doc.Layers[index - 1];
+        _main.ConvertToPixels(lower, announce: false); // merging paints into the lower layer's pixels
+
+        var before = lower.Pixels.Clone();
+        if (upper.IsVisible) Compositor.DrawLayer(lower.Pixels, upper);
+        lower.NotifyPixelsChanged();
+        var pixelStep = PixelChangeAction.Create("Merge", lower, before, lower.Pixels.Bounds);
+
+        var structureStep = LayerStructureAction.Record("Merge", Doc, () =>
+            Doc.SetLayers(Doc.Layers.Where(l => l != upper).ToList(), lower));
+
+        _main.Push(new CompositeAction("Merge Down", new IHistoryAction?[] { pixelStep, structureStep }));
+    }
+
+    /// <summary>Merges all visible layers into one "Background" layer.</summary>
+    private void Flatten()
+    {
+        var flat = new Layer("Background", Compositor.Flatten(Doc));
+        _main.Push(LayerStructureAction.Record("Flatten Image", Doc, () => Doc.SetLayers(new[] { flat }, flat)));
+    }
+
+    private void FlipLayer(bool horizontal)
+    {
+        // Objects flip in place and stay editable.
+        if (Doc.ActiveLayer is { Object: { } obj } objectLayer)
+        {
+            _main.Push(ObjectChangeAction.Apply(horizontal ? "Flip Horizontal" : "Flip Vertical", objectLayer,
+                horizontal ? obj with { FlipX = !obj.FlipX } : obj with { FlipY = !obj.FlipY }));
+            return;
+        }
+        if (!_main.TryGetEditableLayer(out var layer)) return;
+        _main.Push(CanvasChangeAction.ApplyToLayer(horizontal ? "Flip Layer Horizontal" : "Flip Layer Vertical",
+            Doc, layer, horizontal ? ImageTransforms.FlipHorizontal : ImageTransforms.FlipVertical));
+    }
+}

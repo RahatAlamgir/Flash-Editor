@@ -1,0 +1,156 @@
+<UserControl x:Class="FlashEditor.App.Views.Panels.OptionsBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:opt="clr-namespace:FlashEditor.App.Tools.Options"
+             xmlns:tr="clr-namespace:FlashEditor.App.Tools.Transform"
+             xmlns:obj="clr-namespace:FlashEditor.Core.Objects;assembly=FlashEditor.Core"
+             xmlns:conv="clr-namespace:FlashEditor.App.Converters"
+             xmlns:ctl="clr-namespace:FlashEditor.App.Views.Controls">
+    <!-- Settings of the active tool. Each settings type has its own template below. -->
+    <UserControl.Resources>
+        <DataTemplate DataType="{x:Type sys:String}">
+            <TextBlock Text="{Binding}" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center"
+                       Margin="12,0" TextTrimming="CharacterEllipsis" />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type opt:BrushOptions}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Size" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="1" Maximum="500" Value="{Binding Size}" SliderWidth="110" BoxWidth="58" Unit="px" Margin="6,0,4,0" />
+                <TextBlock Text="Hardness" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding Hardness}" SliderWidth="110" BoxWidth="58" Unit="%" Margin="6,0,4,0" />
+                <TextBlock Text="Opacity" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="1" Maximum="100" Value="{Binding Opacity}" SliderWidth="110" BoxWidth="58" Unit="%" Margin="6,0,4,0" />
+                <TextBlock Text="  [ ] change size" Style="{StaticResource OptionLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type opt:BucketOptions}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Tolerance" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="0" Maximum="255" Value="{Binding Tolerance}" SliderWidth="110" BoxWidth="58" Unit="" Margin="6,0,4,0" />
+                <CheckBox Content="Contiguous" IsChecked="{Binding Contiguous}" VerticalAlignment="Center" Margin="16,0,0,0"
+                          ToolTip="On: fill only connected pixels. Off: fill every similar pixel in the layer." />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type opt:ShapeOptions}">
+            <StackPanel Orientation="Horizontal">
+                <!-- Shape gallery: one small button per shape -->
+                <ItemsControl ItemsSource="{Binding Kinds}" Margin="8,0,0,0" VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <RadioButton GroupName="ShapeKinds" ToolTip="{Binding}" Width="30" Height="30" Margin="1,0"
+                                         Style="{StaticResource ShapeKindButton}"
+                                         Command="{Binding DataContext.SelectKindCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                         CommandParameter="{Binding}">
+                                <RadioButton.IsChecked>
+                                    <MultiBinding Converter="{StaticResource EqualsConverter}" Mode="OneWay">
+                                        <Binding />
+                                        <Binding Path="DataContext.Kind" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                    </MultiBinding>
+                                </RadioButton.IsChecked>
+                                <Path Data="{Binding Converter={StaticResource ShapeIcon}}" Stroke="{StaticResource IconBrush}"
+                                      StrokeThickness="1.4" Stretch="Uniform" Width="16" Height="16" StrokeLineJoin="Round" />
+                            </RadioButton>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Rectangle Width="1" Height="22" Fill="{StaticResource DividerBrush}" Margin="8,0" />
+                <CheckBox Content="Fill" IsChecked="{Binding FillEnabled}" VerticalAlignment="Center" />
+                <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding FillBrush}" Command="{Binding PickFillCommand}" ToolTip="Fill color" />
+                <CheckBox Content="Border" IsChecked="{Binding StrokeEnabled}" VerticalAlignment="Center" Margin="14,0,0,0" />
+                <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding StrokeBrush}" Command="{Binding PickStrokeCommand}" ToolTip="Border color" />
+                <ctl:NumberSlider Minimum="1" Maximum="200" Value="{Binding StrokeWidth}" SliderWidth="80" BoxWidth="58" Unit="px" Margin="6,0,4,0" ToolTip="Border / line thickness" />
+                <StackPanel Orientation="Horizontal" Visibility="{Binding HasCorners, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Corners" Style="{StaticResource OptionLabel}" />
+                    <ctl:NumberSlider Minimum="0" Maximum="150" Value="{Binding CornerRadius}" SliderWidth="80" BoxWidth="58" Unit="" Margin="6,0,4,0" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Visibility="{Binding HasPoints, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Points" Style="{StaticResource OptionLabel}" />
+                    <ctl:NumberSlider Minimum="3" Maximum="16" Value="{Binding Points}" SliderWidth="80" BoxWidth="58" Unit="" Margin="6,0,4,0" />
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type opt:QuickSelectOptions}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Brush size" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="2" Maximum="500" Value="{Binding Size}" SliderWidth="110" BoxWidth="58" Unit="px" Margin="6,0,4,0" />
+                <TextBlock Text="Tolerance" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="1" Maximum="255" Value="{Binding Tolerance}" SliderWidth="110" BoxWidth="58" Margin="6,0,4,0" />
+                <CheckBox Content="All layers" IsChecked="{Binding SampleAllLayers}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                <TextBlock Text="  Drag to select. Alt+drag removes. [ ] = size. W switches to Magic Wand." Style="{StaticResource OptionLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type opt:MagicWandOptions}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Tolerance" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="0" Maximum="255" Value="{Binding Tolerance}" SliderWidth="110" BoxWidth="58" Unit="" Margin="6,0,4,0" />
+                <CheckBox Content="Connected only" IsChecked="{Binding Contiguous}" VerticalAlignment="Center" Margin="16,0,0,0"
+                          ToolTip="On: only the touching area. Off: every similar color in the picture." />
+                <CheckBox Content="All layers" IsChecked="{Binding SampleAllLayers}" VerticalAlignment="Center" Margin="12,0,0,0"
+                          ToolTip="On: look at what you see. Off: only the selected layer." />
+                <TextBlock Text="  Shift = add, Alt = subtract" Style="{StaticResource OptionLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type opt:TextToolOptions}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Font" Style="{StaticResource OptionLabel}" />
+                <ComboBox Width="190" VerticalAlignment="Center"
+                          ItemsSource="{Binding Source={x:Static opt:TextToolOptions.InstalledFonts}}"
+                          SelectedItem="{Binding FontFamily}">
+                    <ComboBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ComboBox.ItemsPanel>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Source}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="Size" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="6" Maximum="300" Value="{Binding FontSize}" SliderWidth="110" BoxWidth="58" Unit="px" Margin="6,0,4,0" />
+                <CheckBox Content="Bold" IsChecked="{Binding Bold}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <CheckBox Content="Italic" IsChecked="{Binding Italic}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                <TextBlock Text="  Click on the image to add text" Style="{StaticResource OptionLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type tr:CropTool}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Crop" Style="{StaticResource OptionLabel}" />
+                <ComboBox Width="235" VerticalAlignment="Center" ItemsSource="{Binding Source={x:Static tr:CropTool.Targets}}"
+                          SelectedIndex="{Binding TargetIndex}" ToolTip="Crop the whole picture, or only the selected layer / object" />
+                <TextBlock Text="Shape" Style="{StaticResource OptionLabel}" />
+                <ComboBox Width="190" VerticalAlignment="Center" ItemsSource="{Binding Source={x:Static tr:CropTool.Aspects}}"
+                          SelectedItem="{Binding Aspect}" />
+                <TextBlock Text="{Binding SizeText}" Style="{StaticResource OptionLabel}" />
+                <Button Content="Apply crop (Enter)" Command="{Binding ApplyCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                <Button Content="Cancel (Esc)" Command="{Binding CancelCommand}" Margin="8,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource PanelHeaderBrush}" BorderBrush="{StaticResource DividerBrush}"
+            BorderThickness="0,0,0,1" Height="44">
+        <DockPanel>
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" Margin="12,0,4,0">
+                <Path Style="{StaticResource IconPath}" Data="{Binding Tools.ActiveTool.IconKey, Converter={StaticResource IconGeometry}}" />
+                <TextBlock Text="{Binding Tools.ActiveTool.Name}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,8,0" />
+                <Rectangle Width="1" Height="22" Fill="{StaticResource DividerBrush}" />
+            </StackPanel>
+            <ContentControl Content="{Binding Tools.ActiveTool.Options}" VerticalAlignment="Center" Focusable="False" />
+        </DockPanel>
+    </Border>
+</UserControl>

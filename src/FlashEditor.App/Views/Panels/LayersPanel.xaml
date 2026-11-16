@@ -1,0 +1,139 @@
+<UserControl x:Class="FlashEditor.App.Views.Panels.LayersPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:FlashEditor.App.Views.Controls">
+    <UserControl.Resources>
+        <!-- Small checkerboard behind layer thumbnails -->
+        <DrawingBrush x:Key="ThumbChecker" TileMode="Tile" Viewport="0,0,8,8" ViewportUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#FFCCCCCC" Geometry="M0,0 H2 V2 H0 Z" />
+                    <GeometryDrawing Brush="#FF999999" Geometry="M0,0 H1 V1 H0 Z M1,1 H2 V2 H1 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+        <!-- Padlock toggle: faint when unlocked, bright when locked -->
+        <Style x:Key="LockToggle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ToolTip" Value="Lock / unlock (Ctrl+L)" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border Background="Transparent" Width="26" Height="26">
+                            <Path x:Name="Lock" Style="{StaticResource IconPath}" Data="{StaticResource Icon.Lock}" Opacity="0.2" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Lock" Property="Opacity" Value="1" />
+                                <Setter TargetName="Lock" Property="Stroke" Value="#FFFFB020" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Lock" Property="Opacity" Value="0.8" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Eye icon toggle for layer visibility -->
+        <Style x:Key="EyeToggle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ToolTip" Value="Show / hide layer" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border Background="Transparent" Width="26" Height="26">
+                            <Path x:Name="Eye" Style="{StaticResource IconPath}" Data="{StaticResource Icon.Eye}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="Eye" Property="Opacity" Value="0.25" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="LAYERS" Style="{StaticResource PanelHeader}" />
+
+        <!-- Opacity of the selected layer -->
+        <Grid DockPanel.Dock="Top" Margin="10,0,10,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="44" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Opacity" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,8,0" />
+            <ctl:NumberSlider Grid.Column="1" Grid.ColumnSpan="2" Minimum="0" Maximum="100" SliderWidth="136" BoxWidth="58" Unit="%"
+                              Value="{Binding Document.ActiveLayer.OpacityPercent}" />
+        </Grid>
+
+        <!-- Quick action: remove the background of the selected layer -->
+        <Button DockPanel.Dock="Top" Margin="10,0,10,8" Padding="8,5" HorizontalAlignment="Stretch"
+                Command="{Binding Effects.RemoveBackgroundCommand}"
+                ToolTip="AI: keep the main subject, make the background transparent (Ctrl+Alt+B)">
+            <StackPanel Orientation="Horizontal">
+                <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Magic}" Margin="0,0,8,0" />
+                <TextBlock Text="Remove Background" VerticalAlignment="Center" />
+            </StackPanel>
+        </Button>
+
+        <!-- Buttons -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Padding="6,4">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.NewLayerCommand}" ToolTip="New layer (Ctrl+Shift+N)">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Add}" />
+                </Button>
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.DuplicateCommand}" ToolTip="Duplicate layer (Ctrl+J)">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Duplicate}" />
+                </Button>
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.MoveUpCommand}" ToolTip="Move layer up">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Up}" />
+                </Button>
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.MoveDownCommand}" ToolTip="Move layer down">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Down}" />
+                </Button>
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.MergeDownCommand}" ToolTip="Merge down (Ctrl+E)">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Merge}" />
+                </Button>
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.DeleteCommand}" ToolTip="Delete layer">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Delete}" />
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- Layer list (top layer first) -->
+        <ListBox x:Name="LayerList" Style="{StaticResource PanelList}" SelectionMode="Extended"
+                 SelectionChanged="OnLayerSelectionChanged" ToolTip="Ctrl+click or Shift+click to select several layers (Ctrl+G groups them)"
+                 ItemsSource="{Binding Document.LayersTopDown}" SelectedItem="{Binding Document.ActiveLayer}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Height="42">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <CheckBox Style="{StaticResource EyeToggle}" IsChecked="{Binding IsVisible}" VerticalAlignment="Center" />
+                        <CheckBox Grid.Column="3" Style="{StaticResource LockToggle}" IsChecked="{Binding IsLocked}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                        <Border Grid.Column="1" Width="48" Height="34" Margin="6,0,8,0" Background="{StaticResource ThumbChecker}"
+                                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
+                            <Image Source="{Binding Bitmap}" Stretch="Uniform" />
+                        </Border>
+                        <TextBlock Grid.Column="2" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   MouseLeftButtonDown="OnNameMouseDown" ToolTip="Double-click to rename" />
+                        <TextBox Grid.Column="2" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"
+                                 Visibility="{Binding IsEditingName, Converter={StaticResource BoolToVisibility}}"
+                                 IsVisibleChanged="OnEditorVisibleChanged" KeyDown="OnEditorKeyDown" LostKeyboardFocus="OnEditorLostFocus" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</UserControl>

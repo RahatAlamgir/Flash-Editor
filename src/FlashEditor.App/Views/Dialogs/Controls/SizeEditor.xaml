@@ -1,0 +1,43 @@
+<UserControl x:Class="FlashEditor.App.Views.Dialogs.Controls.SizeEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Width / height / percent fields that stay linked, quick % buttons, and the resize method. -->
+    <StackPanel>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="90" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Width (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="WidthBox" TextChanged="OnWidthChanged" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Height (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="HeightBox" TextChanged="OnHeightChanged" />
+            </StackPanel>
+            <StackPanel Grid.Column="4">
+                <TextBlock Text="Percent" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="PercentBox" TextChanged="OnPercentChanged" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Text="Quick size" Margin="0,10,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+        <WrapPanel x:Name="PresetPanel" />
+
+        <CheckBox x:Name="KeepRatioBox" Content="Keep proportions" IsChecked="True" Margin="0,10,0,0" />
+
+        <TextBlock Text="Resize method" Margin="0,10,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+        <ComboBox x:Name="ModeBox" SelectedIndex="0" SelectionChanged="OnModeChanged">
+            <ComboBoxItem Content="Best quality (Lanczos) - sharpest, best for enlarging" />
+            <ComboBoxItem Content="Sharp (Bicubic)" />
+            <ComboBoxItem Content="Smooth (Bilinear) - soft, no halos" />
+            <ComboBoxItem Content="Pixelated (Nearest) - for pixel art" />
+        </ComboBox>
+        <TextBlock x:Name="HintText" Margin="0,6,0,0" TextWrapping="Wrap" FontSize="12"
+                   Foreground="{StaticResource SubtleTextBrush}" />
+    </StackPanel>
+</UserControl>

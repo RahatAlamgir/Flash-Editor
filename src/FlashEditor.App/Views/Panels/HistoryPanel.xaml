@@ -1,0 +1,53 @@
+<UserControl x:Class="FlashEditor.App.Views.Panels.HistoryPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <DockPanel DockPanel.Dock="Top">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,0,6,0">
+                <Button Style="{StaticResource IconButton}" Command="{Binding Edit.UndoCommand}" ToolTip="Undo (Ctrl+Z)">
+                    <Path Style="{StaticResource IconPath}" Data="M7,6 L3,10 L7,14 M3,10 L12,10 C15,10 17,12 17,14.5" />
+                </Button>
+                <Button Style="{StaticResource IconButton}" Command="{Binding Edit.RedoCommand}" ToolTip="Redo (Ctrl+Y)">
+                    <Path Style="{StaticResource IconPath}" Data="M13,6 L17,10 L13,14 M17,10 L8,10 C5,10 3,12 3,14.5" />
+                </Button>
+            </StackPanel>
+            <ToggleButton IsChecked="{Binding IsHistoryExpanded}" Background="Transparent" BorderThickness="0" Padding="0"
+                          HorizontalContentAlignment="Left" Cursor="Hand" ToolTip="Show / hide the history list">
+                <StackPanel Orientation="Horizontal">
+                    <Path x:Name="Chevron" Data="M4,6 L8,10 L12,6" Stroke="{StaticResource SubtleTextBrush}" StrokeThickness="1.5"
+                          Width="16" Height="16" Margin="8,0,0,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="-90" />
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsHistoryExpanded}" Value="True">
+                                        <Setter Property="RenderTransform">
+                                            <Setter.Value>
+                                                <RotateTransform Angle="0" />
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+                    <TextBlock Text="HISTORY" Style="{StaticResource PanelHeader}" Margin="2,10,10,8" />
+                </StackPanel>
+            </ToggleButton>
+        </DockPanel>
+        <ListBox x:Name="HistoryList" Style="{StaticResource PanelList}"
+                 Visibility="{Binding IsHistoryExpanded, Converter={StaticResource BoolToVisibility}}"
+                 ItemsSource="{Binding Document.HistoryItems}" SelectedItem="{Binding Document.SelectedHistoryItem}"
+                 SelectionChanged="OnSelectionChanged">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}" Opacity="{Binding RowOpacity}" Padding="4,3" ToolTip="Click to go back to this step" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,19 @@
+<UserControl x:Class="FlashEditor.App.Views.Controls.NumberSlider"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root" VerticalAlignment="Center">
+    <!-- A slider for quick changes plus a box to type an exact value (Enter applies). -->
+    <StackPanel Orientation="Horizontal">
+        <Slider x:Name="Slider" VerticalAlignment="Center" IsMoveToPointEnabled="True"
+                Width="{Binding SliderWidth, ElementName=Root}"
+                Minimum="{Binding Minimum, ElementName=Root}" Maximum="{Binding Maximum, ElementName=Root}"
+                SmallChange="{Binding Step, ElementName=Root}" LargeChange="{Binding Step, ElementName=Root}"
+                Value="{Binding Value, ElementName=Root, Mode=TwoWay}" />
+        <TextBox x:Name="Box" Width="{Binding BoxWidth, ElementName=Root}" MinWidth="0" Margin="6,0,0,0" Padding="4,2"
+                 HorizontalContentAlignment="Right" VerticalAlignment="Center"
+                 KeyDown="OnBoxKeyDown" LostKeyboardFocus="OnBoxLostFocus" GotKeyboardFocus="OnBoxGotFocus"
+                 ToolTip="Type a value and press Enter (arrow keys = +/- 1)" PreviewKeyDown="OnBoxPreviewKeyDown" />
+        <TextBlock Text="{Binding Unit, ElementName=Root}" VerticalAlignment="Center" Margin="4,0,0,0"
+                   Foreground="{StaticResource SubtleTextBrush}" />
+    </StackPanel>
+</UserControl>
