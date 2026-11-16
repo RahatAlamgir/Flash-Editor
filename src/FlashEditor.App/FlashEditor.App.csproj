@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -9,9 +9,20 @@
     <AssemblyName>FlashEditor</AssemblyName>
     <RootNamespace>FlashEditor.App</RootNamespace>
     <Product>Flash Editor</Product>
+    <Title>Flash Editor</Title>
+    <Description>Image editor with editable objects and AI tools</Description>
+    <Version>1.0.0</Version>
+    <!-- Icon of FlashEditor.exe (Explorer, taskbar, shortcuts, installer). -->
+    <ApplicationIcon>Assets\FlashEditor.ico</ApplicationIcon>
     <!-- WPF0001: the built-in Fluent (dark) theme is marked experimental. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Window / title-bar icon. -->
+    <Resource Include="Assets\FlashEditor.ico" />
+    <None Remove="Assets\FlashEditor.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FlashEditor.Core\FlashEditor.Core.csproj" />

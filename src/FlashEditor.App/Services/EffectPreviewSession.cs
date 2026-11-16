@@ -16,6 +16,9 @@ public sealed class EffectPreviewSession
     private readonly ImageEffect _effect;
     private readonly Selection? _selection;
     private readonly PixelBuffer _original;
+
+    /// <summary>The layer's pixels before the effect (a private copy).</summary>
+    public PixelBuffer Original => _original;
     private CancellationTokenSource? _pending;
     private int _version;
 

@@ -44,6 +44,8 @@ public sealed class ViewCommands
         "Click to select   Drag to move   Handles resize / rotate (Shift = free / 15°)\n" +
         "Double-click text to edit   Right-click for quick actions   Delete removes a selected object\n" +
         "Ctrl+] / Ctrl+[ forward / backward   Ctrl+Shift+] / [ front / back\n\n" +
+        "REFINE BRUSH (R)\n" +
+        "Restore = paint back what Remove Background took   Remove = paint away leftovers   Alt = other mode   X = switch\n\n" +
         "SELECTIONS\n" +
         "M rectangle / ellipse   L lasso / polygon lasso   P pen (curves)   W magic wand   Shift = add, Alt = subtract\n\n" +
         "IMAGE\n" +

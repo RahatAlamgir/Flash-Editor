@@ -79,6 +79,20 @@
             </StackPanel>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type opt:RefineOptions}">
+            <StackPanel Orientation="Horizontal">
+                <RadioButton Content="Restore" IsChecked="{Binding Restore}" GroupName="RefineMode" VerticalAlignment="Center" Margin="10,0,0,0"
+                             ToolTip="Paint back what Remove Background took away" />
+                <RadioButton Content="Remove" IsChecked="{Binding Remove}" GroupName="RefineMode" VerticalAlignment="Center" Margin="12,0,0,0"
+                             ToolTip="Paint away background that was missed" />
+                <TextBlock Text="Size" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="1" Maximum="500" Value="{Binding Size}" SliderWidth="110" BoxWidth="58" Unit="px" Margin="6,0,4,0" />
+                <TextBlock Text="Hardness" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding Hardness}" SliderWidth="90" BoxWidth="58" Unit="%" Margin="6,0,4,0" />
+                <TextBlock Text="  Alt = other mode while painting.  X = switch.  [ ] = size" Style="{StaticResource OptionLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type opt:QuickSelectOptions}">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Brush size" Style="{StaticResource OptionLabel}" />

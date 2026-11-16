@@ -56,6 +56,12 @@ public sealed class Layer : ObservableObject
 
     public bool IsObjectLayer => Object != null;
 
+    /// <summary>
+    /// The layer's pixels from before its background was removed (canvas-sized), so the Refine brush
+    /// can paint parts back. Null when there is nothing to restore from.
+    /// </summary>
+    public PixelBuffer? RestoreSource { get; set; }
+
     /// <summary>True if some of this layer's pixels lie outside the canvas.</summary>
     public bool HasHiddenPixels => _extended != null;
 
@@ -162,7 +168,7 @@ public sealed class Layer : ObservableObject
 
     public Layer Duplicate(string name)
     {
-        var copy = new Layer(name, Pixels.Clone()) { Opacity = Opacity, IsVisible = IsVisible };
+        var copy = new Layer(name, Pixels.Clone()) { Opacity = Opacity, IsVisible = IsVisible, RestoreSource = RestoreSource };
         if (_extended != null || Object != null) copy.RestoreState(SaveState().DeepCopy());
         return copy;
     }

@@ -10,6 +10,13 @@
   <ItemGroup>
     <!-- DirectML build: runs models on the GPU (any DirectX 12 card), falls back to the CPU. -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.24.4" />
+    <!-- Ship the matching DirectML.dll next to the app (otherwise Windows' older System32 copy is used). -->
+    <PackageReference Include="Microsoft.AI.DirectML" Version="1.15.4" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(PkgMicrosoft_AI_DirectML)\bin\x64-win\DirectML.dll" Link="DirectML.dll"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

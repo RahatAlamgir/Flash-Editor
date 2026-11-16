@@ -18,6 +18,7 @@ public sealed class BrushStroke
     private readonly ColorRgba _color;
     private readonly bool _erase;
     private readonly Selection? _selection;
+    private readonly PixelBuffer? _restoreFrom;
     private readonly float[] _coverage;
     private PointD? _last;
     private double _carry; // distance left over from the previous segment, keeps dab spacing even
@@ -31,6 +32,18 @@ public sealed class BrushStroke
         _selection = selection;
         _coverage = new float[target.Width * target.Height];
         Original = target.Clone();
+    }
+
+    /// <summary>
+    /// A "restore" stroke: paints pixels back from <paramref name="restoreFrom"/> (same size as the target),
+    /// e.g. the picture as it was before its background was removed.
+    /// </summary>
+    public BrushStroke(PixelBuffer target, BrushSettings brush, PixelBuffer restoreFrom, Selection? selection)
+        : this(target, brush, ColorRgba.Transparent, erase: false, selection)
+    {
+        if (restoreFrom.Width != target.Width || restoreFrom.Height != target.Height)
+            throw new ArgumentException("The restore source must be the same size as the layer.");
+        _restoreFrom = restoreFrom;
     }
 
     /// <summary>Copy of the pixels before the stroke started (needed for undo).</summary>
@@ -125,7 +138,9 @@ public sealed class BrushStroke
                 dst[i] = src[i]; dst[i + 1] = src[i + 1]; dst[i + 2] = src[i + 2]; dst[i + 3] = src[i + 3];
                 if (strength <= 0) continue;
 
-                if (_erase)
+                if (_restoreFrom != null)
+                    BlendMath.Lerp(dst, i, src, i, _restoreFrom.Data, i, strength);
+                else if (_erase)
                     dst[i + 3] = ColorMath.ClampByte(src[i + 3] * (1 - strength));
                 else
                     BlendMath.Over(dst, i, _color.B, _color.G, _color.R, strength * colorAlpha);

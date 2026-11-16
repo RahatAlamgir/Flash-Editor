@@ -242,7 +242,14 @@ public sealed class EffectCommands
         {
             _main.Push(await session.CommitAsync(values));
             _main.SetStatus($"Applied {effect.Name}");
-            if (isRemoval) ReportBackgroundRemoval(effect, opaqueBefore, CountVisible(layer.Pixels));
+            if (isRemoval)
+            {
+                // Keep the picture as it was, so the Refine brush can paint parts back.
+                // (A second removal keeps the first original: that is the one with everything in it.)
+                if (layer.RestoreSource == null || layer.RestoreSource.Width != layer.Width || layer.RestoreSource.Height != layer.Height)
+                    layer.RestoreSource = session.Original;
+                ReportBackgroundRemoval(effect, opaqueBefore, CountVisible(layer.Pixels));
+            }
         });
     }
 
@@ -265,7 +272,7 @@ public sealed class EffectCommands
     private void ReportBackgroundRemoval(ImageEffect effect, long before, long after)
     {
         double share = before == 0 ? 0 : (before - after) / (double)before;
-        _main.SetStatus($"Remove Background: {share:P0} of the layer became transparent.");
+        _main.SetStatus($"Remove Background: {share:P0} of the layer became transparent. Missed a spot? Use the Refine brush (R): Restore paints parts back, Remove takes more away.");
         if (share >= 0.01) return;
 
         string reason = _main.Document.Model.Selection != null

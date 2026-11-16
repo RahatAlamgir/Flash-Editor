@@ -53,9 +53,40 @@ public class AiBackgroundTests
         Assert.Equal(0f, hard[0]);
         Assert.Equal(1f, hard[1]);
 
+        var shrunk = new[] { 1f, 0.97f, 0f };
+        MaskOps.Adjust(shrunk, 0.3, -1); // strongest shrink, default sharpness
+        Assert.Equal(1f, shrunk[0]);     // the sure subject stays fully visible
+        Assert.Equal(0f, shrunk[2]);
+
         var grown = new[] { 0.3f };
         MaskOps.Adjust(grown, 1, 1); // grow: keep more
         Assert.Equal(1f, grown[0]);
+    }
+
+    /// <summary>
+    /// A small photo in the corner of a big transparent canvas (a pasted picture) must give the same
+    /// result as the photo on its own: the empty area must not confuse the model.
+    /// </summary>
+    [Fact]
+    public void Real_model_works_on_a_small_picture_in_a_big_empty_canvas_when_installed()
+    {
+        var model = ModelInfo.IsNetGeneralUse;
+        var store = new ModelStore();
+        if (!store.IsInstalled(model) && FindAppModelsFolder() is { } appModels) store = new ModelStore(appModels);
+        if (!store.IsInstalled(model)) { _output.WriteLine("SKIPPED: AI model not installed"); return; }
+
+        using var segmenter = new SubjectSegmenter(model, store.PathOf(model));
+        var effect = new AiBackgroundRemovalEffect(segmenter);
+        foreach (var scene in RealisticBackgrounds.All())
+        {
+            var canvas = new PixelBuffer(scene.Image.Width * 3, scene.Image.Height * 2); // mostly empty
+            canvas.CopyFrom(scene.Image, 0, 0);
+            var result = effect.Apply(canvas, effect.CreateDefaultValues()).Crop(scene.Image.Bounds);
+            var (removed, kept) = RealisticBackgrounds.Score(scene, result);
+            _output.WriteLine($"{scene.Name} (in a big canvas): background removed {removed:P1}, subject kept {kept:P1}");
+            Assert.True(removed >= 0.9, $"{scene.Name}: only {removed:P1} of the background was removed");
+            Assert.True(kept >= 0.9, $"{scene.Name}: only {kept:P1} of the subject was kept");
+        }
     }
 
     [Fact]

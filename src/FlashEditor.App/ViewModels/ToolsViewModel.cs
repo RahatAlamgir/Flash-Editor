@@ -31,6 +31,7 @@ public sealed class ToolsViewModel : ObservableObject
             new CropTool(host),
             new BrushTool(host),
             new EraserTool(host),
+            new RefineTool(host),
             new BucketTool(host),
             new EyedropperTool(host),
             new ShapeTool(host, new ShapeOptions(host.Dialogs)),

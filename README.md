@@ -1,44 +1,107 @@
+<p align="center"><img src="src/FlashEditor.App/Assets/FlashEditor.png" width="96" alt="Flash Editor icon"></p>
+
 # Flash Editor
 
-A small Photoshop-style image editor for Windows, written in **C# / .NET 10 / WPF**, with **SkiaSharp** for reading and writing image files.
+A Photoshop-style image editor for Windows with Canva-style editable objects and built-in AI tools.
+Written in **C# / .NET 10 / WPF**. AI runs on your PC (no internet, no account), on the graphics card when there is one.
+
+---
+
+## Highlights
+
+| | |
+|---|---|
+| **AI Remove Background** | One click keeps the person / product and removes the rest, even busy backgrounds. A **Refine brush** paints back or takes away anything the AI got wrong. |
+| **Recolor** | Change the color of a dress or T-shirt with a color graph. Folds, shadows and highlights are kept, so fabric still looks real. |
+| **Editable objects** | Shapes, text and placed pictures stay editable (like Canva): click to select, drag the handles to resize or rotate, change colors and fonts any time. |
+| **AI Upscale / Clean Up** | Makes small or blurry pictures sharper, or 2x to 4x larger with real-looking detail (Real-ESRGAN). |
+| **Selections** | Rectangle, ellipse, lasso, polygon lasso, pen (curves), magic wand, quick-select brush, AI "Select Subject". |
+| **Export** | Pick format, quality and size, crop to 1:1 / 4:5 / 16:9..., and see the real file size before saving. |
+
+---
+
+## Screenshots
+
+### Change a T-shirt color, keeping the fabric's shading
+Select the shirt (Magic Wand or Quick Select), then **Adjust > Recolor**. Tip: remove the background first, so the selection cannot spill into the background.
+
+![Recolor](docs/screenshots/02-recolor-tshirt.png)
+
+### Editable shapes and text
+Speech bubble, text and a rotated star, each on its own layer. The **Properties** panel changes fill, border, corners, points, rotation, font and size, with a number box next to every slider.
+
+![Editable objects](docs/screenshots/03-shapes.png)
+
+
 
 ## Features
 
-| Area | What you can do |
-|---|---|
-| **Several pictures** | Every opened or new picture gets its own **tab** (double-click or right-click a tab to rename it) above the canvas, with its own layers, undo history, selection and zoom. Ctrl+Tab / Ctrl+Shift+Tab switch, Ctrl+W (or the tab's ✕, or a middle-click) closes; unsaved changes are asked about. Dropping several files opens them all. |
-| **Files** | Open PNG, JPG, WEBP, ICO (also BMP, GIF). Save as PNG, JPG, WEBP or ICO (the icon file contains sizes 16 to 256 px). Drag an image onto the window to open it, or hold Ctrl while dropping to add it as a layer. |
-| **Export** | File > Export (Ctrl+Alt+S): pick format, **quality** and **output size** (smaller or larger), and optionally **crop** (drag a box on the preview, or pick 1:1, 4:5, 9:16, 16:9...), with the real file size shown before saving. The open picture is not changed. |
-| **Editable objects (Canva-style)** | Shapes, text and placed / pasted images stay **editable**: click one to select it, drag to move, drag the handles to resize, the round handle to rotate. The **Properties panel** changes fill and border color, border width, corner roundness, star points, shape type, text, font, size, bold / italic, alignment, flip, exact position / size / rotation. Painting on an object turns it into pixels automatically (Ctrl+Z undoes that). Painted (pixel) layers also get handles: resizing one turns it into a resizable image. |
-| **Lock** | Lock a layer or object (padlock in the Layers panel, right-click > Lock, or Ctrl+L): it can still be selected and copied, but not moved, resized, painted, edited or deleted. |
-| **Group** | Shift+click objects on the canvas (or Ctrl / Shift+click in the Layers panel) to select several; drag to move them together. Ctrl+G groups them so they move, resize and rotate as one; Ctrl+Shift+G ungroups (each part keeps its new place, size and angle). |
-| **Right-click menu** | On the canvas: cut, copy, paste, duplicate, delete, bring to front / forward / backward / back, flip, edit text, remove background, select subject, convert to pixels. |
-| **Remove background** | The **Remove Background** button at the top of the Layers panel (also Image or Layer menu, or Ctrl+Alt+B) uses **AI** to find the main subject (person, animal, product...), so it works on busy photo backgrounds too. Sliders: edge sharpness, shrink / grow, feather. The AI model (170 MB) is downloaded once on first use and then works offline. **Image > Remove Background by Color** is the older non-AI tool for plain backgrounds: Finds the background color along the edges and makes it transparent, with live preview, tolerance, edge softness and feather settings. |
-| **Layers** | Add, duplicate, delete, move up and down, show or hide (eye icon), opacity slider, rename (double-click the name), merge down, flatten. Live thumbnails. |
-| **Tools** | Select / Move, Rectangle select, Ellipse select, Lasso, Polygon lasso, Pen, Quick Select, Magic wand, Crop (whole picture or just the selected layer / object; 1:1, 4:5, 16:9... presets), Brush, Eraser, Paint bucket, Eyedropper, Shapes, Text, Hand, Zoom |
-| **Shapes** | Rectangle (with rounded corners), ellipse / circle, triangle, star, polygon, heart, arrow, speech bubble, line. Fill on/off + color, border on/off + color + width. Click for a default size or drag; Shift = equal width and height. |
-| **Selection** | Rectangle, ellipse / circle, freehand lasso, polygon lasso, **pen (P): smooth curves** (click = corner, click-and-drag = curve, click the first point or Enter to select), **Quick Select brush (W)**: drag over an object and the selection spreads into similar colors around the brush (Alt+drag removes, [ ] = size), magic wand (press W again) (similar color), **Select Subject (AI)**, Select Layer Content. Shift = add to the selection, Alt = subtract. M and L switch between the variants. Drawn with a high-contrast animated outline and a light blue tint. Move the selected pixels (Move tool or arrow keys), copy, cut, paste (as a new layer), delete, fill, select all, deselect, invert. |
-| **Move** | Moving a layer or selection past the canvas edge does **not** cut it off: the hidden part is kept and comes back when you move it back. Image > Reveal All grows the canvas to show everything. |
-| **Image** | Image Size / Resolution (Ctrl+Alt+I, or click the size in the status bar): shrink or enlarge with quick % buttons and 4 resize methods (Lanczos, Bicubic, Bilinear, Nearest). Canvas Size (Ctrl+Alt+C) with anchor, Reveal All, Trim Transparent Edges, Crop (tool or "Crop to Selection"), rotate 90°, 180° or any angle, flip horizontal or vertical (whole image or one layer). |
-| **History** | Undo / Redo plus a History panel (minimized by default; click its header to open). Click any step to jump back to it. |
-| **Split asset sheet** | Image > Split Asset Sheet into Pieces (or right-click). **Select the items first** with any selection tool (e.g. Magic Wand on the background, then Select > Invert): every separate selected area becomes one piece, cut out in the selection's shape. Without a selection it finds every separate item on a sheet with a transparent or plain background automatically; shows numbered boxes (updated live), and adds each piece as its own movable layer and / or saves each as a transparent PNG (name_01.png, name_02.png...). "Join parts closer than" keeps an item and its label together. |
-| **Crop one object** | Crop tool > "Selected layer / object only", or right-click > Crop This Object: trims just that picture / layer, the canvas stays the same. Right-click > Crop Layer to Selection keeps only the selected shape of a layer. The result stays a movable, resizable picture. |
-| **AI Upscale / Clean Up** | Image > AI Upscale / Clean Up (or Filter > AI Clean Up): Real-ESRGAN AI makes a picture sharper and cleaner at the same size, or 2x / 3x / 4x larger with sharp detail. Strength mixes in the original. Works in 128 px tiles blended without seams. Runs on the **graphics card** (DirectML: NVIDIA, AMD or Intel) when there is one, about 20x faster than the processor (a 1536 x 1024 picture: about 25 s instead of 6 min); otherwise on the processor. A progress window shows the time left and has Cancel. Model: Real-ESRGAN x4plus (BSD-3), ONNX build from Qualcomm AI Hub, 62 MB download, installed once. |
-| **Enhance** | Filter > Enhance (clean up blur): removes a little noise, sharpens details (ignoring tiny noise-level differences) and adds clarity. Image > Upscale 2x doubles the resolution with Lanczos and then enhances (for small or soft pictures). Helps slightly blurry photos; heavy blur needs AI. |
-| **Recolor** | Adjust > Recolor (Ctrl+Shift+R, or right-click): select a part (e.g. a dress with the Magic Wand, Lasso or Select Subject), then pick the new color on a **color graph** (or quick colors / hex). Each pixel keeps its own light and dark, so folds, shadows and highlights stay natural. "Keep shading" and "Strength" fine-tune it; the picture updates live. |
-| **Adjustments** | Recolor, Auto Levels, Brightness/Contrast, Exposure/Gamma, Hue/Saturation, Vibrance, Temperature/Tint, Grayscale, Invert, Sepia, Posterize, Threshold |
-| **Filters** | Enhance, Gaussian Blur, Motion Blur, Sharpen, Reduce Noise, Add Noise, Pixelate, Vignette, Emboss, Find Edges (each with live preview) |
-| **Exact values** | Every slider (brush size, border width, corners, rotation, font size, opacity, tolerance...) has a number box next to it: type a value and press Enter, or use the Up / Down keys. |
-| **View** | Mouse-wheel zoom at the cursor, Space + drag or middle mouse to pan, Fit, 100% |
-| **Colors** | Foreground and background swatches with an HSV color picker (hex, RGB, quick swatches), swap (X), reset (D) |
+### Files and pictures
+* Open PNG, JPG, WEBP, ICO, BMP, GIF. Drag files onto the window; hold **Ctrl** while dropping to add them as layers.
+* Save as PNG, JPG, WEBP or ICO (icons contain 16 to 256 px). **Export** (Ctrl+Alt+S) adds format, quality, output size and crop.
+* **Several pictures at once**, one tab each, with their own layers, undo history and zoom. Double-click a tab to rename it.
 
-Adjustments, filters and Remove Background apply to the **active layer**. If there is a selection, they only change the selected area.
+### AI tools (offline, GPU accelerated)
+* **Remove Background** (button in the Layers panel, Ctrl+Alt+B). Sliders for edge sharpness, shrink / grow and feather, with live preview.
+* **Refine brush (R)**: *Restore* paints back what was removed by mistake, *Remove* takes away leftovers. Alt = the other mode.
+* **Select Subject**: selects the main person or object in one click.
+* **AI Upscale / Clean Up**: same size but sharper, or 2x / 3x / 4x larger. Shows progress and time left, with Cancel.
+* Runs on any DirectX 12 graphics card (NVIDIA, AMD, Intel) through DirectML, otherwise on the processor. Example: cleaning up a 1536 x 1024 picture takes about 25 s on an Intel Arc A750 instead of about 6 min on the processor.
 
-Press **F1** in the app to see all keyboard shortcuts.
+### Editable objects (Canva-style)
+* **Shapes (U)**: rectangle (rounded corners), ellipse, triangle, star, polygon, heart, arrow, speech bubble, line. Fill and border, each with its own color.
+* **Text (T)**: any installed font, size, bold, italic, alignment, color. Double-click to edit.
+* Placed and pasted pictures are resizable without losing quality.
+* Click to select, drag handles to resize, round handle to rotate (Shift = 15° steps). **Shift+click** selects several; **Ctrl+G** groups, **Ctrl+Shift+G** ungroups.
+* **Lock** (Ctrl+L or the padlock) prevents moving and editing. Bring to front / back, flip, crop one object, convert to pixels.
 
-## How to run
+### Painting and selecting
+* Brush, eraser, paint bucket, eyedropper, foreground / background colors with an HSV color picker.
+* Selection tools: rectangle, ellipse, lasso, polygon lasso, **pen (curves)**, magic wand, **quick-select brush**, select subject (AI), select layer content. **Shift** adds, **Alt** subtracts.
+* Move the selected pixels, copy, cut, paste, delete, fill, invert. Nothing is cut off at the canvas edge; **Image > Reveal All** shows parts moved outside.
 
-You need the **.NET 10 SDK**.
+### Layers and history
+* Add, duplicate, delete, reorder, show / hide, lock, opacity, rename, merge down, flatten.
+* Undo / redo for everything, plus a History panel (click a step to jump back).
+
+### Image
+* Image Size / Resolution with 4 resize methods (Lanczos, Bicubic, Bilinear, Nearest) and quick % buttons.
+* Canvas Size with anchor, Crop tool (whole picture or one object; 1:1, 4:5, 9:16, 16:9, 3:2, 4:3), Trim, rotate (90°, 180°, any angle), flip.
+* **Split Asset Sheet**: select the items (or let it find them), then split into separate layers and / or transparent PNG files.
+
+### Adjustments and filters (all with live preview)
+* **Adjust:** Recolor, Auto Levels, Brightness / Contrast, Exposure / Gamma, Hue / Saturation, Vibrance, Temperature / Tint, Grayscale, Invert, Sepia, Posterize, Threshold.
+* **Filter:** AI Clean Up, Enhance (no AI), Gaussian Blur, Motion Blur, Sharpen, Reduce Noise, Add Noise, Pixelate, Vignette, Emboss, Find Edges.
+* With an active selection they only change the selected area.
+
+Press **F1** in the app for all keyboard shortcuts.
+
+---
+
+## Install
+
+Download one of the two installers (Windows 10 / 11, 64-bit; no .NET needed):
+
+| Installer | Size | AI tools |
+|---|---|---|
+| `FlashEditor-Setup-1.0.0.exe` (Standard) | 60 MB | Asks to download each AI model (170 MB / 62 MB) the first time you use it |
+| `FlashEditor-Setup-1.0.0-AI.exe` | 274 MB | Both AI models included, ready offline |
+
+**Everything is installed in one folder** (default `C:\Program Files\Flash Editor`): the program, all libraries, the .NET runtime and the AI models (`models\`). Nothing is written to AppData or anywhere else. Uninstall (Settings > Apps, or the Start-menu shortcut) removes the whole folder, including models downloaded later. Installing one edition over the other upgrades in place.
+
+### Build the installers
+
+Needs the .NET 10 SDK and [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`), and the AI models in the Debug build's `models` folder (use the AI tools once in a Debug run, or pass `-ModelsFrom`):
+
+```bash
+powershell -ExecutionPolicy Bypass -File installer\build-installers.ps1 -Version 1.0.0
+```
+
+Both installers end up in `installer\output`. The script is `installer\build-installers.ps1`, the installer definition `installer\FlashEditor.iss`.
+
+## Getting started (developers)
+
+You need Windows 10 / 11 and the **.NET 10 SDK**.
 
 ```bash
 dotnet run --project src/FlashEditor.App
@@ -50,97 +113,101 @@ Run the tests:
 dotnet test
 ```
 
-Build a stand-alone `.exe` (in `publish/`):
+Build a stand-alone app in `publish/`:
 
 ```bash
 dotnet publish src/FlashEditor.App -c Release -r win-x64 --self-contained false -o publish
 ```
 
+### AI models
+
+The models are **not** in the repository (they are large). The app downloads each one the first time you use it, after asking:
+
+| Model | Used for | Download | License |
+|---|---|---|---|
+| IS-Net general use (from the rembg project) | Remove Background, Select Subject | 170 MB | Apache 2.0 |
+| Real-ESRGAN x4plus (ONNX build from Qualcomm AI Hub) | AI Upscale / Clean Up | 62 MB | BSD-3 |
+
+Files are checked (size and SHA-256) before use and saved only in the `models` folder next to `FlashEditor.exe`. After that everything works offline. When copying the app to another PC, copy the whole folder.
+
+---
+
+## Keyboard shortcuts (most used)
+
+| Keys | Action |
+|---|---|
+| V / M / L / P / W | Select & move / rectangle-ellipse select / lasso / pen / quick select-magic wand |
+| B / E / R / G / I | Brush / eraser / refine (restore-remove) / bucket / eyedropper |
+| U / T / C / H / Z | Shapes / text / crop / hand / zoom |
+| Ctrl+Z, Ctrl+Y | Undo, redo |
+| Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut, paste |
+| Ctrl+D, Ctrl+Shift+I | Deselect, invert selection |
+| Ctrl+G, Ctrl+Shift+G | Group, ungroup |
+| Ctrl+L | Lock / unlock |
+| Ctrl+Alt+B | Remove background (AI) |
+| Ctrl+Shift+R | Recolor |
+| Ctrl+Alt+S | Export |
+| Ctrl+Tab, Ctrl+W | Next picture, close picture |
+| Space + drag, mouse wheel | Pan, zoom |
+
+---
+
 ## Project structure
 
-The code is split into four projects:
+Four projects, many small files with one job each:
 
 ```
 Flash Editor/
-├── FlashEditor.slnx                 Solution file (opens all projects)
+├── FlashEditor.slnx                 Solution file
+├── docs/screenshots/                Pictures used in this README
+├── installer/                       Installer script (Inno Setup) + build-installers.ps1
 ├── src/
-│   ├── FlashEditor.Core/            The image engine. No UI code, fully unit-tested.
-│   │   ├── Common/                  ObservableObject (change notifications)
-│   │   ├── Imaging/                 PixelBuffer (pixel storage), colors, rectangles, blending math
-│   │   ├── Documents/               Document (canvas + layer stack), Layer, LayerState (pixels outside the canvas)
-│   │   ├── Objects/                 Editable objects: ShapeObject, TextObject, ImageObject, GroupObject, ObjectBox (position,
-│   │   │                            size, rotation), ObjectTransforms, renderer interface
-│   │   ├── Sheets/                  SheetSplitter: finds the separate items on an asset / sprite sheet
-│   │   ├── Selections/              Selection mask + outline, polygon rasterizer (lasso), mask outline tracer
-│   │   ├── History/                 Undo/redo manager and one class per kind of undo step
-│   │   ├── Painting/                Brush strokes, flood fill, layer compositing, selection copy/clear
-│   │   ├── Transforms/              Crop, flip, rotate, resize (resampling)
-│   │   ├── Effects/                 Effect base classes + EffectApplier (selection masking)
-│   │   │   ├── Adjustments/         Brightness/Contrast, Hue/Saturation, Grayscale, Invert, Sepia
-│   │   │   ├── Filters/             Blur, Sharpen, Noise, Pixelate
-│   │   │   └── Background/          Remove Background
-│   │   └── IO/                      File formats: decoder, encoder, ICO writer, exporter (quality + size)
+│   ├── FlashEditor.Core/            The image engine. No UI code, unit-tested.
+│   │   ├── Imaging/                 PixelBuffer, colors, rectangles, blending math
+│   │   ├── Documents/               Document, Layer, LayerState, LayerCrop
+│   │   ├── Objects/                 Shape / Text / Image / Group objects, ObjectBox, transforms
+│   │   ├── Selections/              Selection masks, polygon rasterizer, outline tracer, quick select
+│   │   ├── Sheets/                  Asset sheet splitter
+│   │   ├── History/                 Undo / redo manager and one class per kind of undo step
+│   │   ├── Painting/                Brush strokes (paint, erase, restore), flood fill, compositing
+│   │   ├── Transforms/              Crop, flip, rotate, resize (Lanczos, Bicubic...)
+│   │   ├── Effects/                 Effect framework, Adjustments/, Filters/, Background/
+│   │   └── IO/                      Decoder, encoder, ICO writer, exporter
 │   │
-│   ├── FlashEditor.AI/              AI features (uses ONNX Runtime). Kept out of Core on purpose.
-│   │   ├── Models/                  ModelInfo (which model, where from), ModelStore (download once, verify, find on disk)
-│   │   ├── Upscaling/               AiUpscaler: Real-ESRGAN in overlapping tiles, blended without seams
-│   │   ├── Segmentation/            SubjectSegmenter (runs the model, caches the result), MaskOps (pre/post-processing math)
-│   │   └── Effects/                 AiBackgroundRemovalEffect (plugs into the normal effect dialog + live preview)
+│   ├── FlashEditor.AI/              AI features (ONNX Runtime + DirectML). Kept out of Core.
+│   │   ├── Models/                  Which model, where from; download once and verify
+│   │   ├── Runtime/                 Opens models on the GPU, falls back to the CPU
+│   │   ├── Segmentation/            Subject finder (background removal, select subject)
+│   │   ├── Upscaling/               Real-ESRGAN in overlapping tiles, blended without seams
+│   │   └── Effects/                 AI background removal effect
 │   │
-│   └── FlashEditor.App/             The Windows app (WPF)
-│       ├── App.xaml                 Startup + theme (Fluent dark)
-│       ├── Themes/                  Colors, icons (vector paths), converters, control styles, text box style
-│       ├── Converters/              Small XAML value converters
-│       ├── Rendering/               PixelBuffer <-> WPF bitmaps, rasterizer, ObjectRenderer + shape outlines, checkerboard
+│   └── FlashEditor.App/             The Windows app (WPF, MVVM)
+│       ├── Assets/                  App icon (.ico for Windows, .png for docs)
+│       ├── Themes/                  Colors, icons, styles
+│       ├── Rendering/               Bitmaps, vector / text rasterizer, object renderer
 │       ├── Services/                Dialogs, clipboard, live effect preview
-│       ├── ViewModels/              Screen state (MVVM)
-│       │   ├── Commands/            One class per menu: File, Edit, Image, Layer, Effects, View
-│       │   └── Infrastructure/      RelayCommand
-│       ├── Tools/                   One class per tool + shared tool interfaces
-│       │   ├── Options/             Tool settings shown in the options bar
-│       │   ├── Painting/            Brush, Eraser, Bucket, Eyedropper
-│       │   ├── Selecting/           Select/Move (+ PixelMover, TransformHandles), rectangle/ellipse select,
-│       │   │                        lasso, polygon lasso, pen (curves), magic wand, selection add/subtract
-│       │   ├── Shapes/              Shapes tool (creates editable shape objects)
-│       │   ├── Text/                Text tool
-│       │   ├── Transform/           Crop tool
-│       │   └── Navigation/          Hand, Zoom
-│       └── Views/
-│           ├── MainWindow.xaml      Menu, layout, keyboard shortcuts
-│           ├── Editor/              CanvasView: zoom, pan, overlays, mouse to tool, handle box, right-click menu
-│           ├── Controls/            Reusable controls: NumberSlider (slider + number box), ColorGraph (color picker graph)
-│           ├── Panels/              Toolbox, options bar, Properties panel, Layers panel, History panel
-│           └── Dialogs/             New image, image size, canvas size, export, recolor, effect settings, text, color picker
-│               └── Controls/        SizeEditor (linked width / height / percent), shared by Image Size and Export
+│       ├── ViewModels/              Screen state; Commands/ has one class per menu
+│       ├── Tools/                   One class per tool (Painting/, Selecting/, Shapes/, Text/...)
+│       └── Views/                   Main window, canvas, panels, dialogs, reusable controls
 └── tests/
-    └── FlashEditor.Core.Tests/      xUnit tests for the engine (pixels, history, selections,
-                                     transforms, effects, painting, file formats) and the AI helpers.
-                                     The real-model test runs only when the model is installed.
+    └── FlashEditor.Core.Tests/      xUnit tests (engine + AI helpers; real-model tests run when installed)
 ```
 
-### How the pieces fit together (architecture)
+### How it fits together
 
-* **Core vs App.** All image processing lives in `FlashEditor.Core`, which knows nothing about windows or buttons. That makes it easy to test, and the UI stays thin.
-* **MVVM.** Views (XAML) bind to view models. View models call into the Core and never create windows themselves; they ask `IDialogService`.
-* **Pixels.** A `PixelBuffer` is a plain BGRA byte array. Each `Layer` owns one. `LayerViewModel` copies only the changed rectangle into a WPF `WriteableBitmap`, so painting stays fast.
-* **Pixels outside the canvas.** `Layer.Pixels` is always exactly canvas-sized, so tools and effects never deal with offsets. When something is moved past the edge, the layer also keeps a larger hidden buffer (`LayerState`) that is kept in sync with every edit. The Move tool, Canvas Size and Reveal All use it.
-* **Undo.** Every change pushes one `IHistoryAction` *after* it is applied:
-  * `PixelChangeAction` stores only the changed rectangle (before and after), for brush strokes, fills and effects.
-  * `LayerStructureAction` handles adding, deleting and reordering layers.
-  * `LayerPropertyAction` handles opacity, visibility and name (slider drags merge into one step).
-  * `CanvasChangeAction` handles crop, resize, rotate, flip and canvas size (it swaps whole layer states).
-  * `LayerContentAction` handles moves (swaps one layer's state, including hidden pixels).
-* **Editable objects.** A layer can hold a `LayerObject` (shape, text or image). Its pixels are then just a drawing of the object, made by `ObjectRenderer` in the app (the engine only knows the `IObjectRenderer` interface). Editing an object makes a new immutable object; `ObjectChangeAction` stores only the small before/after descriptions, so undo is cheap, and repeated slider changes merge into one step. Anything that paints pixels first converts the object (undoable). Crop, canvas size, resize, rotate and flip move objects along instead of flattening them.
-* **Tools.** Each tool is a `ToolBase` subclass that gets mouse and key events from `CanvasView` and talks to the rest of the app through `IToolHost`. To add a tool, write one class and add it to `ToolsViewModel`.
-* **Effects.** Each effect is an `ImageEffect` that lists its `EffectParameter`s. The settings dialog, live preview, selection masking and undo are handled generically. To add a filter, write one class and add one line to `EffectCommands` and the menu.
+* **Core vs App.** All image processing lives in `FlashEditor.Core`, which knows nothing about windows, so it is easy to test and the UI stays thin.
+* **MVVM.** Views bind to view models; view models call into the Core and open windows only through `IDialogService`.
+* **Pixels.** A layer's pixels are always canvas-sized. Content moved past the edge is kept in a hidden, larger buffer, so nothing is ever cut off.
+* **Objects.** An object layer stores a small immutable description (shape, text, image, group) and its pixels are just a drawing of it. Undo only stores the before / after descriptions.
+* **Undo.** Every change pushes one `IHistoryAction` after it is applied (pixel changes store only the changed rectangle).
+* **Extending.** A new tool is one `ToolBase` class; a new filter is one `ImageEffect` class. The dialog, live preview, selection masking and undo come for free.
+
+---
 
 ## Notes and limits
 
-* Crop keeps cut-off pixels on their layers (Image > Reveal All brings them back); resize and rotate drop pixels hidden outside the canvas (undo brings them back). Use Reveal All first if you want to keep them.
-* Saving **merges all visible layers** into one image, since PNG, JPG, WEBP and ICO cannot store layers. There is no layered project format yet.
-* AI runs on the GPU through DirectML (ONNX Runtime DirectML build) and falls back to the CPU automatically. The first GPU run of a model takes a few extra seconds while it is prepared.
-* AI models live in a `models` folder next to `FlashEditor.exe` (or `%LOCALAPPDATA%\FlashEditor\models`): `isnet-general-use.onnx` (background removal) and `real_esrgan_x4plus/` (upscaling: `.onnx` + `.data`). Each is verified (size + SHA-256) after download.
-* **AI Remove Background** keeps the *main* subject. With no clear subject (a landscape) it may keep everything. The app looks for the model file in a `models` folder next to `FlashEditor.exe` first, then in `%LOCALAPPDATA%\FlashEditor\models` (where its own download goes). When publishing or copying the app elsewhere, copy the `models` folder along to avoid a new download. The model is IS-Net general use (Apache 2.0 license, from the rembg project). Delete it to free 170 MB, the app offers to download it again when needed. On a typical PC the first run takes a few seconds; moving the sliders afterwards is instant.
-* **Remove Background by Color** is not AI. It handles plain, gradient, shadowed or slightly noisy backgrounds (studio, wall, sky, product shots, logos), also when the subject touches an edge of the picture. It cannot separate a subject from a busy background (a room, trees, a crowd); there, use the Lasso + Delete or the Eraser. If almost nothing is removed, the app says why.
-* JPG has no transparency. Transparent areas are filled with the **background color** when saving as JPG.
-* The selection outline is not part of undo history (as in many editors). Pixel changes always are.
+* Saving merges all visible layers into one picture; there is no layered project file yet.
+* JPG has no transparency: transparent areas are filled with the background color.
+* AI background removal keeps the *main* subject. When it gets a part wrong, fix it with the Refine brush (R).
+* AI upscaling makes believable detail but cannot recover detail that was never there (e.g. a tiny face).
+* The first AI run after starting the app takes a few extra seconds while the model is prepared for the graphics card.

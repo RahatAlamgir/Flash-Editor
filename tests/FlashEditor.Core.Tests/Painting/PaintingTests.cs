@@ -67,6 +67,28 @@ public class PaintingTests
     }
 
     [Fact]
+    public void Restore_stroke_paints_the_original_back_only_under_the_brush()
+    {
+        var original = TestImages.Solid(40, 20, new ColorRgba(200, 30, 30));      // before background removal
+        var cutOut = new PixelBuffer(40, 20);                                       // everything removed
+        var stroke = new BrushStroke(cutOut, new BrushSettings(8, 1.0, 1.0), original, selection: null);
+        stroke.AddPoint(new PointD(10, 10));
+
+        Assert.Equal(new ColorRgba(200, 30, 30), cutOut.GetPixel(10, 10)); // restored, full color and alpha
+        Assert.Equal(0, cutOut.GetPixel(30, 10).A);                        // away from the brush: still removed
+    }
+
+    [Fact]
+    public void Soft_restore_brings_back_partial_transparency()
+    {
+        var original = TestImages.Solid(20, 20, ColorRgba.Black);
+        var cutOut = new PixelBuffer(20, 20);
+        var stroke = new BrushStroke(cutOut, new BrushSettings(10, 1.0, 0.5), original, selection: null);
+        stroke.AddPoint(new PointD(10, 10));
+        Assert.InRange(cutOut.GetPixel(10, 10).A, 120, 135); // 50% opacity
+    }
+
+    [Fact]
     public void Draw_over_blends_with_opacity()
     {
         var target = TestImages.Solid(2, 2, ColorRgba.White);

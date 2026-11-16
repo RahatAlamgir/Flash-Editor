@@ -78,7 +78,10 @@ public static class MaskOps
     {
         double width = 1 - 0.96 * Math.Clamp(sharpness, 0, 1);
         double center = 0.5 - 0.4 * Math.Clamp(shift, -1, 1);
-        float lo = (float)(center - width / 2), range = (float)width;
+        // Keep the whole soft band inside 0..1: whatever the AI is sure about stays fully kept (1) or fully
+        // removed (0). Shrink / grow only moves the edge; it never makes the subject itself see-through.
+        double lo0 = Math.Clamp(center - width / 2, 0, 1 - width);
+        float lo = (float)lo0, range = (float)width;
         Parallel.For(0, mask.Length, i => mask[i] = Math.Clamp((mask[i] - lo) / range, 0f, 1f));
     }
 
