@@ -19,6 +19,8 @@ public sealed class ShapeOptions : ObservableObject
     private double _strokeWidth = 4;
     private double _cornerRadius;
     private int _points = 5;
+    private double _inner = 0.5;
+    private double _sweep = 270;
 
     public ShapeOptions(IDialogService dialogs)
     {
@@ -37,12 +39,25 @@ public sealed class ShapeOptions : ObservableObject
             if (!SetField(ref _kind, value)) return;
             if (value == ShapeKind.Line && !StrokeEnabled) StrokeEnabled = true; // a line is only a border
             if (value is ShapeKind.Star && Points < 3) Points = 5;
+            // A pie starts solid (no hole); the other ring-like shapes start with a half-size hole.
+            if (value == ShapeKind.Pie) Inner = 0; else if (Inner < 0.05) Inner = 0.5;
+            OnPropertyChanged(nameof(HasInner));
+            OnPropertyChanged(nameof(HasSweep));
+            OnPropertyChanged(nameof(InnerLabel));
             OnPropertyChanged(nameof(HasCorners));
             OnPropertyChanged(nameof(HasPoints));
         }
     }
 
-    public bool HasCorners => Kind is ShapeKind.Rectangle or ShapeKind.SpeechBubble;
+    public bool HasCorners => Kind is ShapeKind.Rectangle or ShapeKind.SpeechBubble or ShapeKind.Frame;
+    public bool HasInner => ShapeNames.HasInner(Kind);
+    public bool HasSweep => Kind == ShapeKind.Pie;
+    public string InnerLabel => ShapeNames.InnerLabel(Kind);
+
+    /// <summary>Hole size / arm thickness / bite, 0..95 %.</summary>
+    public double InnerPercent { get => Math.Round(_inner * 100); set => Inner = Math.Clamp(value, 0, 95) / 100; }
+    public double Inner { get => _inner; set { if (SetField(ref _inner, Math.Clamp(value, 0, 0.95))) OnPropertyChanged(nameof(InnerPercent)); } }
+    public double Sweep { get => _sweep; set => SetField(ref _sweep, Math.Clamp(Math.Round(value), 10, 360)); }
     public bool HasPoints => Kind is ShapeKind.Star or ShapeKind.Polygon;
 
     public bool FillEnabled { get => _fillEnabled; set => SetField(ref _fillEnabled, value); }
@@ -70,6 +85,8 @@ public sealed class ShapeOptions : ObservableObject
             Stroke: line || StrokeEnabled || !FillEnabled ? StrokeColor : null,
             StrokeWidth: StrokeWidth,
             CornerRadius: CornerRadius,
-            Points: _points);
+            Points: _points,
+            Inner: _inner,
+            Sweep: _sweep);
     }
 }

@@ -24,6 +24,8 @@ public sealed class LayerContentAction : IHistoryAction
 
     public string Name { get; }
 
+    public long SizeInBytes => _before.ByteSize + _after.ByteSize;
+
     public void Undo() => _layer.RestoreState(_before);
     public void Redo() => _layer.RestoreState(_after);
 }

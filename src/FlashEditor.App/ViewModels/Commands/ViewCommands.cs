@@ -36,7 +36,8 @@ public sealed class ViewCommands
         "EDIT\n" +
         "Ctrl+Z Undo   Ctrl+Y or Ctrl+Shift+Z Redo\n" +
         "Ctrl+C Copy   Ctrl+X Cut   Ctrl+V Paste   Delete Clear selection\n" +
-        "Ctrl+A Select all   Ctrl+D Deselect   Ctrl+Shift+I Invert selection\n\n" +
+        "Ctrl+A Select all layers (Select / Move tool) or all pixels (other tools)   Ctrl+Shift+D Deselect   Ctrl+Shift+I Invert selection\n" +
+        "Ctrl+D Duplicate the selected layer or object\n\n" +
         "FILE\n" +
         "Ctrl+N New   Ctrl+O Open   Ctrl+S Save   Ctrl+Shift+S Save As\n" +
         "Ctrl+Alt+S Export (choose quality and size)\n\n" +

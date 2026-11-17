@@ -24,6 +24,8 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     {
         _main = main;
         main.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Document)) Track(); };
+        main.ActivePartChanged += (_, _) => OnPropertyChanged(string.Empty); // another part of a group was selected
+        main.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.IsReshaping)) OnPropertyChanged(nameof(IsReshaping)); };
         Track();
 
         PickFillCommand = new RelayCommand(() => PickColor("Fill color", Shape?.Fill ?? ColorRgba.Black,
@@ -35,18 +37,43 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         FlipHorizontalCommand = new RelayCommand(() => Change("Flip Horizontal", o => o with { FlipX = !o.FlipX }), () => HasObject);
         FlipVerticalCommand = new RelayCommand(() => Change("Flip Vertical", o => o with { FlipY = !o.FlipY }), () => HasObject);
         ResetRotationCommand = new RelayCommand(() => Rotation = 0, () => HasObject);
-        ConvertToPixelsCommand = new RelayCommand(() => { if (_layer != null) _main.ConvertToPixels(_layer, announce: false); }, () => HasObject);
+        ConvertToPixelsCommand = new RelayCommand(() => { if (_layer != null) _main.ConvertToPixels(_layer, announce: false); }, () => HasObject && !IsPart);
         EditTextCommand = new RelayCommand(EditText, () => IsText);
         OriginalSizeCommand = new RelayCommand(OriginalSize, () => IsImage);
+        PickShadowColorCommand = new RelayCommand(() => PickColor("Shadow color", (Object?.Shadow?.Color ?? ColorRgba.Black) with { A = 255 },
+            c => ChangeShadow("Shadow Color", s => s with { Color = c with { A = s.Color.A } })), () => HasShadow);
+        ApplyShadowPresetCommand = new RelayCommand(p =>
+        {
+            if (p is ShadowPreset preset) Change($"Shadow: {preset.Name}", o => o with { Shadow = preset.CreateStyle(o.Shadow) });
+        }, _ => HasObject);
+        MakeEditableCommand = new RelayCommand(MakeEditable, () => IsPixelLayer);
+        ToggleReshapeCommand = new RelayCommand(() => _main.ToggleReshape(), () => CanReshape && CanEdit);
+        ResetShapeCommand = new RelayCommand(() => Change("Reset Shape", o => ((ShapeObject)o) with { Vertices = null }), () => HasCustomOutline && CanEdit);
+        UnlockCommand = new RelayCommand(() => _main.Layers.UnlockSelectedCommand.Execute(null), () => IsLocked);
+        DeletePartCommand = new RelayCommand(() => _main.DeleteActivePart(), () => IsPart);
+        LeavePartCommand = new RelayCommand(() => { if (_layer != null) _main.SelectPart(_layer, null); }, () => IsPart);
     }
 
     // ------------------------------------------------------------------ what is selected
 
-    public LayerObject? Object => _layer?.Object;
+    /// <summary>What is being edited: the selected part of a group, or else the active layer's object.</summary>
+    private EditTarget Target => new(_layer, _main.ActivePartIndex);
+
+    /// <summary>The edited object, as it looks on the canvas.</summary>
+    public LayerObject? Object => Target.Object;
     private ShapeObject? Shape => Object as ShapeObject;
     private TextObject? Text => Object as TextObject;
 
     public bool HasObject => Object != null;
+
+    /// <summary>A layer of plain pixels (painted, or turned into pixels): it has no object settings such as a shadow.</summary>
+    public bool IsPixelLayer => _layer is { Object: null };
+
+    /// <summary>The "click something to edit it" hint: when no object is selected and the layer is not a pixel layer either.</summary>
+    public bool ShowHint => !HasObject && !IsPixelLayer;
+
+    /// <summary>True when a part inside a group is selected (Canva style) rather than the group itself.</summary>
+    public bool IsPart => Target.IsPart;
 
     /// <summary>Locked objects show their settings but cannot be changed.</summary>
     public bool IsLocked => _layer?.IsLocked == true;
@@ -54,13 +81,13 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public bool IsShape => Shape != null;
     public bool IsText => Text != null;
     public bool IsImage => Object is ImageObject;
-    public bool IsGroup => Object is GroupObject;
+    public bool IsGroup => !IsPart && Object is GroupObject;
     public bool CanFill => Shape?.CanFill == true;
     public bool HasCorners => Shape?.HasCorners == true;
     public bool HasPoints => Shape?.HasPoints == true;
     public bool IsLine => Shape?.IsLineLike == true;
 
-    public string Title => Object switch
+    public string Title => (IsPart ? "Part: " : "") + Object switch
     {
         ShapeObject s => $"{s.SuggestedLayerName} shape",
         TextObject => "Text",
@@ -68,6 +95,11 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         GroupObject g => $"Group of {g.Members.Count}",
         _ => "",
     };
+
+    /// <summary>Shown above the settings while a part of a group is selected.</summary>
+    public string PartInfo => Target is { Part: { } index, Layer.Object: GroupObject group } && index < group.Members.Count
+        ? $"Editing \"{group.Members[index].Name}\" inside the group"
+        : "";
 
     // ------------------------------------------------------------------ position and size
 
@@ -97,13 +129,17 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     // ------------------------------------------------------------------ shape
 
-    public IReadOnlyList<ShapeKind> ShapeKinds { get; } = Enum.GetValues<ShapeKind>();
+    /// <summary>The kind of the selected shape (shown only: the kind is chosen when the shape is drawn).</summary>
+    public ShapeKind ShapeKind => Shape?.Shape ?? ShapeKind.Rectangle;
 
-    public ShapeKind ShapeKind
-    {
-        get => Shape?.Shape ?? ShapeKind.Rectangle;
-        set => Change("Change Shape", o => ((ShapeObject)o) with { Shape = value });
-    }
+    /// <summary>True for shapes with straight sides: their corner points can be dragged.</summary>
+    public bool CanReshape => Shape?.CanReshape == true;
+
+    /// <summary>True once the corners were dragged (a custom outline).</summary>
+    public bool HasCustomOutline => Shape?.HasCustomOutline == true;
+
+    /// <summary>True while the corner points of the shape are shown for dragging.</summary>
+    public bool IsReshaping => _main.IsReshaping;
 
     public bool FillEnabled
     {
@@ -150,6 +186,24 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         set => Change("Points", o => ((ShapeObject)o) with { Points = (int)Math.Clamp(Math.Round(value), 3, 24) });
     }
 
+    public bool HasInner => Shape?.HasInner == true;
+    public bool HasSweep => Shape?.HasSweep == true;
+    public string InnerLabel => Shape == null ? "Hole" : ShapeNames.InnerLabel(Shape.Shape);
+
+    /// <summary>Hole size (ring, half ring, pie, frame), arm thickness (cross) or bite (crescent), 0..95 %.</summary>
+    public double InnerPercent
+    {
+        get => Math.Round((Shape?.Inner ?? 0.5) * 100);
+        set => Change("Hole Size", o => ((ShapeObject)o) with { Inner = Math.Clamp(value, 0, 95) / 100 });
+    }
+
+    /// <summary>How many degrees of the circle a pie covers.</summary>
+    public double Sweep
+    {
+        get => Math.Round(Shape?.Sweep ?? 270);
+        set => Change("Pie Angle", o => ((ShapeObject)o) with { Sweep = Math.Clamp(Math.Round(value), 10, 360) });
+    }
+
     // ------------------------------------------------------------------ text
 
     public string TextContent
@@ -182,8 +236,77 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     public Brush TextBrush => ToBrush(Text?.Color);
 
+    // ------------------------------------------------------------------ shadow (every kind of object)
+
+    public bool HasShadow => Object?.Shadow != null;
+
+    public bool ShadowEnabled
+    {
+        get => HasShadow;
+        set => Change("Shadow", o => o with { Shadow = value ? o.Shadow ?? ShadowStyle.Default : null });
+    }
+
+    /// <summary>The shadow color as a solid swatch (its strength is the separate Opacity setting).</summary>
+    public Brush ShadowBrush => ToBrush(Object?.Shadow is { } s ? s.Color with { A = 255 } : null);
+
+    /// <summary>How dark the shadow is, 0..100 %.</summary>
+    public double ShadowOpacity
+    {
+        get => Math.Round((Object?.Shadow?.Color.A ?? 0) / 255.0 * 100);
+        set => ChangeShadow("Shadow Opacity", s => s with { Color = s.Color with { A = (byte)Math.Round(Math.Clamp(value, 0, 100) * 2.55) } });
+    }
+
+    /// <summary>How far the shadow is shifted away from the object, in pixels.</summary>
+    public double ShadowDistance
+    {
+        get => Math.Round(Object?.Shadow?.Distance ?? 0);
+        set => ChangeShadow("Shadow Distance", s => s with { Distance = Math.Clamp(value, 0, 500) });
+    }
+
+    /// <summary>Direction of the shadow in degrees (0 = right, 90 = down, 180 = left, -90 = up).</summary>
+    public double ShadowAngle
+    {
+        get => Math.Round(Object?.Shadow?.Angle ?? 0);
+        set => ChangeShadow("Shadow Angle", s => s with { Angle = ObjectBox.NormalizeAngle(value) });
+    }
+
+    /// <summary>How soft the shadow's edge is, in pixels.</summary>
+    public double ShadowBlur
+    {
+        get => Math.Round(Object?.Shadow?.Blur ?? 0);
+        set => ChangeShadow("Shadow Blur", s => s with { Blur = Math.Clamp(value, 0, 300) });
+    }
+
+    private void ChangeShadow(string name, Func<ShadowStyle, ShadowStyle> change)
+        => Change(name, o => o.Shadow is { } shadow ? o with { Shadow = change(shadow) } : o);
+
     // ------------------------------------------------------------------ commands
 
+    private IReadOnlyList<ShadowPresetItem>? _presetItems;
+
+    /// <summary>The shadow presets with their pictures (made the first time they are needed).</summary>
+    public IReadOnlyList<ShadowPresetItem> ShadowPresetItems => _presetItems ??= ShadowPresetPreviews.Create();
+
+    /// <summary>The ready-made shadow looks (Soft, Hard, Lifted) shown as quick buttons.</summary>
+    public IReadOnlyList<ShadowPreset> ShadowPresets => ShadowPreset.All;
+
+    /// <summary>Gives the object the shadow of the preset given as the command parameter (adds a shadow when there is none).</summary>
+    public RelayCommand ApplyShadowPresetCommand { get; }
+    public RelayCommand PickShadowColorCommand { get; }
+
+    /// <summary>Turns a pixel layer into a picture object, which can be resized, rotated and given a shadow.</summary>
+    public RelayCommand MakeEditableCommand { get; }
+
+    /// <summary>Shows / hides the corner points of the selected shape for dragging.</summary>
+    public RelayCommand ToggleReshapeCommand { get; }
+
+    /// <summary>Removes the custom outline: the shape goes back to the normal form of its kind.</summary>
+    public RelayCommand ResetShapeCommand { get; }
+
+    /// <summary>Unlocks the layer (shown next to the "locked" note, which would otherwise leave the panel greyed out).</summary>
+    public RelayCommand UnlockCommand { get; }
+    public RelayCommand DeletePartCommand { get; }
+    public RelayCommand LeavePartCommand { get; }
     public RelayCommand PickFillCommand { get; }
     public RelayCommand PickStrokeCommand { get; }
     public RelayCommand PickTextColorCommand { get; }
@@ -199,10 +322,16 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     /// <summary>Applies a change to the selected object and records it (merging repeats of the same change).</summary>
     public void Change(string name, Func<LayerObject, LayerObject> change)
     {
-        if (_layer?.Object is not { } current) return;
+        var target = Target;
+        if (_layer == null || target.Object is not { } current) return;
         if (_layer.IsLocked) { _main.IsLockedWithMessage(_layer); return; }
         var updated = change(current);
-        _main.Push(ObjectChangeAction.Apply(name, _layer, updated, mergeKey: name));
+        if (Equals(updated, current)) return;
+
+        // Inside a group the change goes to one part; the group then fits itself around its parts again.
+        var layerObject = target.WithObject(updated);
+        if (layerObject == null) return;
+        _main.Push(ObjectChangeAction.Apply(name, _layer, layerObject, mergeKey: target.IsPart ? $"{name} (part {target.Part})" : name));
     }
 
     /// <summary>Text changes keep the box fitted to the text (top-left stays put).</summary>
@@ -232,6 +361,16 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
             return;
         }
         ChangeBox("Resize", box => box with { Width = w, Height = h });
+    }
+
+    private void MakeEditable()
+    {
+        if (_layer is not { Object: null } layer) return;
+        if (layer.IsLocked) { _main.IsLockedWithMessage(layer); return; }
+        if (_main.MakePictureObject(layer))
+            _main.SetStatus($"\"{layer.Name}\" is now an editable picture: resize and rotate it, give it a shadow, change its look in the Properties panel.");
+        else
+            _main.SetStatus("Nothing to make editable: the layer is empty or hidden.");
     }
 
     private void PickColor(string title, ColorRgba initial, Action<ColorRgba> apply)

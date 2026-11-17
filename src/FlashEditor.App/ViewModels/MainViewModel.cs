@@ -67,20 +67,133 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     public IReadOnlyList<Layer> SelectedLayers
         => Document.Model.Layers.Where(l => _selected.Contains(l) || l == Document.Model.ActiveLayer).ToList();
 
+    // ------------------------------------------------------------------ reshaping a shape (dragging its corner points)
+
+    private Layer? _reshapeLayer;
+
+    /// <summary>
+    /// True while the corner points of the active shape are shown for dragging (a square becomes a trapezium...). It ends by itself
+    /// when another layer is selected, the shape is locked, or it is no longer a straight-sided shape (undo).
+    /// </summary>
+    public bool IsReshaping
+        => _reshapeLayer != null && ReferenceEquals(_reshapeLayer, Document.Model.ActiveLayer)
+           && _reshapeLayer is { IsLocked: false, Object: ShapeObject { CanReshape: true } } && SelectedLayers.Count <= 1;
+
+    /// <summary>Starts or stops showing the corner points of the active shape.</summary>
+    public void ToggleReshape()
+    {
+        if (IsReshaping) { StopReshaping(); return; }
+        if (Document.Model.ActiveLayer is not { Object: ShapeObject { CanReshape: true } } layer)
+        {
+            SetStatus("Only shapes with straight sides (rectangle, triangle, star, trapezoid...) can be reshaped.");
+            return;
+        }
+        if (IsLockedWithMessage(layer)) return;
+
+        _reshapeLayer = layer;
+        OnPropertyChanged(nameof(IsReshaping));
+        SetStatus("Drag a round corner point to change the form of the shape (Shift = coarser steps). Esc or the Reshape button finishes.");
+    }
+
+    /// <summary>Ends reshaping when another layer than the one being reshaped became the active one.</summary>
+    private void EndReshapeIfLayerChanged()
+    {
+        if (_reshapeLayer != null && !ReferenceEquals(_reshapeLayer, Document.Model.ActiveLayer)) StopReshaping();
+    }
+
+    public void StopReshaping()
+    {
+        if (_reshapeLayer == null) return;
+        _reshapeLayer = null;
+        OnPropertyChanged(nameof(IsReshaping));
+    }
+
+    // ------------------------------------------------------------------ a part inside a group
+
+    private Layer? _partLayer;
+    private int _partIndex = -1;
+
+    /// <summary>Raised when a part of a group is selected or deselected (or the selected part changed).</summary>
+    public event EventHandler? ActivePartChanged;
+
+    /// <summary>
+    /// Which part of the active group layer is selected (index in the group's parts, bottom to top), or null
+    /// when the whole layer is selected. Parts are selected by double-clicking a group or clicking it in the Layers panel.
+    /// </summary>
+    public int? ActivePartIndex
+        => _partLayer != null && ReferenceEquals(_partLayer, Document.Model.ActiveLayer)
+           && _partLayer.Object is GroupObject group && _partIndex >= 0 && _partIndex < group.Members.Count
+            ? _partIndex
+            : null;
+
+    /// <summary>What the Properties panel and the transform frame work on: the selected part, else the active layer's object.</summary>
+    public EditTarget ActiveTarget => new(Document.Model.ActiveLayer, ActivePartIndex);
+
+    /// <summary>Selects one part of a group (and the group's layer), or with a null index just the whole group.</summary>
+    public void SelectPart(Layer group, int? index)
+    {
+        if (index is not { } i || group.Object is not GroupObject g || i < 0 || i >= g.Members.Count)
+        {
+            SetPart(null, -1);
+            return;
+        }
+        if (!ReferenceEquals(Document.Model.ActiveLayer, group) || SelectedLayers.Count > 1) SelectOnly(group);
+        SetPart(group, i);
+    }
+
+    private void SetPart(Layer? layer, int index)
+    {
+        if (ReferenceEquals(_partLayer, layer) && _partIndex == index) return;
+        if (_partLayer != null) _partLayer.PropertyChanged -= OnPartLayerChanged;
+        _partLayer = layer;
+        _partIndex = index;
+        if (_partLayer != null) _partLayer.PropertyChanged += OnPartLayerChanged;
+        ActivePartChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnPartLayerChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(Layer.Object)) return;
+        // Undo / redo may have turned the group into something else, or removed the part.
+        if (ActivePartIndex == null) SetPart(null, -1);
+        else ActivePartChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Removes the selected part from its group (undoable). Returns false when no part is selected.</summary>
+    public bool DeleteActivePart()
+    {
+        if (ActivePartIndex is not { } index || _partLayer is not { Object: GroupObject group } layer) return false;
+        if (IsLockedWithMessage(layer)) return true;
+        var smaller = group.WithoutPart(index);
+        if (smaller == null)
+        {
+            SetStatus("A group needs at least one part. Delete the whole group instead (click it, then Delete), or ungroup it (Ctrl+Shift+G).");
+            return true;
+        }
+        string name = group.Members[index].Name;
+        SetPart(null, -1);
+        Push(ObjectChangeAction.Apply("Delete Part", layer, smaller));
+        SetStatus($"Removed \"{name}\" from the group. Ctrl+Z brings it back.");
+        return true;
+    }
+
     /// <summary>Selects just this layer.</summary>
     public void SelectOnly(Layer? layer)
     {
+        SetPart(null, -1);
         _changingSelection = true;
         _selected.Clear();
         if (layer != null) _selected.Add(layer);
         Document.Model.ActiveLayer = layer ?? Document.Model.ActiveLayer;
         _changingSelection = false;
+        EndReshapeIfLayerChanged();
         SelectedLayersChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Adds the layer to the selection, or removes it if it was selected (Shift+click).</summary>
     public void ToggleSelected(Layer layer)
     {
+        SetPart(null, -1);
         _changingSelection = true;
         var doc = Document.Model;
         if (doc.ActiveLayer != null) _selected.Add(doc.ActiveLayer);
@@ -102,11 +215,13 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     /// <summary>Sets the selection from the Layers panel (Ctrl / Shift + click there).</summary>
     public void SetSelection(IEnumerable<Layer> layers, Layer? active)
     {
+        SetPart(null, -1);
         _changingSelection = true;
         _selected.Clear();
         foreach (var l in layers) _selected.Add(l);
         if (active != null) { _selected.Add(active); Document.Model.ActiveLayer = active; }
         _changingSelection = false;
+        EndReshapeIfLayerChanged();
         SelectedLayersChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -131,6 +246,8 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         if (e.PropertyName == nameof(Core.Documents.Document.ActiveLayer) && !_changingSelection)
         {
             var active = Document.Model.ActiveLayer;
+            if (!ReferenceEquals(active, _partLayer)) SetPart(null, -1);
+            EndReshapeIfLayerChanged();
             if (active == null || !_selected.Contains(active)) SelectOnly(active);
             else SelectedLayersChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -332,6 +449,34 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         return true;
     }
 
+    /// <summary>
+    /// Turns a layer of plain pixels into a picture object (its visible area becomes a picture that can be moved, resized,
+    /// rotated and given a shadow). One undo step. Returns false when the layer is hidden or empty.
+    /// </summary>
+    public bool MakePictureObject(Layer layer, string actionName = "Make Editable")
+    {
+        if (layer.Object != null || !layer.IsVisible) return false;
+        var bounds = layer.VisibleBounds();
+        if (bounds.IsEmpty) return false;
+
+        var (content, x, y) = layer.GetFullContent();
+        var source = content.Crop(bounds.Offset(-x, -y));
+        var before = layer.SaveState();
+        layer.SetObject(new ImageObject(new ObjectBox(bounds.X, bounds.Y, bounds.Width, bounds.Height), source, layer.Name));
+        Push(new LayerContentAction(actionName, layer, before, layer.SaveState()));
+        return true;
+    }
+
+    /// <summary>Selects every layer of the picture (Select All in the Layers panel).</summary>
+    public void SelectAllLayers()
+    {
+        var layers = Document.Model.Layers.ToList();
+        if (layers.Count == 0) return;
+        var active = Document.Model.ActiveLayer ?? layers[^1];
+        SetSelection(layers, active);
+        SetStatus(layers.Count == 1 ? "Selected the only layer." : $"Selected all {layers.Count} layers. Lock / Unlock in the Layers panel act on them; Ctrl+G groups them.");
+    }
+
     /// <summary>Turns an object layer into a normal pixel layer (undoable). Does nothing for pixel layers.</summary>
     public void ConvertToPixels(Layer layer, bool announce = true)
     {
@@ -342,7 +487,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
             SetStatus($"\"{layer.Name}\" was a {kind} object and is now normal pixels so it can be painted on. Ctrl+Z makes it editable again.");
     }
 
-    /// <summary>Adds a new layer holding <paramref name="obj"/> above the active layer and selects it.</summary>
+    /// <summary>Adds a new layer holding <paramref name="obj"/> at the very top (in front of everything) and selects it.</summary>
     public Layer AddObjectLayer(LayerObject obj, string actionName)
     {
         var doc = Document.Model;
@@ -351,7 +496,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         Push(LayerStructureAction.Record(actionName, doc, () =>
         {
             var layers = doc.Layers.ToList();
-            layers.Insert(Math.Min(layers.Count, doc.ActiveLayerIndex + 1), layer);
+            layers.Add(layer);
             doc.SetLayers(layers, layer);
         }));
         return layer;
@@ -369,7 +514,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     /// The top-most visible layer with something at <paramref name="point"/> (an object's box, or a
     /// non-transparent pixel), or null. <paramref name="margin"/> widens object boxes (easier to hit thin lines).
     /// </summary>
-    public Layer? FindLayerAt(PointD point, double margin = 0)
+    public Layer? FindLayerAt(PointD point, double margin = 0, bool includeLocked = false)
     {
         var doc = Document.Model;
         int x = (int)Math.Floor(point.X), y = (int)Math.Floor(point.Y);
@@ -377,9 +522,14 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         {
             var layer = doc.Layers[i];
             if (!layer.IsVisible || layer.Opacity <= 0.02) continue;
+            if (layer.IsLocked && !includeLocked) continue; // a locked layer cannot be picked on the canvas
             if (layer.Object is { } obj)
             {
-                if (obj.Box.Contains(point, margin + (obj.IsLineLike ? 4 : 0))) return layer;
+                // A picture counts only where it has visible pixels (the removed part of a cut-out can be clicked through).
+                bool hit = obj is ImageObject picture
+                    ? picture.HasContentAt(point, margin)
+                    : obj.Box.Contains(point, margin + (obj.IsLineLike ? 4 : 0));
+                if (hit) return layer;
             }
             else if (doc.Bounds.Contains(x, y) && layer.Pixels.GetPixel(x, y).A > 16)
             {

@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using FlashEditor.App.Tools.Selecting;
 using FlashEditor.Core.Documents;
+using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Objects;
 
 namespace FlashEditor.App.Views.Editor;
@@ -16,6 +17,7 @@ public partial class CanvasView
 {
     private Layer? _framedLayer;
     private ObjectBox? _frameBox;
+    private LayerObject? _frameObject; // what the frame surrounds (the selected part of a group, or the layer's object)
     private Cursor? _cursorOverride;
 
     /// <summary>Recomputes the box (call after the selected layer's content changed).</summary>
@@ -37,9 +39,12 @@ public partial class CanvasView
                 _framedLayer.PropertyChanged += OnFramedLayerPropertyChanged;
             }
         }
-        _frameBox = show ? TransformHandles.FrameOf(layer) : null;
+        // Inside a group the frame goes around the selected part instead of the whole group.
+        int? part = _main?.ActivePartIndex;
+        _frameBox = show ? TransformHandles.FrameOf(layer, part) : null;
+        _frameObject = show ? new EditTarget(layer, part).Object : null;
         _multiBoxes = show && _main != null && _main.SelectedLayers.Count > 1
-            ? _main.SelectedLayers.Select(TransformHandles.FrameOf).OfType<ObjectBox>().ToList()
+            ? _main.SelectedLayers.Select(l => TransformHandles.FrameOf(l)).OfType<ObjectBox>().ToList()
             : null;
         DrawTransformFrame();
     }
@@ -79,6 +84,27 @@ public partial class CanvasView
         if (e.PropertyName is nameof(Layer.IsVisible) or nameof(Layer.Object) or nameof(Layer.IsLocked)) RefreshTransformFrame();
     }
 
+    /// <summary>Reshape mode: the outline through the shape's corner points, with a round handle on each point (same size on screen at every zoom).</summary>
+    private void DrawCornerPoints(ShapeObject shape, IReadOnlyList<PointD> corners)
+    {
+        var canvasPoints = corners.Select(shape.FromUnit).ToList();
+
+        var outline = new StreamGeometry();
+        using (var ctx = outline.Open())
+        {
+            ctx.BeginFigure(new Point(canvasPoints[0].X, canvasPoints[0].Y), false, true);
+            ctx.PolyLineTo(canvasPoints.Skip(1).Select(p => new Point(p.X, p.Y)).ToList(), true, false);
+        }
+        outline.Freeze();
+        FrameOutline.Data = outline;
+
+        double radius = TransformHandles.HandleSize / 2 * 1.1 / _zoom;
+        var handles = new GeometryGroup();
+        foreach (var p in canvasPoints) handles.Children.Add(new EllipseGeometry(new Point(p.X, p.Y), radius, radius));
+        handles.Freeze();
+        FrameHandles.Data = handles;
+    }
+
     /// <summary>Draws the outline, the resize squares and the round rotate handle for the current zoom.</summary>
     private void DrawTransformFrame()
     {
@@ -90,6 +116,13 @@ public partial class CanvasView
         if (_frameBox is not { } box)
         {
             FrameOutline.Data = FrameHandles.Data = null;
+            return;
+        }
+
+        // Reshape: the shape's own outline and a round point at each corner (instead of the box with square handles).
+        if (_main?.IsReshaping == true && _frameObject is ShapeObject reshaping && reshaping.CurrentVertices is { Count: >= 3 } points)
+        {
+            DrawCornerPoints(reshaping, points);
             return;
         }
 
@@ -120,7 +153,7 @@ public partial class CanvasView
             FrameHandles.Data = handles;
             return;
         }
-        foreach (var kind in TransformHandles.HandlesFor(_framedLayer?.Object))
+        foreach (var kind in TransformHandles.HandlesFor(_frameObject))
         {
             var p = TransformHandles.Position(box, kind, _zoom);
             var square = new RectangleGeometry(new Rect(p.X - half, p.Y - half, half * 2, half * 2))

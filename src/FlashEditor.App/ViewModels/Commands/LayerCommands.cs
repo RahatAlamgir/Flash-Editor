@@ -19,6 +19,9 @@ public sealed class LayerCommands
         DuplicateCommand = new RelayCommand(Duplicate, () => Doc.ActiveLayer != null);
         DeleteCommand = new RelayCommand(Delete, () => Doc.ActiveLayer is { IsLocked: false } && Doc.Layers.Count > 1);
         ToggleLockCommand = new RelayCommand(ToggleLock, () => Doc.ActiveLayer != null);
+        SelectAllLayersCommand = new RelayCommand(_main.SelectAllLayers, () => Doc.Layers.Count > 0);
+        LockSelectedCommand = new RelayCommand(() => SetLockOfSelected(true), () => _main.SelectedLayers.Any(l => !l.IsLocked));
+        UnlockSelectedCommand = new RelayCommand(() => SetLockOfSelected(false), () => _main.SelectedLayers.Any(l => l.IsLocked));
         CropToSelectionCommand = new RelayCommand(CropToSelection, () => Doc.Selection != null && Doc.ActiveLayer is { IsLocked: false });
         CropObjectCommand = new RelayCommand(CropObject, () => Doc.ActiveLayer is { IsLocked: false });
         GroupCommand = new RelayCommand(Group, () => _main.SelectedLayers.Count >= 2 && _main.SelectedLayers.All(l => !l.IsLocked));
@@ -28,7 +31,7 @@ public sealed class LayerCommands
         BringToFrontCommand = new RelayCommand(() => MoveTo(Doc.Layers.Count - 1, "Bring to Front"),
             () => Doc.ActiveLayer != null && Doc.ActiveLayerIndex < Doc.Layers.Count - 1);
         SendToBackCommand = new RelayCommand(() => MoveTo(0, "Send to Back"), () => Doc.ActiveLayerIndex > 0);
-        ConvertToPixelsCommand = new RelayCommand(() => { if (Doc.ActiveLayer is { } l) _main.ConvertToPixels(l, announce: false); },
+        ConvertToPixelsCommand = new RelayCommand(() => { if (Doc.ActiveLayer is { } l) _main.ConvertToPixels(l, announce: true); },
             () => Doc.ActiveLayer?.Object != null);
         MergeDownCommand = new RelayCommand(MergeDown, () => Doc.ActiveLayerIndex > 0
             && !Doc.ActiveLayer!.IsLocked && !Doc.Layers[Doc.ActiveLayerIndex - 1].IsLocked);
@@ -49,6 +52,15 @@ public sealed class LayerCommands
     public RelayCommand MoveDownCommand { get; }
     public RelayCommand MergeDownCommand { get; }
     public RelayCommand ToggleLockCommand { get; }
+
+    /// <summary>Selects every layer (the Select all button of the Layers panel).</summary>
+    public RelayCommand SelectAllLayersCommand { get; }
+
+    /// <summary>Locks every selected layer that is not locked yet.</summary>
+    public RelayCommand LockSelectedCommand { get; }
+
+    /// <summary>Unlocks every selected layer that is locked.</summary>
+    public RelayCommand UnlockSelectedCommand { get; }
     public RelayCommand GroupCommand { get; }
     public RelayCommand CropToSelectionCommand { get; }
     public RelayCommand CropObjectCommand { get; }
@@ -69,10 +81,31 @@ public sealed class LayerCommands
         InsertAboveActive("New Layer", layer);
     }
 
+    /// <summary>
+    /// Ctrl+D: copies the selected layers (all of them when several are selected) and selects the copies.
+    /// The copies go above the top-most selected layer. Copies of editable objects are shifted a little so they
+    /// can be told apart from the original.
+    /// </summary>
     private void Duplicate()
     {
-        if (Doc.ActiveLayer is not { } active) return;
-        InsertAboveActive("Duplicate Layer", active.Duplicate(active.Name + " copy"));
+        var sources = _main.SelectedLayers.ToList(); // bottom to top
+        if (sources.Count == 0) return;
+
+        var copies = sources.Select(source =>
+        {
+            var copy = source.Duplicate(source.Name + " copy");
+            if (copy.Object is { } obj) copy.SetObject(ObjectTransforms.Offset(obj, 20, 20));
+            return copy;
+        }).ToList();
+
+        int top = sources.Max(layer => Doc.Layers.IndexOf(layer));
+        _main.Push(LayerStructureAction.Record(sources.Count > 1 ? "Duplicate Layers" : "Duplicate Layer", Doc, () =>
+        {
+            var layers = Doc.Layers.ToList();
+            layers.InsertRange(top + 1, copies);
+            Doc.SetLayers(layers, copies[^1]);
+        }));
+        _main.SetSelection(copies, copies[^1]);
     }
 
     private void InsertAboveActive(string actionName, Layer layer)
@@ -209,6 +242,34 @@ public sealed class LayerCommands
         if (_main.Document.ActiveLayer is not { } layer) return;
         layer.IsLocked = !layer.IsLocked; // recorded as an undo step by the layer view model
         _main.SetStatus(layer.IsLocked ? $"Locked \"{layer.Name}\"." : $"Unlocked \"{layer.Name}\".");
+    }
+
+    /// <summary>
+    /// Locks (or unlocks) all selected layers that are not already so. One undo step for all of them.
+    /// </summary>
+    private void SetLockOfSelected(bool locked)
+    {
+        var changing = _main.SelectedLayers.Where(l => l.IsLocked != locked).ToList();
+        if (changing.Count == 0) return;
+
+        foreach (var layer in changing) layer.IsLocked = locked;
+        _main.Push(new CompositeAction(locked ? "Lock Layers" : "Unlock Layers",
+            changing.Select(l => (IHistoryAction)new LayerPropertyAction(l, LayerProperty.Lock, !locked, locked))));
+
+        string verb = locked ? "Locked" : "Unlocked";
+        _main.SetStatus(changing.Count == 1 ? $"{verb} \"{changing[0].Name}\"." : $"{verb} {changing.Count} layers.");
+    }
+
+    /// <summary>
+    /// Drag and drop in the Layers panel: moves the layers into the gap number <paramref name="gap"/> of the list
+    /// (0 = above the top layer, Count = below the bottom one). One undo step; locked layers can be reordered too.
+    /// </summary>
+    public void MoveLayersToGap(IReadOnlyCollection<Layer> moved, int gap)
+    {
+        var order = LayerOrder.MoveToGap(Doc.Layers.ToList(), moved, gap);
+        if (order == null) return;
+        var active = Doc.ActiveLayer;
+        _main.Push(LayerStructureAction.Record(moved.Count > 1 ? "Move Layers" : "Move Layer", Doc, () => Doc.SetLayers(order, active)));
     }
 
     /// <summary>Moves the active layer to the given position in the stack (0 = bottom).</summary>

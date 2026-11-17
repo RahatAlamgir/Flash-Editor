@@ -7,6 +7,8 @@ using FlashEditor.Core.Effects;
 using FlashEditor.Core.Effects.Adjustments;
 using FlashEditor.Core.Effects.Background;
 using FlashEditor.Core.Effects.Filters;
+using FlashEditor.Core.History;
+using FlashEditor.Core.Objects;
 
 namespace FlashEditor.App.ViewModels.Commands;
 
@@ -240,17 +242,41 @@ public sealed class EffectCommands
 
         _main.RunAsync(effect.Name, async () =>
         {
-            _main.Push(await session.CommitAsync(values));
+            var step = await session.CommitAsync(values);
             _main.SetStatus($"Applied {effect.Name}");
-            if (isRemoval)
+            if (!isRemoval)
             {
-                // Keep the picture as it was, so the Refine brush can paint parts back.
-                // (A second removal keeps the first original: that is the one with everything in it.)
-                if (layer.RestoreSource == null || layer.RestoreSource.Width != layer.Width || layer.RestoreSource.Height != layer.Height)
-                    layer.RestoreSource = session.Original;
-                ReportBackgroundRemoval(effect, opaqueBefore, CountVisible(layer.Pixels));
+                _main.Push(step);
+                return;
             }
+
+            // The cut-out becomes an editable picture (it can be moved, resized, rotated and given a shadow like any
+            // object) that remembers the picture as it was, so the Refine brush can always paint parts back.
+            long opaqueAfter = CountVisible(layer.Pixels);
+            var cutOut = MakeCutOutObject(layer, session.Original);
+            _main.Push(cutOut == null ? step : new CompositeAction(effect.Name, new[] { step, cutOut }));
+            if (cutOut == null && layer.RestoreSource == null)
+                layer.RestoreSource = session.Original; // rare layers that cannot become an object keep the older way
+            ReportBackgroundRemoval(effect, opaqueBefore, opaqueAfter);
         });
+    }
+
+    /// <summary>
+    /// Turns a layer whose background was just removed into a picture object: the cut-out and the original (both cropped to the
+    /// area the original covered) go into one <see cref="ImageObject"/>. Returns the undo step, or null when the layer is left as it is.
+    /// </summary>
+    private static IHistoryAction? MakeCutOutObject(Core.Documents.Layer layer, Core.Imaging.PixelBuffer original)
+    {
+        if (layer.HasHiddenPixels || original.Width != layer.Width || original.Height != layer.Height) return null;
+
+        // Everything the original had, so removed parts can be brought back.
+        var area = original.VisibleBounds().Union(layer.Pixels.VisibleBounds());
+        if (area.IsEmpty) return null;
+
+        var before = layer.SaveState();
+        layer.SetObject(new ImageObject(new ObjectBox(area.X, area.Y, area.Width, area.Height),
+            layer.Pixels.Crop(area), layer.Name, Original: original.Crop(area)));
+        return new LayerContentAction("Cut-out", layer, before, layer.SaveState());
     }
 
     /// <summary>
@@ -276,7 +302,7 @@ public sealed class EffectCommands
         if (share >= 0.01) return;
 
         string reason = _main.Document.Model.Selection != null
-            ? "There is an active selection, so only the selected area was processed. Press Ctrl+D to deselect and try again.\n\n"
+            ? "There is an active selection, so only the selected area was processed. Press Ctrl+Shift+D (or Esc) to deselect and try again.\n\n"
             : "";
         if (effect is AiBackgroundRemovalEffect)
         {

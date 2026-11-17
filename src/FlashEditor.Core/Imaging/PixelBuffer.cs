@@ -54,6 +54,20 @@ public sealed class PixelBuffer
 
     public void Clear() => Array.Clear(Data);
 
+    /// <summary>Makes the pixels inside <paramref name="rect"/> fully transparent (clipped to the buffer).</summary>
+    public void ClearRegion(PixelRect rect)
+    {
+        rect = rect.Intersect(Bounds);
+        if (rect.IsEmpty) return;
+        if (rect.Width == Width)
+        {
+            Array.Clear(Data, rect.Y * Stride, rect.Height * Stride);
+            return;
+        }
+        for (int y = rect.Y; y < rect.Bottom; y++)
+            Array.Clear(Data, IndexOf(rect.X, y), rect.Width * 4);
+    }
+
     public void Fill(ColorRgba c)
     {
         if (Data.Length == 0) return;

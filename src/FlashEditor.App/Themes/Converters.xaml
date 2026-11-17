@@ -10,4 +10,6 @@
     <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
     <conv:LineOrBorderConverter x:Key="LineOrBorder" />
     <conv:ShapeKindToGeometryConverter x:Key="ShapeIcon" />
+    <conv:ShapeNameConverter x:Key="ShapeName" />
+    <conv:BoolToDimConverter x:Key="BoolToDim" />
 </ResourceDictionary>

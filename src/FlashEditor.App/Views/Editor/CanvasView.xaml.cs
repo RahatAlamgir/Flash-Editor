@@ -82,6 +82,7 @@ public partial class CanvasView : UserControl, ICanvasView
             if (e.PropertyName == nameof(ToolsViewModel.ActiveTool)) OnToolChanged();
         };
         main.SelectedLayersChanged += (_, _) => RefreshTransformFrame();
+        main.ActivePartChanged += (_, _) => RefreshTransformFrame();
         AttachDocument(main.Document);
         OnToolChanged();
     }
@@ -98,6 +99,7 @@ public partial class CanvasView : UserControl, ICanvasView
 
     private void OnMainPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainViewModel.IsReshaping)) RefreshTransformFrame();
         if (e.PropertyName == nameof(MainViewModel.Document) && _main != null)
             AttachDocument(_main.Document);
     }

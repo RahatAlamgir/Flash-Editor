@@ -12,6 +12,16 @@ public sealed class HistoryManager
     /// <summary>Oldest steps are dropped beyond this count to limit memory use.</summary>
     public int MaxActions { get; set; } = 60;
 
+    /// <summary>
+    /// Oldest steps are also dropped when the pixel copies kept for undo take more than this many bytes
+    /// (default 1 GB). Each edit of a very large picture keeps a before and an after copy, so the step count
+    /// alone cannot keep memory under control. The newest step is always kept.
+    /// </summary>
+    public long MaxBytes { get; set; } = 1L << 30;
+
+    /// <summary>Memory kept alive by all steps together (see <see cref="IHistoryAction.SizeInBytes"/>).</summary>
+    public long TotalBytes => _actions.Sum(action => action.SizeInBytes);
+
     public IReadOnlyList<IHistoryAction> Actions => _actions;
     public int Position { get; private set; }
 
@@ -48,8 +58,11 @@ public sealed class HistoryManager
         _actions.Add(action);
         Position++;
 
-        while (_actions.Count > MaxActions)
+        // Too many steps, or too much memory: forget the oldest ones (but never the step just made).
+        long total = TotalBytes;
+        while (_actions.Count > MaxActions || (total > MaxBytes && _actions.Count > 1))
         {
+            total -= _actions[0].SizeInBytes;
             _actions.RemoveAt(0);
             Position--;
             if (_savedPosition >= 0) _savedPosition--;

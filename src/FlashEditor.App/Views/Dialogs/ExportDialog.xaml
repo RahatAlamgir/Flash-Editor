@@ -53,6 +53,9 @@
                 <ComboBoxItem Content="JPG - small photos, no transparency" />
                 <ComboBoxItem Content="WebP - smallest, keeps transparency" />
                 <ComboBoxItem Content="ICO - Windows icon (16-256 px)" />
+                <ComboBoxItem Content="BMP - uncompressed, keeps transparency" />
+                <ComboBoxItem Content="TIFF - lossless, for printing and archives" />
+                <ComboBoxItem Content="GIF - 256 colors, simple graphics" />
             </ComboBox>
 
             <StackPanel x:Name="QualityPanel" Margin="0,14,0,0">

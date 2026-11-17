@@ -39,7 +39,7 @@ public sealed class ToolsViewModel : ObservableObject
             new HandTool(host),
             new ZoomTool(host),
         };
-        _activeTool = Get<BrushTool>();
+        _activeTool = Get<MoveTool>(); // the program starts on Select / Move
         _activeTool.IsActive = true;
     }
 

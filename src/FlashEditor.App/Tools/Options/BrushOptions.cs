@@ -1,3 +1,4 @@
+using FlashEditor.App.Rendering;
 using FlashEditor.Core.Common;
 using FlashEditor.Core.Painting;
 
@@ -10,6 +11,24 @@ public sealed class BrushOptions : ObservableObject
     private double _hardness = 80;
     private double _opacity = 100;
 
+    private BrushType _type = BrushType.Round;
+
+    /// <summary>The kind of brush tip (round, square, calligraphy, pencil, chalk, spray, splatter).</summary>
+    public BrushType Type
+    {
+        get => _type;
+        set
+        {
+            if (SetField(ref _type, value)) OnPropertyChanged(nameof(HardnessUsed));
+        }
+    }
+
+    /// <summary>All brush types with a picture of each, for the picker in the tool options.</summary>
+    public IReadOnlyList<BrushTypeItem> Types => BrushTypePreviews.Items;
+
+    /// <summary>False for tips that have a fixed edge (pencil, spray, splatter): then the Hardness setting does nothing.</summary>
+    public bool HardnessUsed => BrushTypes.UsesHardness(_type);
+
     /// <summary>Diameter in pixels.</summary>
     public double Size { get => _size; set => SetField(ref _size, Math.Clamp(Math.Round(value), 1, 1000)); }
 
@@ -19,7 +38,7 @@ public sealed class BrushOptions : ObservableObject
     /// <summary>1..100 %</summary>
     public double Opacity { get => _opacity; set => SetField(ref _opacity, Math.Clamp(Math.Round(value), 1, 100)); }
 
-    public BrushSettings ToSettings() => new(Size, Hardness / 100.0, Opacity / 100.0);
+    public BrushSettings ToSettings() => new(Size, Hardness / 100.0, Opacity / 100.0, Type);
 
     /// <summary>"[" and "]" keys: change size in sensible steps.</summary>
     public void Grow() => Size += Size < 10 ? 1 : Size < 50 ? 5 : Size < 200 ? 10 : 50;

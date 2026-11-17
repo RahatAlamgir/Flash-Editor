@@ -15,7 +15,7 @@ namespace FlashEditor.App.Views.Dialogs;
 public partial class ExportDialog : Window
 {
     private static readonly ImageFileFormat[] Formats =
-        { ImageFileFormat.Png, ImageFileFormat.Jpeg, ImageFileFormat.Webp, ImageFileFormat.Ico };
+        { ImageFileFormat.Png, ImageFileFormat.Jpeg, ImageFileFormat.Webp, ImageFileFormat.Ico, ImageFileFormat.Bmp, ImageFileFormat.Tiff, ImageFileFormat.Gif };
 
     private const int PreviewSize = 380;
 
@@ -80,9 +80,14 @@ public partial class ExportDialog : Window
         bool hasQuality = ImageFileFormats.HasQuality(Format);
         QualityPanel.Visibility = hasQuality ? Visibility.Visible : Visibility.Collapsed;
         NoQualityText.Visibility = hasQuality ? Visibility.Collapsed : Visibility.Visible;
-        NoQualityText.Text = Format == ImageFileFormat.Ico
-            ? "Icons always contain the sizes 16 to 256 px; the size below is the source the icon sizes are made from."
-            : "PNG is lossless (no quality setting). To make the file smaller, reduce the size below or choose JPG / WebP.";
+        NoQualityText.Text = Format switch
+        {
+            ImageFileFormat.Ico => "Icons always contain the sizes 16 to 256 px; the size below is the source the icon sizes are made from.",
+            ImageFileFormat.Bmp => "BMP is not compressed: the file is large but exact, and transparency is kept. For a smaller file choose PNG, JPG or WebP.",
+            ImageFileFormat.Tiff => "TIFF is lossless (no quality setting) and keeps transparency: good for printing and archives. Files are compressed, but larger than JPG / WebP.",
+            ImageFileFormat.Gif => "GIF can show at most 256 colors (and fully clear or solid transparency), so photos lose detail. Best for simple graphics. One picture only, no animation.",
+            _ => "PNG is lossless (no quality setting). To make the file smaller, reduce the size below or choose JPG / WebP.",
+        };
         SizeBox.IsEnabled = true;
     }
 

@@ -37,32 +37,41 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 ## Features
 
 ### Files and pictures
-* Open PNG, JPG, WEBP, ICO, BMP, GIF. Drag files onto the window; hold **Ctrl** while dropping to add them as layers.
-* Save as PNG, JPG, WEBP or ICO (icons contain 16 to 256 px). **Export** (Ctrl+Alt+S) adds format, quality, output size and crop.
+* Open **PNG, JPG, WEBP, ICO, BMP, GIF, TIFF, JPEG XR, DDS** and, when Windows has the free codec from the Microsoft Store, **HEIC, AVIF, JPEG XL and camera RAW** (DNG, CR2, NEF, ARW...). Drag files onto the window; hold **Ctrl** while dropping to add them as layers.
+* Save as **PNG, JPG, WEBP, ICO** (16 to 256 px), **BMP**, **TIFF** or **GIF** (256 colors, with smart color reduction). **Export** (Ctrl+Alt+S) adds format, quality, output size and crop.
 * **Several pictures at once**, one tab each, with their own layers, undo history and zoom. Double-click a tab to rename it.
 
 ### AI tools (offline, GPU accelerated)
-* **Remove Background** (button in the Layers panel, Ctrl+Alt+B). Sliders for edge sharpness, shrink / grow and feather, with live preview.
-* **Refine brush (R)**: *Restore* paints back what was removed by mistake, *Remove* takes away leftovers. Alt = the other mode.
+* **Remove Background** (button in the Layers panel, Ctrl+Alt+B). Sliders for edge sharpness, shrink / grow and feather, with live preview. The result is an **editable picture object**: move, resize, rotate it, give it a **shadow**, and click through its removed (transparent) parts to what lies behind. It remembers the original picture, so it can always be refined.
+* **Refine brush (R)**: *Restore* paints back what was removed by mistake, *Remove* takes away leftovers. Alt = the other mode. It paints on the picture itself, so it keeps working after the cut-out was moved, resized, rotated or mirrored, and the shadow follows the new edge. Works on any placed picture too.
 * **Select Subject**: selects the main person or object in one click.
 * **AI Upscale / Clean Up**: same size but sharper, or 2x / 3x / 4x larger. Shows progress and time left, with Cancel.
 * Runs on any DirectX 12 graphics card (NVIDIA, AMD, Intel) through DirectML, otherwise on the processor. Example: cleaning up a 1536 x 1024 picture takes about 25 s on an Intel Arc A750 instead of about 6 min on the processor.
 
 ### Editable objects (Canva-style)
-* **Shapes (U)**: rectangle (rounded corners), ellipse, triangle, star, polygon, heart, arrow, speech bubble, line. Fill and border, each with its own color.
+* **Shapes (U)**: 36 shapes: rectangle (rounded corners), ellipse, triangle, right triangle, star, polygon, pentagon, hexagon, octagon, sparkle, burst, diamond, trapezoid, parallelogram, heart, arrow, double arrow, chevron, tag, home, cross, check, X mark, lightning bolt, cloud, teardrop, shield, speech bubble, oval bubble, line, and **ring, half ring, half circle, quarter circle, pie, crescent, frame** (with a hole-size or angle setting). Fill and border, each with its own color. Pick a shape from the grid in the tool options; the kind is chosen when you draw it.
+* **Reshape corners**: select a straight-sided shape and click **Reshape corners** in the Properties panel, then drag its round corner points: a square becomes a trapezium, a star point can be pulled out. Shift = coarser steps, Esc finishes, **Reset** brings back the normal form. One undo step per drag.
 * **Text (T)**: any installed font, size, bold, italic, alignment, color. Double-click to edit.
 * Placed and pasted pictures are resizable without losing quality.
-* Click to select, drag handles to resize, round handle to rotate (Shift = 15° steps). **Shift+click** selects several; **Ctrl+G** groups, **Ctrl+Shift+G** ungroups.
-* **Lock** (Ctrl+L or the padlock) prevents moving and editing. Bring to front / back, flip, crop one object, convert to pixels.
+* Click to select, drag handles to resize, round handle to rotate (Shift = 15° steps). **Shift+click** or **Ctrl+drag a box** selects several; **Ctrl+G** groups, **Ctrl+Shift+G** ungroups, **Ctrl+D** duplicates.
+* **Lock** (Ctrl+L or the padlock) prevents moving and editing. A locked object cannot be picked by clicking on the canvas (clicks go through it); select it in the Layers panel to unlock it. Bring to front / back, flip, crop one object, convert to pixels.
 
 ### Painting and selecting
-* Brush, eraser, paint bucket, eyedropper, foreground / background colors with an HSV color picker.
-* Selection tools: rectangle, ellipse, lasso, polygon lasso, **pen (curves)**, magic wand, **quick-select brush**, select subject (AI), select layer content. **Shift** adds, **Alt** subtracts.
+* Brush, eraser, paint bucket, eyedropper, foreground / background colors with an HSV color picker. **Brush types** (pick in the tool options, each with a preview): round, square, calligraphy, pencil, chalk, spray, splatter.
+* Selection tools: rectangle, ellipse, lasso, polygon lasso, **pen (curves)**, magic wand, **quick-select brush**, select subject (AI), select layer content. **Shift** adds, **Alt** subtracts. The program starts with **Select / Move** active.
 * Move the selected pixels, copy, cut, paste, delete, fill, invert. Nothing is cut off at the canvas edge; **Image > Reveal All** shows parts moved outside.
 
 ### Layers and history
-* Add, duplicate, delete, reorder, show / hide, lock, opacity, rename, merge down, flatten.
-* Undo / redo for everything, plus a History panel (click a step to jump back).
+* Add, duplicate, delete, reorder, show / hide, lock, opacity, rename, merge down, flatten. **Select all**, **Lock all** and **Unlock all** buttons act on the selected layers (Ctrl+A with the Select / Move tool also selects every layer).
+* A layer of plain pixels (painted, or after "To pixels") has no shadow, size or rotation settings: click **Make editable** in the Properties panel to turn it into a picture object that has them. "To pixels" does the opposite: it makes an object paintable but no longer editable as an object.
+* **Groups show their parts** (like Canva): a grouped layer has an arrow to open or close the list of its parts, each with a small picture and its name (double-click to rename).
+* **Edit inside a group** (like Canva): double-click a group, or click one of its parts in the Layers panel, to select just that part. Move, resize, rotate, recolor, change text, add a shadow or delete it (Delete) while it stays in the group. **Esc** goes back to the whole group. All undoable.
+* **Drop shadow** on any shape, text, picture or group (Properties > Shadow): color, opacity, blur, distance and angle. The shadow follows the real outline of the object. Ten one-click presets, each shown as a small picture of the shadow: Soft, Hard, Lifted, Subtle, Contact, Sticker, Long, Glow, Neon and Left.
+* **Drag layers up and down** in the Layers panel to change their order (drag one of several selected layers to move them all). A line shows where the layer will land; one undo step.
+* Layer icons are redrawn when you finish a change (a moment after you let go of the mouse), not while you drag, which keeps moving objects smooth.
+* New shapes, text and pictures are always added in front of everything else.
+* Undo / redo for everything, plus a History panel (click a step to jump back). Undo keeps at most 60 steps and about 1 GB of memory, so editing a very large picture many times cannot use up your RAM (the oldest steps are forgotten first).
+* The window opens full screen the first time, then reopens with the size, position and maximized state you left it in (saved in `settings\window.json` next to `FlashEditor.exe`).
 
 ### Image
 * Image Size / Resolution with 4 resize methods (Lanczos, Bicubic, Bilinear, Nearest) and quick % buttons.
@@ -141,7 +150,8 @@ Files are checked (size and SHA-256) before use and saved only in the `models` f
 | U / T / C / H / Z | Shapes / text / crop / hand / zoom |
 | Ctrl+Z, Ctrl+Y | Undo, redo |
 | Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut, paste |
-| Ctrl+D, Ctrl+Shift+I | Deselect, invert selection |
+| Ctrl+Shift+D, Ctrl+Shift+I | Deselect, invert selection |
+| Ctrl+D | Duplicate layer / object |
 | Ctrl+G, Ctrl+Shift+G | Group, ungroup |
 | Ctrl+L | Lock / unlock |
 | Ctrl+Alt+B | Remove background (AI) |
@@ -172,7 +182,7 @@ Flash Editor/
 │   │   ├── Painting/                Brush strokes (paint, erase, restore), flood fill, compositing
 │   │   ├── Transforms/              Crop, flip, rotate, resize (Lanczos, Bicubic...)
 │   │   ├── Effects/                 Effect framework, Adjustments/, Filters/, Background/
-│   │   └── IO/                      Decoder, encoder, ICO writer, exporter
+│   │   └── IO/                      Decoder, encoder (PNG/JPG/WebP/ICO/BMP/GIF), exporter; TIFF and unusual formats through Windows codecs
 │   │
 │   ├── FlashEditor.AI/              AI features (ONNX Runtime + DirectML). Kept out of Core.
 │   │   ├── Models/                  Which model, where from; download once and verify

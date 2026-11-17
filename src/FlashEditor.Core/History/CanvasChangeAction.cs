@@ -30,6 +30,8 @@ public sealed class CanvasChangeAction : IHistoryAction
 
     public string Name { get; }
 
+    public long SizeInBytes => _before.Values.Sum(s => s.ByteSize) + _after.Values.Sum(s => s.ByteSize);
+
     /// <summary>
     /// Transforms every layer with <paramref name="transform"/>, resizes the canvas to the size of the
     /// results, and returns the matching undo step. Pixels hidden outside the canvas are dropped

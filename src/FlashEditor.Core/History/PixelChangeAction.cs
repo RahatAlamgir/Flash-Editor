@@ -25,6 +25,8 @@ public sealed class PixelChangeAction : IHistoryAction
 
     public string Name { get; }
 
+    public long SizeInBytes => (long)_before.Data.Length + _after.Data.Length;
+
     /// <summary>
     /// Builds the action by comparing <paramref name="fullBefore"/> (a full copy of the layer taken before
     /// editing) with the layer's current pixels inside <paramref name="dirty"/>.

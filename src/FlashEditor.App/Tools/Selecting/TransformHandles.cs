@@ -27,6 +27,13 @@ public static class TransformHandles
         return bounds.IsEmpty ? null : new ObjectBox(bounds.X, bounds.Y, bounds.Width, bounds.Height);
     }
 
+    /// <summary>The frame of the selected part of a group when there is one, otherwise <see cref="FrameOf(Layer?)"/>.</summary>
+    public static ObjectBox? FrameOf(Layer? layer, int? part)
+    {
+        if (part == null) return FrameOf(layer);
+        return layer is { IsVisible: true } ? new EditTarget(layer, part).Object?.Box : null;
+    }
+
     /// <summary>Direction of each resize handle (-1, 0 or 1 per axis) in box space.</summary>
     public static (int Sx, int Sy) Direction(HandleKind kind) => kind switch
     {
@@ -48,6 +55,25 @@ public static class TransformHandles
         if (kind == HandleKind.Rotate) return box.ToCanvas(0, -box.Height / 2 - RotateDistance / zoom);
         var (sx, sy) = Direction(kind);
         return box.ToCanvas(sx * box.Width / 2, sy * box.Height / 2);
+    }
+
+    /// <summary>
+    /// Which corner point of a shape is under the point (while reshaping), or null. Points are the shape's current corners.
+    /// </summary>
+    public static int? VertexAt(ShapeObject shape, PointD canvasPoint, double zoom)
+    {
+        var points = shape.CurrentVertices;
+        if (points == null) return null;
+
+        double radius = (HandleSize / 2 + 4) / zoom;
+        int? best = null;
+        double bestDistance = radius;
+        for (int i = 0; i < points.Count; i++)
+        {
+            double d = shape.FromUnit(points[i]).DistanceTo(canvasPoint);
+            if (d <= bestDistance) { bestDistance = d; best = i; }
+        }
+        return best;
     }
 
     /// <summary>Which handle (or the box itself) is under the point.</summary>

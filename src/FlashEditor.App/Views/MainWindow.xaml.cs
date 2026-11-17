@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
+        Services.WindowPlacement.Restore(this); // full screen on the first run, afterwards as the user left it
         _viewModel = viewModel;
         DataContext = viewModel;
         CanvasArea.Attach(viewModel);
@@ -77,8 +78,10 @@ public partial class MainWindow : Window
             case Key.D: _viewModel.Colors.Reset(); e.Handled = true; return;
             case Key.Delete:
             case Key.Back:
-                // Delete the selected pixels; without a selection, delete the selected shape / text / image.
-                if (_viewModel.Edit.DeleteCommand.CanExecute(null)) _viewModel.Edit.DeleteCommand.Execute(null);
+                // Delete the selected pixels; without a selection, delete the selected shape / text / image
+                // (or, when a part of a group is selected, just that part).
+                if (_viewModel.DeleteActivePart()) { }
+                else if (_viewModel.Edit.DeleteCommand.CanExecute(null)) _viewModel.Edit.DeleteCommand.Execute(null);
                 else if (_viewModel.Document.Model.ActiveLayer?.Object != null && _viewModel.Layers.DeleteCommand.CanExecute(null))
                     _viewModel.Layers.DeleteCommand.Execute(null);
                 e.Handled = true;
@@ -123,7 +126,12 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (!_viewModel.ConfirmCloseAll()) e.Cancel = true;
+        if (!_viewModel.ConfirmCloseAll())
+        {
+            e.Cancel = true;
+            return;
+        }
+        Services.WindowPlacement.Save(this); // here, while the window still knows its size (RestoreBounds is empty after Closed)
     }
 
     private void OnExit(object sender, RoutedEventArgs e) => Close();

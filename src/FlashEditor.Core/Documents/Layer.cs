@@ -125,7 +125,15 @@ public sealed class Layer : ObservableObject
     public void ReplacePixels(PixelBuffer pixels) => RestoreState(LayerState.Simple(pixels));
 
     /// <summary>The current buffers (not copies). Used by undo steps that swap whole layers.</summary>
-    public LayerState SaveState() => new(Pixels, _extended, _extendedX, _extendedY, Object);
+    public LayerState SaveState()
+    {
+        _ownsPixels = false; // someone may keep these buffers (undo), so they must not be changed in place any more
+        return new(Pixels, _extended, _extendedX, _extendedY, Object);
+    }
+
+    // True while Pixels is a buffer made by SetObject that nobody else holds. Only then can the next SetObject
+    // redraw just the changed part of it (dragging an object redraws it many times per second).
+    private bool _ownsPixels;
 
     /// <summary>
     /// Makes this an object layer showing <paramref name="obj"/> (redraws the pixels), or, with null,
@@ -139,7 +147,65 @@ public sealed class Layer : ObservableObject
             RestoreState(SaveState() with { Object = null });
             return;
         }
+
+        if (Object != null && _ownsPixels && _extended == null)
+        {
+            RedrawObjectInPlace(obj);
+            return;
+        }
         RestoreState(RenderState(obj, Width, Height));
+        _ownsPixels = true; // RenderState made a brand-new buffer that only this layer holds
+    }
+
+    /// <summary>
+    /// Replaces the object and redraws only the area the old and the new drawing cover. Same result as drawing a
+    /// whole new canvas, but the cost depends on the object's size instead of the picture's size.
+    /// </summary>
+    private void RedrawObjectInPlace(LayerObject obj)
+    {
+        var renderer = ObjectRendering.Renderer;
+        if (TryShiftObject(renderer, obj)) return;
+
+        var oldArea = renderer.PaintedArea(Object!, Width, Height);
+        var newArea = renderer.PaintedArea(obj, Width, Height);
+
+        Pixels.ClearRegion(oldArea);
+        renderer.RenderInto(Pixels, obj);
+
+        Object = obj;
+        NotifyPixelsChanged(oldArea.Union(newArea)); // raises PixelsChanged for just that area
+        OnPropertyChanged(nameof(Object));
+    }
+
+    /// <summary>
+    /// When the object only moved by whole pixels (same size, rotation, colors, text...), its drawing is identical
+    /// except for the position, so the old pixels are copied to the new place instead of drawing it again. This is
+    /// what happens most while dragging. Only when both the old and the new drawing lie completely on the canvas
+    /// (nothing was cut off at the edge). Returns false when the object has to be drawn normally.
+    /// </summary>
+    private bool TryShiftObject(IObjectRenderer renderer, LayerObject obj)
+    {
+        var old = Object!;
+        if (obj.Box.Width != old.Box.Width || obj.Box.Height != old.Box.Height || obj.Box.Rotation != old.Box.Rotation) return false;
+        if (!Equals(obj with { Box = old.Box }, old)) return false; // something else changed too (color, text, shadow...)
+
+        double dx = obj.Box.X - old.Box.X, dy = obj.Box.Y - old.Box.Y;
+        if (dx != Math.Round(dx) || dy != Math.Round(dy) || Math.Abs(dx) > int.MaxValue / 2 || Math.Abs(dy) > int.MaxValue / 2) return false;
+
+        var from = renderer.DrawingBounds(old);
+        var to = renderer.DrawingBounds(obj);
+        var canvas = Pixels.Bounds;
+        if (from.IsEmpty || to.IsEmpty || from.Intersect(canvas) != from || to.Intersect(canvas) != to) return false;
+        if (to.X - from.X != (int)dx || to.Y - from.Y != (int)dy) return false;
+
+        var content = Pixels.Crop(from);   // a copy: the old and the new place may overlap
+        Pixels.ClearRegion(from);
+        Pixels.CopyFrom(content, to.X, to.Y);
+
+        Object = obj;
+        NotifyPixelsChanged(from.Union(to));
+        OnPropertyChanged(nameof(Object));
+        return true;
     }
 
     /// <summary>The layer state for <paramref name="obj"/> drawn on a canvas of the given size.</summary>
@@ -149,6 +215,7 @@ public sealed class Layer : ObservableObject
     /// <summary>Makes <paramref name="state"/> the layer's content. The buffers are used as they are (not copied).</summary>
     public void RestoreState(LayerState state)
     {
+        _ownsPixels = false; // these buffers also belong to an undo step (or the caller)
         Pixels = state.Pixels;
         _extended = state.Extended;
         _extendedX = state.ExtendedX;

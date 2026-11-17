@@ -30,11 +30,11 @@
         <KeyBinding Gesture="Ctrl+X" Command="{Binding Edit.CutCommand}" />
         <KeyBinding Gesture="Ctrl+V" Command="{Binding Edit.PasteCommand}" />
         <KeyBinding Gesture="Ctrl+A" Command="{Binding Edit.SelectAllCommand}" />
-        <KeyBinding Gesture="Ctrl+D" Command="{Binding Edit.DeselectCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+D" Command="{Binding Edit.DeselectCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+I" Command="{Binding Edit.InvertSelectionCommand}" />
         <!-- Layer -->
         <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding Layers.NewLayerCommand}" />
-        <KeyBinding Gesture="Ctrl+J" Command="{Binding Layers.DuplicateCommand}" />
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding Layers.DuplicateCommand}" />
         <KeyBinding Gesture="Ctrl+E" Command="{Binding Layers.MergeDownCommand}" />
         <KeyBinding Gesture="Ctrl+L" Command="{Binding Layers.ToggleLockCommand}" />
         <KeyBinding Gesture="Ctrl+G" Command="{Binding Layers.GroupCommand}" />
@@ -82,8 +82,8 @@
                 <MenuItem Header="_Fill with Foreground Color" Command="{Binding Edit.FillCommand}" />
             </MenuItem>
             <MenuItem Header="_Select">
-                <MenuItem Header="Select _All" InputGestureText="Ctrl+A" Command="{Binding Edit.SelectAllCommand}" />
-                <MenuItem Header="_Deselect" InputGestureText="Ctrl+D" Command="{Binding Edit.DeselectCommand}" />
+                <MenuItem Header="Select _All" InputGestureText="Ctrl+A" Command="{Binding Edit.SelectAllCommand}" ToolTip="All layers with the Select / Move tool, all pixels with the other tools" />
+                <MenuItem Header="_Deselect" InputGestureText="Ctrl+Shift+D" Command="{Binding Edit.DeselectCommand}" />
                 <MenuItem Header="_Invert Selection" InputGestureText="Ctrl+Shift+I" Command="{Binding Edit.InvertSelectionCommand}" />
                 <Separator />
                 <MenuItem Header="Select _Subject (AI)" Command="{Binding Effects.SelectSubjectCommand}" />
@@ -113,10 +113,13 @@
             </MenuItem>
             <MenuItem Header="_Layer">
                 <MenuItem Header="_New Layer" InputGestureText="Ctrl+Shift+N" Command="{Binding Layers.NewLayerCommand}" />
-                <MenuItem Header="_Duplicate Layer" InputGestureText="Ctrl+J" Command="{Binding Layers.DuplicateCommand}" />
+                <MenuItem Header="_Duplicate Layer" InputGestureText="Ctrl+D" Command="{Binding Layers.DuplicateCommand}" />
                 <MenuItem Header="De_lete Layer" Command="{Binding Layers.DeleteCommand}" />
                 <MenuItem Header="_Rename Layer" Command="{Binding Layers.RenameCommand}" />
                 <MenuItem Header="Lock / Unloc_k" InputGestureText="Ctrl+L" Command="{Binding Layers.ToggleLockCommand}" />
+                <MenuItem Header="Select All _Layers" Command="{Binding Layers.SelectAllLayersCommand}" />
+                <MenuItem Header="Lock _All Selected" Command="{Binding Layers.LockSelectedCommand}" />
+                <MenuItem Header="Unlock All S_elected" Command="{Binding Layers.UnlockSelectedCommand}" />
                 <MenuItem Header="Crop This _Object..." Command="{Binding Layers.CropObjectCommand}" />
                 <MenuItem Header="Crop Layer to _Selection" Command="{Binding Layers.CropToSelectionCommand}" />
                 <MenuItem Header="_Group" InputGestureText="Ctrl+G" Command="{Binding Layers.GroupCommand}" />

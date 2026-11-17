@@ -14,6 +14,9 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
 
+        // Lets the program open and save more image formats through Windows' own codecs (TIFF, HEIC, RAW, GIF...).
+        Services.WicImageCodec.Register();
+
         // Lets object layers (shapes, text, placed images) draw themselves.
         Core.Objects.ObjectRendering.Renderer = new Rendering.ObjectRenderer();
 

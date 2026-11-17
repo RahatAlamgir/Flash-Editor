@@ -37,6 +37,39 @@
             </Setter>
         </Style>
 
+        <!-- Small arrow that opens / closes a group: points down when open, right when closed -->
+        <Style x:Key="ExpandToggle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ToolTip" Value="Show / hide the parts of this group" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border Background="Transparent" Width="20" Height="26">
+                            <Path x:Name="Arrow" Style="{StaticResource IconPath}" Data="{StaticResource Icon.Down}"
+                                  RenderTransformOrigin="0.5,0.5" Width="16" Height="16" Stretch="Uniform" Opacity="0.8">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="-90" />
+                                </Path.RenderTransform>
+                            </Path>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Arrow" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="0" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Arrow" Property="Opacity" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Eye icon toggle for layer visibility -->
         <Style x:Key="EyeToggle" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand" />
@@ -73,15 +106,23 @@
                               Value="{Binding Document.ActiveLayer.OpacityPercent}" />
         </Grid>
 
-        <!-- Quick action: remove the background of the selected layer -->
-        <Button DockPanel.Dock="Top" Margin="10,0,10,8" Padding="8,5" HorizontalAlignment="Stretch"
-                Command="{Binding Effects.RemoveBackgroundCommand}"
-                ToolTip="AI: keep the main subject, make the background transparent (Ctrl+Alt+B)">
-            <StackPanel Orientation="Horizontal">
-                <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Magic}" Margin="0,0,8,0" />
-                <TextBlock Text="Remove Background" VerticalAlignment="Center" />
-            </StackPanel>
-        </Button>
+        <!-- Select every layer, and lock / unlock the selected layers -->
+        <Grid DockPanel.Dock="Top" Margin="10,0,10,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Select all" Padding="4,5" MinWidth="0" Margin="0,0,4,0"
+                    Command="{Binding Layers.SelectAllLayersCommand}"
+                    ToolTip="Select every layer (Ctrl+A with the Select / Move tool)" />
+            <Button Grid.Column="1" Content="Lock all" Padding="4,5" MinWidth="0" Margin="0,0,4,0"
+                    Command="{Binding Layers.LockSelectedCommand}"
+                    ToolTip="Lock every selected layer that is not locked. Locked layers cannot be picked on the canvas or changed." />
+            <Button Grid.Column="2" Content="Unlock all" Padding="4,5" MinWidth="0"
+                    Command="{Binding Layers.UnlockSelectedCommand}"
+                    ToolTip="Unlock every selected layer that is locked" />
+        </Grid>
 
         <!-- Buttons -->
         <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Padding="6,4">
@@ -89,7 +130,7 @@
                 <Button Style="{StaticResource IconButton}" Command="{Binding Layers.NewLayerCommand}" ToolTip="New layer (Ctrl+Shift+N)">
                     <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Add}" />
                 </Button>
-                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.DuplicateCommand}" ToolTip="Duplicate layer (Ctrl+J)">
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.DuplicateCommand}" ToolTip="Duplicate layer (Ctrl+D)">
                     <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Duplicate}" />
                 </Button>
                 <Button Style="{StaticResource IconButton}" Command="{Binding Layers.MoveUpCommand}" ToolTip="Move layer up">
@@ -108,32 +149,92 @@
         </Border>
 
         <!-- Layer list (top layer first) -->
-        <ListBox x:Name="LayerList" Style="{StaticResource PanelList}" SelectionMode="Extended"
-                 SelectionChanged="OnLayerSelectionChanged" ToolTip="Ctrl+click or Shift+click to select several layers (Ctrl+G groups them)"
+        <Grid>
+        <ListBox x:Name="LayerList" Style="{StaticResource PanelList}" SelectionMode="Extended" AllowDrop="True"
+                 SelectionChanged="OnLayerSelectionChanged"
+                 ToolTip="Drag a layer up or down to change its order. Ctrl+click or Shift+click selects several layers (Ctrl+G groups them)."
+                 PreviewMouseLeftButtonDown="OnListMouseDown" PreviewMouseMove="OnListMouseMove" PreviewMouseLeftButtonUp="OnListMouseUp"
+                 DragOver="OnListDragOver" DragLeave="OnListDragLeave" Drop="OnListDrop"
                  ItemsSource="{Binding Document.LayersTopDown}" SelectedItem="{Binding Document.ActiveLayer}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Grid Height="42">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <CheckBox Style="{StaticResource EyeToggle}" IsChecked="{Binding IsVisible}" VerticalAlignment="Center" />
-                        <CheckBox Grid.Column="3" Style="{StaticResource LockToggle}" IsChecked="{Binding IsLocked}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                        <Border Grid.Column="1" Width="48" Height="34" Margin="6,0,8,0" Background="{StaticResource ThumbChecker}"
-                                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
-                            <Image Source="{Binding Bitmap}" Stretch="Uniform" />
-                        </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                   MouseLeftButtonDown="OnNameMouseDown" ToolTip="Double-click to rename" />
-                        <TextBox Grid.Column="2" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"
-                                 Visibility="{Binding IsEditingName, Converter={StaticResource BoolToVisibility}}"
-                                 IsVisibleChanged="OnEditorVisibleChanged" KeyDown="OnEditorKeyDown" LostKeyboardFocus="OnEditorLostFocus" />
-                    </Grid>
+                    <StackPanel>
+                        <Grid Height="42">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Style="{StaticResource EyeToggle}" IsChecked="{Binding IsVisible}" VerticalAlignment="Center" />
+                            <!-- Arrow that opens / closes a group (only shown for groups) -->
+                            <CheckBox Grid.Column="1" Style="{StaticResource ExpandToggle}" IsChecked="{Binding IsExpanded}"
+                                      Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisibility}}" />
+                            <CheckBox Grid.Column="4" Style="{StaticResource LockToggle}" IsChecked="{Binding IsLocked}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <Border Grid.Column="2" Width="48" Height="34" Margin="2,0,8,0" Background="{StaticResource ThumbChecker}"
+                                    BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
+                                <Image Source="{Binding Icon}" Stretch="Uniform" />
+                            </Border>
+                            <TextBlock Grid.Column="3" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       MouseLeftButtonDown="OnNameMouseDown" ToolTip="Double-click to rename" />
+                            <TextBox Grid.Column="3" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"
+                                     Visibility="{Binding IsEditingName, Converter={StaticResource BoolToVisibility}}"
+                                     IsVisibleChanged="OnEditorVisibleChanged" KeyDown="OnEditorKeyDown" LostKeyboardFocus="OnEditorLostFocus" />
+                        </Grid>
+
+                        <!-- The parts of a group, indented under it (Canva style). Click one to select the group. -->
+                        <ItemsControl ItemsSource="{Binding Children}" Margin="46,0,0,4"
+                                      Visibility="{Binding ShowChildren, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Height="32" PreviewMouseLeftButtonDown="OnPartMouseDown">
+                                        <Grid.Style>
+                                            <Style TargetType="Grid">
+                                                <!-- Set here (not on the element) so the selected-row trigger below can override it -->
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="36" Height="26" Margin="0,0,8,0" Background="{StaticResource ThumbChecker}"
+                                                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
+                                            <Image Source="{Binding Thumbnail}" Stretch="Uniform" Margin="1" />
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                   Margin="0,0,6,0" ToolTip="Click to edit this part inside the group. Double-click to rename.">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="Foreground" Value="White" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"
+                                                 Visibility="{Binding IsEditingName, Converter={StaticResource BoolToVisibility}}"
+                                                 IsVisibleChanged="OnEditorVisibleChanged" KeyDown="OnEditorKeyDown" LostKeyboardFocus="OnEditorLostFocus" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
+        <!-- Shows where the dragged layer will land -->
+        <Border x:Name="DropLine" Height="3" CornerRadius="1.5" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                Margin="4,0,4,0" Background="{StaticResource AccentBrush}" IsHitTestVisible="False" Visibility="Collapsed" />
+        </Grid>
     </DockPanel>
 </UserControl>

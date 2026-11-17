@@ -14,6 +14,8 @@ public sealed class CompositeAction : IHistoryAction
     public string Name { get; }
     public bool IsEmpty => _steps.Count == 0;
 
+    public long SizeInBytes => _steps.Sum(step => step.SizeInBytes);
+
     public void Undo()
     {
         for (int i = _steps.Count - 1; i >= 0; i--) _steps[i].Undo();

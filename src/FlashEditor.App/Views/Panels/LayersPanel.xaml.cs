@@ -16,9 +16,17 @@ public partial class LayersPanel : UserControl
         InitializeComponent();
         DataContextChanged += (_, _) =>
         {
-            if (_main != null) _main.SelectedLayersChanged -= OnMainSelectionChanged;
+            if (_main != null)
+            {
+                _main.SelectedLayersChanged -= OnMainSelectionChanged;
+                _main.ActivePartChanged -= OnActivePartChanged;
+            }
             _main = DataContext as MainViewModel;
-            if (_main != null) _main.SelectedLayersChanged += OnMainSelectionChanged;
+            if (_main != null)
+            {
+                _main.SelectedLayersChanged += OnMainSelectionChanged;
+                _main.ActivePartChanged += OnActivePartChanged;
+            }
         };
     }
 
@@ -58,10 +66,47 @@ public partial class LayersPanel : UserControl
         finally { _syncing = false; }
     }
 
+    private void OnActivePartChanged(object? sender, EventArgs e) => UpdatePartHighlight();
+
+    /// <summary>Click a part under a group to edit it inside the group; double-click its name to rename it.</summary>
+    private void OnPartMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (_main == null || sender is not FrameworkElement { DataContext: GroupChildViewModel part }) return;
+        if (IsInsideTextBox(e.OriginalSource as DependencyObject)) return; // typing a new name: leave the box alone
+
+        e.Handled = true; // we select the group and its part ourselves (the list would only select the group)
+        if (e.ClickCount >= 2)
+        {
+            part.IsEditingName = true;
+            return;
+        }
+        _main.SelectPart(part.GroupLayer, part.Index);
+        UpdatePartHighlight();
+        _main.Canvas?.RefreshTransformFrame();
+    }
+
+    private static bool IsInsideTextBox(DependencyObject? element)
+    {
+        for (; element != null; element = System.Windows.Media.VisualTreeHelper.GetParent(element))
+            if (element is TextBox) return true;
+        return false;
+    }
+
+    /// <summary>Highlights the row of the part that is being edited (if any).</summary>
+    private void UpdatePartHighlight()
+    {
+        if (_main == null) return;
+        int? selected = _main.ActivePartIndex;
+        var layer = _main.Document.Model.ActiveLayer;
+        foreach (var vm in _main.Document.LayersTopDown)
+            foreach (var child in vm.Children)
+                child.IsSelected = selected != null && ReferenceEquals(child.GroupLayer, layer) && child.Index == selected;
+    }
+
     /// <summary>Double-click a layer name to rename it.</summary>
     private void OnNameMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.ClickCount == 2 && sender is FrameworkElement { DataContext: LayerViewModel layer })
+        if (e.ClickCount == 2 && sender is FrameworkElement { DataContext: IEditableName layer })
         {
             layer.IsEditingName = true;
             e.Handled = true;
@@ -79,7 +124,7 @@ public partial class LayersPanel : UserControl
 
     private void OnEditorKeyDown(object sender, KeyEventArgs e)
     {
-        if (sender is not TextBox { DataContext: LayerViewModel layer } box) return;
+        if (sender is not TextBox { DataContext: IEditableName layer } box) return;
         if (e.Key == Key.Enter)
         {
             box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
@@ -96,7 +141,7 @@ public partial class LayersPanel : UserControl
 
     private void OnEditorLostFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
-        if (sender is not TextBox { DataContext: LayerViewModel layer } box || !layer.IsEditingName) return;
+        if (sender is not TextBox { DataContext: IEditableName layer } box || !layer.IsEditingName) return;
         box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
         layer.IsEditingName = false;
     }

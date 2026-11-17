@@ -17,4 +17,11 @@ public interface IHistoryAction
     /// a slider become a single history step). Return true if merged.
     /// </summary>
     bool TryMerge(IHistoryAction next) => false;
+
+    /// <summary>
+    /// Roughly how much memory this step keeps alive (copies of pixels for undo). The history drops its oldest
+    /// steps when the total gets too large, so a few edits of a huge picture cannot use up all the memory.
+    /// Small steps (names, opacity, objects) can leave this at 0.
+    /// </summary>
+    long SizeInBytes => 0;
 }

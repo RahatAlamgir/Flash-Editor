@@ -28,6 +28,17 @@ public sealed class LayerStructureAction : IHistoryAction
 
     public string Name { get; }
 
+    /// <summary>Layers that were removed (or are only here for undo) keep their pixels alive.</summary>
+    public long SizeInBytes
+    {
+        get
+        {
+            var onlyBefore = _before.Layers.Except(_after.Layers);
+            var onlyAfter = _after.Layers.Except(_before.Layers);
+            return onlyBefore.Concat(onlyAfter).Sum(layer => (long)layer.Pixels.Data.Length);
+        }
+    }
+
     /// <summary>Runs <paramref name="change"/> and returns an action describing it.</summary>
     public static LayerStructureAction Record(string name, Document document, Action change)
     {

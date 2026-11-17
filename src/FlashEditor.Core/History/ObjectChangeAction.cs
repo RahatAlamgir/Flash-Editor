@@ -27,6 +27,10 @@ public sealed class ObjectChangeAction : IHistoryAction
 
     public string Name { get; }
 
+    /// <summary>An edited picture keeps its new pixels alive for redo (and the old ones for undo).</summary>
+    public long SizeInBytes => _before is ImageObject b && _after is ImageObject a && !ReferenceEquals(b.Source, a.Source)
+        ? (long)a.Source.Data.Length : 0;
+
     /// <summary>Applies <paramref name="after"/> to the layer and returns the undo step (null if nothing changed).</summary>
     public static ObjectChangeAction? Apply(string name, Layer layer, LayerObject? after, string? mergeKey = null)
     {

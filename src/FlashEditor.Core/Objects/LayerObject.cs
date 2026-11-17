@@ -8,6 +8,9 @@ namespace FlashEditor.Core.Objects;
 /// </summary>
 public abstract record LayerObject(ObjectBox Box, bool FlipX = false, bool FlipY = false)
 {
+    /// <summary>The drop shadow behind the object, or null for none (any kind of object can have one).</summary>
+    public ShadowStyle? Shadow { get; init; }
+
     /// <summary>Short name for menus and the history ("Shape", "Text", "Image").</summary>
     public abstract string KindName { get; }
 

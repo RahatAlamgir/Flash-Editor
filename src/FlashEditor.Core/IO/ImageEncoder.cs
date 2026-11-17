@@ -4,9 +4,18 @@ using SkiaSharp;
 
 namespace FlashEditor.Core.IO;
 
-/// <summary>Writes a <see cref="PixelBuffer"/> as PNG, JPEG, WebP or ICO.</summary>
+/// <summary>
+/// Writes a <see cref="PixelBuffer"/> as PNG, JPEG, WebP, ICO, BMP or GIF directly; TIFF goes to <see cref="FallbackEncoder"/>
+/// (the application connects it to Windows' own image codecs).
+/// </summary>
 public static class ImageEncoder
 {
+    /// <summary>
+    /// Writes TIFF files (a format the built-in encoder does not know). Gets the picture and the format and
+    /// returns the file bytes. Set by the app at startup; without it saving those formats is not possible.
+    /// </summary>
+    public static Func<PixelBuffer, ImageFileFormat, byte[]>? FallbackEncoder { get; set; }
+
     /// <param name="quality">1..100, used by JPEG and WebP (100 WebP = lossless).</param>
     /// <param name="matte">Color behind transparent pixels for formats without transparency (JPEG).</param>
     public static void Save(PixelBuffer image, string path, ImageFileFormat format, int quality = 90, ColorRgba? matte = null)
@@ -27,6 +36,10 @@ public static class ImageEncoder
             ImageFileFormat.Jpeg => EncodeWithSkia(FlattenOnto(image, matte ?? ColorRgba.White), SKEncodedImageFormat.Jpeg, quality),
             ImageFileFormat.Webp => EncodeWithSkia(image, SKEncodedImageFormat.Webp, quality),
             ImageFileFormat.Ico => IcoEncoder.Encode(image),
+            ImageFileFormat.Bmp => BmpEncoder.Encode(image),
+            ImageFileFormat.Gif => GifEncoder.Encode(image),
+            ImageFileFormat.Tiff => FallbackEncoder?.Invoke(image, format)
+                ?? throw new NotSupportedException($"Saving {format} files is not available here."),
             _ => throw new ArgumentOutOfRangeException(nameof(format)),
         };
     }

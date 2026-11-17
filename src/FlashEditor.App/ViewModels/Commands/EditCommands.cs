@@ -24,7 +24,12 @@ public sealed class EditCommands
         PasteCommand = new RelayCommand(Paste, () => _main.Clipboard.HasImage);
         DeleteCommand = new RelayCommand(Delete, () => Doc.Selection != null);
         FillCommand = new RelayCommand(Fill, () => Doc.ActiveLayer != null);
-        SelectAllCommand = new RelayCommand(() => Doc.Selection = Selection.All(Doc.Width, Doc.Height));
+        // Ctrl+A: with the Select / Move tool it selects every layer (like in Canva); with the other tools it selects all pixels.
+        SelectAllCommand = new RelayCommand(() =>
+        {
+            if (_main.Tools.ActiveTool is Tools.Selecting.MoveTool) _main.SelectAllLayers();
+            else Doc.Selection = Selection.All(Doc.Width, Doc.Height);
+        });
         DeselectCommand = new RelayCommand(() => Doc.Selection = null, () => Doc.Selection != null);
         InvertSelectionCommand = new RelayCommand(InvertSelection);
         SelectLayerContentCommand = new RelayCommand(SelectLayerContent, () => Doc.ActiveLayer != null);

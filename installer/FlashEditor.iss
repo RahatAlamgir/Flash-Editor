@@ -70,6 +70,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Dirs]
 ; The app downloads AI models into this folder (Standard edition), so normal users may write here.
 Name: "{app}\models"; Permissions: users-modify
+; The program remembers the window position and size here (also written by normal users).
+Name: "{app}\settings"; Permissions: users-modify
 
 [Files]
 ; The program, its libraries and the .NET runtime (self-contained), all in {app}.
@@ -91,4 +93,5 @@ Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags
 ; Models downloaded later by the app are not in the installer's file list: remove them too,
 ; so uninstalling leaves nothing behind.
 Type: filesandordirs; Name: "{app}\models"
+Type: filesandordirs; Name: "{app}\settings"
 Type: dirifempty; Name: "{app}"

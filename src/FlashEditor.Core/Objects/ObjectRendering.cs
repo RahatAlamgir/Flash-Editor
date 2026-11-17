@@ -10,6 +10,24 @@ public interface IObjectRenderer
 
     /// <summary>Natural size of a text object's text (used to size its box).</summary>
     (double Width, double Height) MeasureText(TextObject text);
+
+    /// <summary>
+    /// The part of a canvas of the given size that <see cref="RenderInto"/> draws on (the object plus its border and shadow).
+    /// Lets dragging an object redraw only that part instead of the whole canvas. The default is the whole canvas.
+    /// </summary>
+    PixelRect PaintedArea(LayerObject obj, int canvasWidth, int canvasHeight) => new(0, 0, canvasWidth, canvasHeight);
+
+    /// <summary>
+    /// The whole rectangle the object's drawing covers (box, border, shadow), even where it is outside the canvas.
+    /// Empty when unknown (the default); then <see cref="Layer"/> always redraws instead of just shifting the old drawing.
+    /// </summary>
+    PixelRect DrawingBounds(LayerObject obj) => PixelRect.Empty;
+
+    /// <summary>
+    /// Draws the object into an existing canvas-sized buffer, replacing everything inside <see cref="PaintedArea"/>
+    /// (and nothing outside it). The default draws a whole new canvas and copies it over.
+    /// </summary>
+    void RenderInto(PixelBuffer canvas, LayerObject obj) => canvas.CopyFrom(Render(obj, canvas.Width, canvas.Height), 0, 0);
 }
 
 /// <summary>

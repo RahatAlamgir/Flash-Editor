@@ -21,7 +21,10 @@ installer/output/
 # ---- AI models (downloaded, very large) -------------------------------------
 # The app downloads these itself on first use (170 MB background remover,
 # 62 MB upscaler). Never commit them: GitHub refuses files over 100 MB.
-models/
+# Only the download folders are ignored. A plain "models/" would also hide the SOURCE folder
+# src/FlashEditor.AI/Models (ModelInfo.cs, ModelStore.cs), and a fresh clone would not build.
+/models/
+**/bin/**/models/
 *.onnx
 *.onnx.part
 *.data

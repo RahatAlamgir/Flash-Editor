@@ -48,7 +48,7 @@ public partial class CanvasView
         Add(hasSelection ? "Cut Selection" : "Cut", _main.Edit.CutCommand, "Ctrl+X");
         Add(hasSelection ? "Copy Selection" : "Copy", _main.Edit.CopyCommand, "Ctrl+C");
         Add("Paste", _main.Edit.PasteCommand, "Ctrl+V");
-        Add("Duplicate", _main.Layers.DuplicateCommand, "Ctrl+J");
+        Add("Duplicate", _main.Layers.DuplicateCommand, "Ctrl+D");
         Add(hasSelection ? "Delete Selected Pixels" : count > 1 ? $"Delete {count} Layers" : "Delete Layer",
             hasSelection ? _main.Edit.DeleteCommand : _main.Layers.DeleteCommand, "Delete");
         Separator();
@@ -69,7 +69,7 @@ public partial class CanvasView
         Add("Select Subject (AI)", _main.Effects.SelectSubjectCommand);
         Add("Split Asset Sheet into Pieces...", _main.Image.SplitSheetCommand);
         Add("Select Layer Content", _main.Edit.SelectLayerContentCommand);
-        if (hasSelection) Add("Deselect", _main.Edit.DeselectCommand, "Ctrl+D");
+        if (hasSelection) Add("Deselect", _main.Edit.DeselectCommand, "Ctrl+Shift+D");
         if (obj != null)
         {
             Separator();
