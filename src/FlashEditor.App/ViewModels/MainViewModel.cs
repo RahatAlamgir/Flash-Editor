@@ -9,6 +9,7 @@ using FlashEditor.Core.Documents;
 using FlashEditor.Core.History;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Objects;
+using FlashEditor.Core.Snapping;
 
 namespace FlashEditor.App.ViewModels;
 
@@ -77,22 +78,22 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     /// </summary>
     public bool IsReshaping
         => _reshapeLayer != null && ReferenceEquals(_reshapeLayer, Document.Model.ActiveLayer)
-           && _reshapeLayer is { IsLocked: false, Object: ShapeObject { CanReshape: true } } && SelectedLayers.Count <= 1;
+           && _reshapeLayer is { IsLocked: false, Object: { CanReshape: true } } && SelectedLayers.Count <= 1;
 
     /// <summary>Starts or stops showing the corner points of the active shape.</summary>
     public void ToggleReshape()
     {
         if (IsReshaping) { StopReshaping(); return; }
-        if (Document.Model.ActiveLayer is not { Object: ShapeObject { CanReshape: true } } layer)
+        if (Document.Model.ActiveLayer is not { Object: { CanReshape: true } } layer)
         {
-            SetStatus("Only shapes with straight sides (rectangle, triangle, star, trapezoid...) can be reshaped.");
+            SetStatus("Lines cannot be reshaped. Every other object (shape, picture, text, group) can.");
             return;
         }
         if (IsLockedWithMessage(layer)) return;
 
         _reshapeLayer = layer;
         OnPropertyChanged(nameof(IsReshaping));
-        SetStatus("Drag a round corner point to change the form of the shape (Shift = coarser steps). Esc or the Reshape button finishes.");
+        SetStatus("Drag a round corner point to change the form of the object (it may go outside the box) (Shift = coarser steps). Esc or the Reshape button finishes.");
     }
 
     /// <summary>Ends reshaping when another layer than the one being reshaped became the active one.</summary>
@@ -275,6 +276,13 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     public ClipboardService Clipboard { get; }
     public ColorsViewModel Colors { get; }
     public ToolsViewModel Tools { get; }
+
+    /// <summary>Rulers, grid, guides and snapping (the toggle buttons above the canvas).</summary>
+    public ViewAids Aids { get; } = ViewAids.Load();
+
+    /// <summary>Snapping for a drag that starts now (null when snapping is off). <paramref name="exclude"/> = the layers being dragged.</summary>
+    public SnapSession? CreateSnapSession(IEnumerable<Layer> exclude)
+        => Aids.SnapEnabled ? new SnapSession(Document.Model, exclude, Document.VerticalGuides, Document.HorizontalGuides, Aids.ToSnapSettings()) : null;
 
     public FileCommands File { get; }
     public EditCommands Edit { get; }
@@ -526,8 +534,8 @@ public sealed class MainViewModel : ObservableObject, IToolHost
             if (layer.Object is { } obj)
             {
                 // A picture counts only where it has visible pixels (the removed part of a cut-out can be clicked through).
-                bool hit = obj is ImageObject picture
-                    ? picture.HasContentAt(point, margin)
+                bool hit = obj.HasCustomOutline ? PixelHit(layer, point, margin) // a reshaped object: where its pixels are
+                    : obj is ImageObject picture ? picture.HasContentAt(point, margin)
                     : obj.Box.Contains(point, margin + (obj.IsLineLike ? 4 : 0));
                 if (hit) return layer;
             }
@@ -537,6 +545,20 @@ public sealed class MainViewModel : ObservableObject, IToolHost
             }
         }
         return null;
+    }
+
+    /// <summary>True when a visible pixel of the layer lies within <paramref name="margin"/> of the point (for objects whose outline was reshaped).</summary>
+    private bool PixelHit(Layer layer, PointD point, double margin)
+    {
+        int reach = (int)Math.Min(8, Math.Ceiling(margin));
+        int cx = (int)Math.Floor(point.X), cy = (int)Math.Floor(point.Y);
+        for (int dy = -reach; dy <= reach; dy++)
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                int x = cx + dx, y = cy + dy;
+                if (Document.Model.Bounds.Contains(x, y) && layer.Pixels.GetPixel(x, y).A > 16) return true;
+            }
+        return false;
     }
 
     /// <summary>Makes the layer under the point active (Canva-style click to select). Returns it, or null.</summary>

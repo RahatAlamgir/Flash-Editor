@@ -1,0 +1,100 @@
+<UserControl x:Class="FlashEditor.App.Views.Panels.ViewAidsBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:FlashEditor.App.ViewModels">
+    <!-- Toggle buttons above the canvas: rulers, grid, guides, snapping. The small arrow next to a button opens its settings. -->
+    <UserControl.Resources>
+        <Style x:Key="MoreArrow" TargetType="ToggleButton" BasedOn="{StaticResource AidToggle}">
+            <Setter Property="Width" Value="13" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate><Path Data="M0,0 L6,0 L3,3.5 Z" Fill="{StaticResource IconBrush}" Width="6" Height="4" Stretch="Fill" /></DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PopupCard" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+        <!-- Rulers -->
+        <ToggleButton Style="{StaticResource AidToggle}" Width="28" Height="26" IsChecked="{Binding Aids.ShowRulers}"
+                      ToolTip="Rulers (Ctrl+R). Drag from a ruler onto the picture to make a guide line.">
+            <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Ruler}" />
+        </ToggleButton>
+
+        <!-- Grid -->
+        <ToggleButton Style="{StaticResource AidToggle}" Width="28" Height="26" IsChecked="{Binding Aids.ShowGrid}" Margin="2,0,0,0"
+                      ToolTip="Grid (Ctrl+')">
+            <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Grid}" />
+        </ToggleButton>
+        <ToggleButton x:Name="GridMore" Style="{StaticResource MoreArrow}" Content="v" ToolTip="Grid settings" />
+        <Popup IsOpen="{Binding IsChecked, ElementName=GridMore, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=GridMore}"
+               Placement="Bottom" AllowsTransparency="True">
+            <Border Style="{StaticResource PopupCard}">
+                <StackPanel>
+                    <TextBlock Text="Grid" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Lines every" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{x:Static vm:ViewAids.GridSizes}" SelectedItem="{Binding Aids.GridSize}" Width="70" />
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{StaticResource SubtleTextBrush}" />
+                    </StackPanel>
+                    <CheckBox Content="Snap to the grid" IsChecked="{Binding Aids.SnapToGrid}" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <!-- Guides -->
+        <ToggleButton Style="{StaticResource AidToggle}" Width="28" Height="26" IsChecked="{Binding Aids.ShowGuides}" Margin="4,0,0,0"
+                      ToolTip="Show guide lines (Ctrl+;)">
+            <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Guides}" />
+        </ToggleButton>
+        <ToggleButton x:Name="GuidesMore" Style="{StaticResource MoreArrow}" Content="v" ToolTip="Guide settings" />
+        <Popup IsOpen="{Binding IsChecked, ElementName=GuidesMore, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=GuidesMore}"
+               Placement="Bottom" AllowsTransparency="True">
+            <Border Style="{StaticResource PopupCard}">
+                <StackPanel>
+                    <TextBlock Text="Guide lines" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Text="Drag from a ruler to make one. Drag a guide with the Select / Move tool to move it, or drag it back onto the ruler to remove it."
+                               TextWrapping="Wrap" Width="230" Foreground="{StaticResource SubtleTextBrush}" />
+                    <CheckBox Content="Snap to guides" IsChecked="{Binding Aids.SnapToGuides}" Margin="0,10,0,0" />
+                    <Button Content="Clear all guides" Command="{Binding View.ClearGuidesCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="10,4" />
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <Rectangle Width="1" Height="18" Fill="{StaticResource DividerBrush}" Margin="8,0" />
+
+        <!-- Snapping -->
+        <ToggleButton Style="{StaticResource AidToggle}" Width="28" Height="26" IsChecked="{Binding Aids.SnapEnabled}"
+                      ToolTip="Snapping (Ctrl+Shift+;): things click into place against the lines below while you drag them">
+            <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Magnet}" />
+        </ToggleButton>
+        <ToggleButton x:Name="SnapMore" Style="{StaticResource MoreArrow}" Content="v" ToolTip="What to snap to" />
+        <Popup IsOpen="{Binding IsChecked, ElementName=SnapMore, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=SnapMore}"
+               Placement="Bottom" AllowsTransparency="True">
+            <Border Style="{StaticResource PopupCard}">
+                <StackPanel>
+                    <TextBlock Text="Snap to" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <CheckBox Content="Other objects (edges and centers)" IsChecked="{Binding Aids.SnapToObjects}" />
+                    <CheckBox Content="Canvas edges and center" IsChecked="{Binding Aids.SnapToCanvas}" Margin="0,6,0,0" />
+                    <CheckBox Content="Equal spacing between objects (shows the gap in px)" IsChecked="{Binding Aids.SnapToSpacing}" Margin="0,6,0,0" />
+                    <CheckBox Content="Grid (while the grid is shown)" IsChecked="{Binding Aids.SnapToGrid}" Margin="0,6,0,0" />
+                    <CheckBox Content="Guides (while they are shown)" IsChecked="{Binding Aids.SnapToGuides}" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+        </Popup>
+    </StackPanel>
+</UserControl>

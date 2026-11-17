@@ -3,6 +3,7 @@ using FlashEditor.App.ViewModels;
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Objects;
+using FlashEditor.Core.Snapping;
 
 namespace FlashEditor.App.Tools;
 
@@ -13,6 +14,9 @@ public interface IToolHost
     ColorsViewModel Colors { get; }
     IDialogService Dialogs { get; }
     ICanvasView? Canvas { get; }
+
+    /// <summary>Snapping for a drag that starts now (null when snapping is off); <paramref name="exclude"/> = the layers being dragged.</summary>
+    SnapSession? CreateSnapSession(IEnumerable<Layer> exclude);
 
     void SelectTool<T>() where T : ToolBase;
     void SetStatus(string message);

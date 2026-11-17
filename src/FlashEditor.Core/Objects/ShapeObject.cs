@@ -89,30 +89,27 @@ public sealed record ShapeObject(
     public bool HasInner => Vertices == null && ShapeNames.HasInner(Shape);
     public bool HasSweep => Vertices == null && Shape == ShapeKind.Pie;
 
-    /// <summary>True for shapes made of straight sides: their corner points can be dragged (reshape).</summary>
-    public bool CanReshape => ShapeVertices.IsPolygonal(Shape);
+    /// <summary>True for shapes made of straight sides: dragging a corner moves just that corner of the outline.</summary>
+    public bool HasStraightSides => ShapeVertices.IsPolygonal(Shape);
+
+    /// <summary>Every shape can be reshaped (except a line): straight-sided shapes by their own corners, curved ones by the four corners of the box.</summary>
+    public override bool CanReshape => !IsLineLike;
 
     /// <summary>True once the corners were dragged: the shape has a custom outline.</summary>
-    public bool HasCustomOutline => Vertices != null;
-
-    /// <summary>A point of the canvas as a position in the shape (0,0 = top-left of its box, 1,1 = bottom-right), however it is turned or mirrored.</summary>
-    public PointD ToUnit(PointD canvasPoint)
-    {
-        var local = Box.ToLocal(canvasPoint);
-        double x = FlipX ? -local.X : local.X, y = FlipY ? -local.Y : local.Y;
-        return new PointD(x / Math.Max(1e-9, Box.Width) + 0.5, y / Math.Max(1e-9, Box.Height) + 0.5);
-    }
-
-    /// <summary>Where a position in the shape (0..1 in both directions) is on the canvas.</summary>
-    public PointD FromUnit(PointD unit)
-    {
-        double x = (unit.X - 0.5) * Box.Width * (FlipX ? -1 : 1);
-        double y = (unit.Y - 0.5) * Box.Height * (FlipY ? -1 : 1);
-        return Box.ToCanvas(x, y);
-    }
+    public override bool HasCustomOutline => Vertices != null || Warp != null;
 
     /// <summary>The corner points now: the custom ones, or those of the normal outline (null for shapes with curved sides).</summary>
     public IReadOnlyList<PointD>? CurrentVertices => Vertices ?? ShapeVertices.For(this);
+
+    public override IReadOnlyList<PointD>? ReshapePoints
+        => !CanReshape ? null : HasStraightSides ? CurrentVertices : Warp ?? DefaultCorners;
+
+    public override LayerObject WithReshapePoints(IReadOnlyList<PointD> points)
+        => HasStraightSides ? this with { Vertices = points, CornerRadius = 0 } : this with { Warp = points };
+
+    public override LayerObject WithoutReshape() => this with { Vertices = null, Warp = null };
+
+    protected override IReadOnlyList<PointD>? ReshapeOutline => Vertices ?? Warp;
     public bool CanFill => Shape != ShapeKind.Line;
 }
 

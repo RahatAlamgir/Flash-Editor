@@ -17,7 +17,13 @@ public sealed class RectSelectTool : ToolBase
     private PointD _start;
     private ModifierKeys _startModifiers;
 
-    public RectSelectTool(IToolHost host, bool ellipse = false) : base(host) => _ellipse = ellipse;
+    private readonly SnapDrag _snap;
+
+    public RectSelectTool(IToolHost host, bool ellipse = false) : base(host)
+    {
+        _ellipse = ellipse;
+        _snap = new SnapDrag(host);
+    }
 
     public override string Name => _ellipse ? "Ellipse Select" : "Rectangle Select";
     public override string IconKey => _ellipse ? "EllipseSelect" : "RectSelect";
@@ -28,6 +34,7 @@ public sealed class RectSelectTool : ToolBase
     public override void MouseDown(ToolMouseArgs e)
     {
         if (e.Button != MouseButton.Left) return;
+        e = e with { Position = _snap.Point(e.Position, Host.Canvas?.Zoom ?? 1, !e.Alt) };   // snap to objects, canvas, grid, guides
         _start = e.Position;
         _startModifiers = e.Modifiers;
         _dragging = true;
@@ -36,13 +43,15 @@ public sealed class RectSelectTool : ToolBase
 
     public override void MouseMove(ToolMouseArgs e)
     {
-        if (_dragging) UpdatePreview(e);
+        if (_dragging) UpdatePreview(e with { Position = _snap.Point(e.Position, Host.Canvas?.Zoom ?? 1, !e.Alt) });
     }
 
     public override void MouseUp(ToolMouseArgs e)
     {
         if (!_dragging) return;
         _dragging = false;
+        e = e with { Position = _snap.Point(e.Position, Host.Canvas?.Zoom ?? 1, !e.Alt) };
+        _snap.End();
         Host.Canvas?.ShowSelectionPreview(null);
 
         var rect = GetRect(e);

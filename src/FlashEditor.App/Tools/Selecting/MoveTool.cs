@@ -24,6 +24,9 @@ public sealed class MoveTool : ToolBase
 {
     private readonly PixelMover _pixels;
     private readonly MultiMover _multi;
+    private readonly SnapDrag _snap;
+    private PixelRect? _multiStart;   // area of the layers being moved together, when the drag started
+    private PixelRect? _snapStart;    // area of the object being moved, when the drag started
 
     // Object drag state
     private Layer? _objectLayer;
@@ -39,6 +42,7 @@ public sealed class MoveTool : ToolBase
     {
         _pixels = new PixelMover(host);
         _multi = new MultiMover(host);
+        _snap = new SnapDrag(host);
     }
 
     public override string Name => "Select / Move";
@@ -77,7 +81,7 @@ public sealed class MoveTool : ToolBase
         bool single = Host.SelectedLayers.Count <= 1;
         int? activePart = Host.ActivePartIndex;
         // While reshaping, the corner points of the shape are the handles; the box handles are hidden and not used.
-        if (Host.IsReshaping && Document.ActiveLayer is { Object: ShapeObject reshaped } shapeLayer && TransformHandles.VertexAt(reshaped, e.Position, Zoom) is { } corner)
+        if (Host.IsReshaping && Document.ActiveLayer is { Object: { } reshaped } shapeLayer && TransformHandles.VertexAt(reshaped, e.Position, Zoom) is { } corner)
         {
             BeginCornerDrag(shapeLayer, reshaped, corner);
             return;
@@ -175,9 +179,18 @@ public sealed class MoveTool : ToolBase
         }
         if (_multi.IsMoving)
         {
-            int mdx = (int)Math.Round(e.Position.X - _start.X), mdy = (int)Math.Round(e.Position.Y - _start.Y);
-            if (e.Shift) { if (Math.Abs(mdx) > Math.Abs(mdy)) mdy = 0; else mdx = 0; }
-            _multi.MoveTo(mdx, mdy);
+            double mdx = Math.Round(e.Position.X - _start.X), mdy = Math.Round(e.Position.Y - _start.Y);
+            bool lockX = false, lockY = false;
+            if (e.Shift) { if (Math.Abs(mdx) > Math.Abs(mdy)) lockY = true; else lockX = true; }
+            if (lockX) mdx = 0;
+            if (lockY) mdy = 0;
+
+            // Snap the whole group of layers to other objects, the canvas, the grid and the guides.
+            _multiStart ??= UnionBounds(Host.SelectedLayers);
+            var (snapX, snapY) = _snap.Move(Host.SelectedLayers, _multiStart.Value, mdx, mdy, Zoom, !e.Alt);
+            if (!lockX) mdx = Math.Round(snapX);
+            if (!lockY) mdy = Math.Round(snapY);
+            _multi.MoveTo((int)mdx, (int)mdy);
             return;
         }
         if (_pixels.IsMoving)
@@ -189,9 +202,10 @@ public sealed class MoveTool : ToolBase
             return;
         }
 
-        if (_objectLayer != null && _startObject is ShapeObject cornerShape && _cornerIndex is { } cornerIndex)
+        if (_objectLayer != null && _startObject is { } cornerShape && _cornerIndex is { } cornerIndex)
         {
-            _objectLayer.SetObject(WithMovedCorner(cornerShape, cornerIndex, e.Position, e.Shift));
+            var cornerAt = e.Shift ? e.Position : _snap.Point(new[] { _objectLayer }, e.Position, Zoom, !e.Alt);
+            _objectLayer.SetObject(WithMovedCorner(cornerShape, cornerIndex, cornerAt, e.Shift));
             return;
         }
 
@@ -365,7 +379,7 @@ public sealed class MoveTool : ToolBase
 
     // ------------------------------------------------------------------ reshape (dragging the corner points of a shape)
 
-    private void BeginCornerDrag(Layer layer, ShapeObject shape, int corner)
+    private void BeginCornerDrag(Layer layer, LayerObject shape, int corner)
     {
         _objectLayer = layer;
         _startObject = shape;
@@ -377,19 +391,20 @@ public sealed class MoveTool : ToolBase
     }
 
     /// <summary>
-    /// The shape with one corner point moved to the mouse. The point stays inside the shape's box. Shift snaps it to a coarse grid.
-    /// A shape that still had its normal outline gets custom corner points (and loses rounded corners, which no longer fit).
+    /// The object with one corner point moved to the mouse. The point may go outside the object's box (outward) up to a few box sizes.
+    /// Shift snaps it to a coarse grid. A shape that still had its normal outline gets custom corner points (and loses rounded
+    /// corners, which no longer fit); other objects (pictures, text, groups, curved shapes) get their four corners moved.
     /// </summary>
-    private static ShapeObject WithMovedCorner(ShapeObject shape, int index, PointD mouse, bool snap)
+    private static LayerObject WithMovedCorner(LayerObject obj, int index, PointD mouse, bool snap)
     {
-        var points = (shape.Vertices ?? ShapeVertices.For(shape))!.ToList();
-        if (index < 0 || index >= points.Count) return shape;
+        var points = obj.ReshapePoints?.ToList();
+        if (points == null || index < 0 || index >= points.Count) return obj;
 
-        var unit = shape.ToUnit(mouse);
-        double x = Math.Clamp(unit.X, 0, 1), y = Math.Clamp(unit.Y, 0, 1);
+        var unit = obj.ToUnit(mouse);
+        double x = Math.Clamp(unit.X, -3, 4), y = Math.Clamp(unit.Y, -3, 4);
         if (snap) { x = Math.Round(x * 20) / 20; y = Math.Round(y * 20) / 20; }
         points[index] = new PointD(x, y);
-        return shape with { Vertices = points, CornerRadius = 0 };
+        return obj.WithReshapePoints(points);
     }
 
     // ------------------------------------------------------------------ objects
@@ -424,7 +439,19 @@ public sealed class MoveTool : ToolBase
             case HandleKind.Move:
             {
                 double dx = Math.Round(e.Position.X - _start.X), dy = Math.Round(e.Position.Y - _start.Y);
-                if (e.Shift) { if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0; }
+                bool lockX = false, lockY = false;
+                if (e.Shift) { if (Math.Abs(dx) > Math.Abs(dy)) lockY = true; else lockX = true; }
+                if (lockX) dx = 0;
+                if (lockY) dy = 0;
+
+                // Snap the edges and the center of the object to other objects, the canvas, the grid and the guides (not for parts of a group).
+                if (_partIndex == null && _objectLayer != null)
+                {
+                    _snapStart ??= start.VisualBounds();
+                    var (snapX, snapY) = _snap.Move(new[] { _objectLayer }, _snapStart.Value, dx, dy, Zoom, !e.Alt);
+                    if (!lockX) dx = Math.Round(snapX);
+                    if (!lockY) dy = Math.Round(snapY);
+                }
                 Host.SetStatus($"Move: {dx:+0;-0;0}, {dy:+0;-0;0} px");
                 return ObjectTransforms.Offset(start, dx, dy);
             }
@@ -437,7 +464,8 @@ public sealed class MoveTool : ToolBase
             default:
             {
                 bool keepRatio = start.KeepsAspectByDefault != e.Shift;
-                var box = TransformHandles.Resize(start.Box, _handle, e.Position, keepRatio);
+                var at = _partIndex == null && _objectLayer != null ? _snap.Point(new[] { _objectLayer }, e.Position, Zoom, !e.Alt) : e.Position;
+                var box = TransformHandles.Resize(start.Box, _handle, at, keepRatio);
                 if (start.IsLineLike) box = ObjectBox.FromCenter(box.Center, box.Width, start.Box.Height, box.Rotation);
                 Host.SetStatus($"{box.Width:0} x {box.Height:0} px");
                 // Text: the font size follows the height so the text stays sharp.
@@ -469,6 +497,17 @@ public sealed class MoveTool : ToolBase
         _startPart = null;
         _cornerIndex = null;
         _handle = HandleKind.None;
+        _multiStart = null;
+        _snapStart = null;
+        _snap.End();
+    }
+
+    /// <summary>The area covered by all the given layers together.</summary>
+    private static PixelRect UnionBounds(IEnumerable<Layer> layers)
+    {
+        var result = PixelRect.Empty;
+        foreach (var layer in layers) result = result.Union(SnapDrag.BoundsOf(layer));
+        return result;
     }
 
     /// <summary>The top-most part of a group under the point (by its box), or null.</summary>
@@ -508,7 +547,7 @@ public sealed class MoveTool : ToolBase
     {
         var active = Document.ActiveLayer;
         Cursor? cursor = null;
-        if (Host.IsReshaping && active is { Object: ShapeObject shape } && TransformHandles.VertexAt(shape, position, Zoom) != null)
+        if (Host.IsReshaping && active is { Object: { } shape } && TransformHandles.VertexAt(shape, position, Zoom) != null)
         {
             Host.Canvas?.SetCursorOverride(Cursors.Hand);
             return;

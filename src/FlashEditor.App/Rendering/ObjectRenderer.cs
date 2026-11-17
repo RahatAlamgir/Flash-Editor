@@ -31,15 +31,15 @@ public sealed class ObjectRenderer : IObjectRenderer
     private static PixelRect DrawArea(LayerObject obj, int canvasWidth, int canvasHeight, out int reach)
     {
         var shadow = obj.Shadow;
-        reach = shadow == null ? 0 : (int)Math.Ceiling(shadow.Extent);
+        reach = (int)Math.Ceiling(EffectReach(obj));
         var canvasBounds = new PixelRect(0, 0, canvasWidth, canvasHeight);
-        return obj.Box.Bounds(MarginFor(obj) + reach).Intersect(canvasBounds.Inflate(reach));
+        return obj.VisualBounds(MarginFor(obj) + reach).Intersect(canvasBounds.Inflate(reach));
     }
 
     public PixelRect DrawingBounds(LayerObject obj)
     {
-        int reach = obj.Shadow == null ? 0 : (int)Math.Ceiling(obj.Shadow.Extent);
-        return obj.Box.Bounds(MarginFor(obj) + reach);
+        int reach = (int)Math.Ceiling(EffectReach(obj));
+        return obj.VisualBounds(MarginFor(obj) + reach);
     }
 
     public PixelRect PaintedArea(LayerObject obj, int canvasWidth, int canvasHeight)
@@ -57,12 +57,26 @@ public sealed class ObjectRenderer : IObjectRenderer
             dc.PushTransform(new MatrixTransform(matrix));
             Draw(dc, obj, matrix, shadowScale: 1); // the object's own shadow is added below, from its pixels
             dc.Pop();
-        }, highQualityImages: obj is ImageObject or GroupObject);
+        }, highQualityImages: obj is ImageObject or GroupObject || obj.Warp != null);
 
+        // The 3D look comes first (the shadow is then cast by the object together with its side).
+        if (pixels != null && obj.ThreeD is { } threeD)
+            pixels = ThreeDFx.Apply(pixels, threeD.OffsetX, threeD.OffsetY, threeD.Color, threeD.Bevel, BevelSize(obj, 1));
         if (pixels != null && shadow != null)
-            pixels = ShadowFx.Apply(pixels, shadow.Color, shadow.OffsetX, shadow.OffsetY, shadow.Blur);
+        {
+            var center = obj.Box.Center;
+            pixels = ShadowFx.Apply(pixels, shadow.Color, shadow.OffsetX, shadow.OffsetY, shadow.Blur, shadow.Size, center.X - area.X, center.Y - area.Y);
+        }
         if (pixels != null) canvas.CopyFrom(pixels, area.X, area.Y);
     }
+
+    /// <summary>How far the shadow and the 3D side can reach beyond the object, in canvas pixels.</summary>
+    private static double EffectReach(LayerObject obj)
+        => (obj.Shadow?.ExtentFor(obj.Box.Width, obj.Box.Height) ?? 0) + (obj.ThreeD?.Extent ?? 0);
+
+    /// <summary>Width of the lit and shaded bevel edges: a few percent of the object's smaller side.</summary>
+    private static double BevelSize(LayerObject obj, double scale)
+        => Math.Clamp(Math.Min(obj.Box.Width, obj.Box.Height) * 0.05, 3, 14) * scale;
 
     public (double Width, double Height) MeasureText(TextObject text)
     {
@@ -77,7 +91,7 @@ public sealed class ObjectRenderer : IObjectRenderer
     private static double MarginFor(LayerObject obj) => obj switch
     {
         ShapeObject { Stroke: not null } s => s.StrokeWidth / 2 + 2,
-        GroupObject g => 2 + g.Members.Max(m => MarginFor(m.Object) + (m.Object.Shadow?.Extent ?? 0)) * Math.Max(g.Scale.Sx, g.Scale.Sy),
+        GroupObject g => 2 + g.Members.Max(m => MarginFor(m.Object) + EffectReach(m.Object)) * Math.Max(g.Scale.Sx, g.Scale.Sy),
         _ => 2,
     };
 
@@ -97,6 +111,12 @@ public sealed class ObjectRenderer : IObjectRenderer
     /// <param name="shadowScale">How much the groups around the object were stretched (shadows grow with them).</param>
     private static void Draw(DrawingContext dc, LayerObject obj, Matrix toCanvas, double shadowScale)
     {
+        if (obj.Warp is { Count: 4 } corners)
+        {
+            DrawWarped(dc, obj, toCanvas, shadowScale, corners);
+            return;
+        }
+
         var b = obj.Box;
         switch (obj)
         {
@@ -154,7 +174,7 @@ public sealed class ObjectRenderer : IObjectRenderer
                     var memberToCanvas = local * toBox * toCanvas;
                     dc.PushOpacity(member.Opacity);
                     dc.PushTransform(new MatrixTransform(local));
-                    if (member.Object.Shadow != null) DrawWithShadow(dc, member.Object, memberToCanvas, childShadowScale);
+                    if (member.Object.Shadow != null || member.Object.ThreeD != null) DrawWithShadow(dc, member.Object, memberToCanvas, childShadowScale);
                     else Draw(dc, member.Object, memberToCanvas, childShadowScale);
                     dc.Pop();
                     dc.Pop();
@@ -166,14 +186,58 @@ public sealed class ObjectRenderer : IObjectRenderer
     }
 
     /// <summary>
+    /// Draws an object whose corners were dragged (pictures, text, groups, curved shapes): the object is drawn normally on a bitmap
+    /// of its own, which is then stretched onto the four corner points. Corners may lie outside the box.
+    /// </summary>
+    private static void DrawWarped(DrawingContext dc, LayerObject obj, Matrix toCanvas, double shadowScale, IReadOnlyList<PointD> unitCorners)
+    {
+        var plain = obj with { Warp = null, Shadow = null };
+        double w = Math.Max(1, obj.Box.Width), h = Math.Max(1, obj.Box.Height);
+        var quad = unitCorners.Select(p => new PointD(p.X * w, p.Y * h)).ToArray();
+        double minX = quad.Min(p => p.X), maxX = quad.Max(p => p.X), minY = quad.Min(p => p.Y), maxY = quad.Max(p => p.Y);
+
+        double determinant = Math.Abs(new Matrix(toCanvas.M11, toCanvas.M12, toCanvas.M21, toCanvas.M22, 0, 0).Determinant);
+        if (determinant < 1e-9)
+        {
+            Draw(dc, plain, toCanvas, shadowScale);
+            return;
+        }
+
+        // Pixels per unit of the object's own space: as sharp as it is on the canvas, more when the corners pulled it bigger.
+        double margin = MarginFor(plain);
+        double stretch = Math.Min(4, Math.Max(1, Math.Max((maxX - minX) / w, (maxY - minY) / h)));
+        double res = Math.Clamp(Math.Sqrt(determinant) * stretch, 0.05, 16);
+        res = Math.Min(res, 2500 / (Math.Max(Math.Max(w, h), Math.Max(maxX - minX, maxY - minY)) + 2 * margin));
+        int pad = (int)Math.Ceiling(margin * res) + 1;
+
+        var source = WpfRasterizer.Render(new PixelRect(0, 0, (int)Math.Ceiling(w * res) + 2 * pad, (int)Math.Ceiling(h * res) + 2 * pad), c =>
+        {
+            c.PushTransform(new MatrixTransform(new Matrix(res, 0, 0, res, pad, pad)));
+            Draw(c, plain, toCanvas, shadowScale);
+            c.Pop();
+        }, highQualityImages: true);
+        if (source == null) return;
+
+        double originX = Math.Floor((minX - margin) * res), originY = Math.Floor((minY - margin) * res);
+        int width = Math.Max(1, (int)Math.Ceiling((maxX + margin) * res - originX));
+        int height = Math.Max(1, (int)Math.Ceiling((maxY + margin) * res - originY));
+        var warp = QuadWarp.Create(quad.Select(p => new PointD(p.X * res - originX, p.Y * res - originY)).ToArray());
+        if (warp == null) return;
+
+        var warped = warp.Apply(source, pad, pad, w * res, h * res, width, height);
+        dc.DrawImage(BitmapConverter.ToFrozenBitmap(warped), new Rect(originX / res, originY / res, width / res, height / res));
+    }
+
+    /// <summary>
     /// Draws a part of a group together with its own shadow. The part is drawn alone on a small bitmap (in its own
     /// space, so rotation and group stretching do not matter), the shadow is made from that, and the result is
     /// drawn into the group. The shadow keeps pointing the same way on the canvas, however the part is turned.
     /// </summary>
     private static void DrawWithShadow(DrawingContext dc, LayerObject obj, Matrix toCanvas, double shadowScale)
     {
-        var shadow = obj.Shadow!.Scaled(shadowScale);
-        var plain = obj with { Shadow = null };
+        var shadow = obj.Shadow?.Scaled(shadowScale);
+        var threeD = obj.ThreeD?.Scaled(shadowScale);
+        var plain = obj with { Shadow = null, ThreeD = null };
 
         var linear = new Matrix(toCanvas.M11, toCanvas.M12, toCanvas.M21, toCanvas.M22, 0, 0);
         double determinant = linear.Determinant;
@@ -187,7 +251,9 @@ public sealed class ObjectRenderer : IObjectRenderer
         double box = Math.Max(1, Math.Max(obj.Box.Width, obj.Box.Height));
         double res = Math.Clamp(Math.Sqrt(Math.Abs(determinant)), 0.05, 16);
         res = Math.Min(res, 3000 / box); // keep the bitmap a sane size
-        int pad = (int)Math.Ceiling(MarginFor(plain) * res + shadow.Extent);
+        double perCanvasPixel = res / Math.Sqrt(Math.Abs(determinant));      // bitmap pixels per canvas pixel (extents are given on the canvas)
+        double reach = ((shadow?.ExtentFor(obj.Box.Width, obj.Box.Height) ?? 0) + (threeD?.Extent ?? 0)) * perCanvasPixel;
+        int pad = (int)Math.Ceiling(MarginFor(plain) * res + reach);
         int width = (int)Math.Ceiling(obj.Box.Width * res) + 2 * pad;
         int height = (int)Math.Ceiling(obj.Box.Height * res) + 2 * pad;
 
@@ -199,12 +265,21 @@ public sealed class ObjectRenderer : IObjectRenderer
         }, highQualityImages: true);
         if (drawn == null) return;
 
-        // The shadow's direction is given on the canvas; the bitmap is in the part's own (turned) space.
+        // Directions are given on the canvas; the bitmap is in the part's own (turned) space.
         linear.Invert();
-        var shift = linear.Transform(new Vector(shadow.OffsetX, shadow.OffsetY)) * res;
-        var shadowed = ShadowFx.Apply(drawn, shadow.Color, shift.X, shift.Y, shadow.Blur * res / Math.Sqrt(Math.Abs(determinant)));
+        if (threeD != null)
+        {
+            var side = linear.Transform(new Vector(threeD.OffsetX, threeD.OffsetY)) * res;
+            drawn = ThreeDFx.Apply(drawn, side.X, side.Y, threeD.Color, threeD.Bevel, BevelSize(obj, res));
+        }
+        if (shadow != null)
+        {
+            var shift = linear.Transform(new Vector(shadow.OffsetX, shadow.OffsetY)) * res;
+            drawn = ShadowFx.Apply(drawn, shadow.Color, shift.X, shift.Y, shadow.Blur * perCanvasPixel, shadow.Size,
+                pad + obj.Box.Width * res / 2, pad + obj.Box.Height * res / 2);
+        }
 
-        dc.DrawImage(BitmapConverter.ToFrozenBitmap(shadowed), new Rect(-pad / res, -pad / res, width / res, height / res));
+        dc.DrawImage(BitmapConverter.ToFrozenBitmap(drawn), new Rect(-pad / res, -pad / res, width / res, height / res));
     }
 
     private static FormattedText CreateText(TextObject text)

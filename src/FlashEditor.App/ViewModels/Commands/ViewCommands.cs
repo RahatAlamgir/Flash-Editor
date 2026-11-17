@@ -14,6 +14,11 @@ public sealed class ViewCommands
         ZoomOutCommand = new RelayCommand(() => _main.Canvas?.ZoomOut());
         FitCommand = new RelayCommand(() => _main.Canvas?.FitToWindow());
         ActualSizeCommand = new RelayCommand(() => _main.Canvas?.ActualSize());
+        ToggleRulersCommand = new RelayCommand(() => _main.Aids.ShowRulers = !_main.Aids.ShowRulers);
+        ToggleGridCommand = new RelayCommand(() => _main.Aids.ShowGrid = !_main.Aids.ShowGrid);
+        ToggleGuidesCommand = new RelayCommand(() => _main.Aids.ShowGuides = !_main.Aids.ShowGuides);
+        ToggleSnapCommand = new RelayCommand(() => _main.Aids.SnapEnabled = !_main.Aids.SnapEnabled);
+        ClearGuidesCommand = new RelayCommand(() => _main.Document.ClearGuides());
         ShortcutsCommand = new RelayCommand(() => _main.Dialogs.ShowInfo("Keyboard Shortcuts", ShortcutsText));
         AboutCommand = new RelayCommand(() => _main.Dialogs.ShowInfo("About Flash Editor",
             "Flash Editor 1.0\nA small layer-based image editor built with C#, WPF and SkiaSharp."));
@@ -23,6 +28,11 @@ public sealed class ViewCommands
     public RelayCommand ZoomOutCommand { get; }
     public RelayCommand FitCommand { get; }
     public RelayCommand ActualSizeCommand { get; }
+    public RelayCommand ToggleRulersCommand { get; }
+    public RelayCommand ToggleGridCommand { get; }
+    public RelayCommand ToggleGuidesCommand { get; }
+    public RelayCommand ToggleSnapCommand { get; }
+    public RelayCommand ClearGuidesCommand { get; }
     public RelayCommand ShortcutsCommand { get; }
     public RelayCommand AboutCommand { get; }
 
@@ -53,7 +63,8 @@ public sealed class ViewCommands
         "Ctrl+Alt+I Image size / resolution   Ctrl+Alt+C Canvas size   Ctrl+Alt+B Remove background\n\n" +
         "VIEW\n" +
         "Mouse wheel Zoom   Space+drag or middle mouse Pan\n" +
-        "Ctrl+Plus Zoom in   Ctrl+Minus Zoom out   Ctrl+0 Fit   Ctrl+1 100%\n\n" +
+        "Ctrl+Plus Zoom in   Ctrl+Minus Zoom out   Ctrl+0 Fit   Ctrl+1 100%\n" +
+        "Ctrl+R Rulers   Ctrl+' Grid   Ctrl+; Guides   Ctrl+Shift+; Snapping (buttons above the canvas)\n\n" +
         "CROP TOOL\n" +
         "Enter Apply   Esc Cancel";
 }

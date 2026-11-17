@@ -77,7 +77,7 @@ public sealed class GroupChildViewModel : ObservableObject, IEditableName
         var scaled = ObjectTransforms.Scale(obj, factor, factor);
 
         // Draw it alone on a small canvas just big enough for it (borders and rotation included).
-        var bounds = scaled.Box.Bounds(4 + (scaled.Shadow?.Extent ?? 0)); // room for borders and the shadow
+        var bounds = scaled.VisualBounds(4 + (scaled.Shadow?.ExtentFor(scaled.Box.Width, scaled.Box.Height) ?? 0) + (scaled.ThreeD?.Extent ?? 0)); // room for borders, the shadow and the 3D side
         int width = Math.Max(1, bounds.Width), height = Math.Max(1, bounds.Height);
         var placed = ObjectTransforms.Offset(scaled, -bounds.X, -bounds.Y);
         var pixels = ObjectRendering.Renderer.Render(placed, width, height);

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using FlashEditor.Core.Snapping;
 
 namespace FlashEditor.App.Tools;
 
@@ -27,6 +28,9 @@ public interface ICanvasView
 
     /// <summary>Redraws the box with handles around the selected layer.</summary>
     void RefreshTransformFrame();
+
+    /// <summary>Shows the lines something just snapped to (vertical lines at x, horizontal lines at y); empty lists hide them.</summary>
+    void ShowSnapLines(IReadOnlyList<double> xs, IReadOnlyList<double> ys, IReadOnlyList<GapMark>? gaps = null);
 
     /// <summary>Cursor to show instead of the tool's own (null = the tool's cursor).</summary>
     void SetCursorOverride(System.Windows.Input.Cursor? cursor);

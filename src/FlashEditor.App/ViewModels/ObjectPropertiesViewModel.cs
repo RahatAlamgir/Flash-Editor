@@ -46,9 +46,15 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         {
             if (p is ShadowPreset preset) Change($"Shadow: {preset.Name}", o => o with { Shadow = preset.CreateStyle(o.Shadow) });
         }, _ => HasObject);
+        PickThreeDColorCommand = new RelayCommand(() => PickColor("3D color", Object?.ThreeD?.Color ?? new ColorRgba(90, 90, 90),
+            c => ChangeThreeD("3D Color", t => t with { Color = c with { A = 255 } })), () => HasThreeD);
+        ApplyThreeDPresetCommand = new RelayCommand(p =>
+        {
+            if (p is ThreeDPreset preset) Change($"3D: {preset.Name}", o => o with { ThreeD = preset.CreateStyle(o.ThreeD) });
+        }, _ => HasObject);
         MakeEditableCommand = new RelayCommand(MakeEditable, () => IsPixelLayer);
         ToggleReshapeCommand = new RelayCommand(() => _main.ToggleReshape(), () => CanReshape && CanEdit);
-        ResetShapeCommand = new RelayCommand(() => Change("Reset Shape", o => ((ShapeObject)o) with { Vertices = null }), () => HasCustomOutline && CanEdit);
+        ResetShapeCommand = new RelayCommand(() => Change("Reset Shape", o => o.WithoutReshape()), () => HasCustomOutline && CanEdit);
         UnlockCommand = new RelayCommand(() => _main.Layers.UnlockSelectedCommand.Execute(null), () => IsLocked);
         DeletePartCommand = new RelayCommand(() => _main.DeleteActivePart(), () => IsPart);
         LeavePartCommand = new RelayCommand(() => { if (_layer != null) _main.SelectPart(_layer, null); }, () => IsPart);
@@ -133,10 +139,10 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public ShapeKind ShapeKind => Shape?.Shape ?? ShapeKind.Rectangle;
 
     /// <summary>True for shapes with straight sides: their corner points can be dragged.</summary>
-    public bool CanReshape => Shape?.CanReshape == true;
+    public bool CanReshape => !IsPart && Object?.CanReshape == true;
 
     /// <summary>True once the corners were dragged (a custom outline).</summary>
-    public bool HasCustomOutline => Shape?.HasCustomOutline == true;
+    public bool HasCustomOutline => !IsPart && Object?.HasCustomOutline == true;
 
     /// <summary>True while the corner points of the shape are shown for dragging.</summary>
     public bool IsReshaping => _main.IsReshaping;
@@ -279,6 +285,62 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     private void ChangeShadow(string name, Func<ShadowStyle, ShadowStyle> change)
         => Change(name, o => o.Shadow is { } shadow ? o with { Shadow = change(shadow) } : o);
+
+    /// <summary>How big the shadow is compared to the object, in % (100 = as big; less = small, more = big).</summary>
+    public double ShadowSize
+    {
+        get => Math.Round((Object?.Shadow?.Size ?? 1.0) * 100);
+        set => ChangeShadow("Shadow Size", s => s with { Size = Math.Clamp(value, 10, 400) / 100.0 });
+    }
+
+    // ------------------------------------------------------------------ 3D (every kind of object)
+
+    public bool HasThreeD => Object?.ThreeD != null;
+
+    public bool ThreeDEnabled
+    {
+        get => HasThreeD;
+        set => Change("3D", o => o with { ThreeD = value ? o.ThreeD ?? ThreeDStyle.Default : null });
+    }
+
+    /// <summary>How deep the solid side of the object is, in pixels.</summary>
+    public double ThreeDDepth
+    {
+        get => Math.Round(Object?.ThreeD?.Depth ?? 0);
+        set => ChangeThreeD("3D Depth", t => t with { Depth = Math.Clamp(value, 0, 300) });
+    }
+
+    /// <summary>Direction the side runs (0 = right, 90 = down, 180 = left, -90 = up).</summary>
+    public double ThreeDAngle
+    {
+        get => Math.Round(Object?.ThreeD?.Angle ?? 0);
+        set => ChangeThreeD("3D Angle", t => t with { Angle = ObjectBox.NormalizeAngle(value) });
+    }
+
+    /// <summary>How strong the lit / shaded edges on the face are, 0..100 %.</summary>
+    public double ThreeDBevel
+    {
+        get => Math.Round((Object?.ThreeD?.Bevel ?? 0) * 100);
+        set => ChangeThreeD("3D Bevel", t => t with { Bevel = Math.Clamp(value, 0, 100) / 100.0 });
+    }
+
+    /// <summary>True when the side takes the object's own color (darker); false when a color was chosen.</summary>
+    public bool ThreeDAutoColor
+    {
+        get => Object?.ThreeD?.Color == null;
+        set => ChangeThreeD("3D Color", t => t with { Color = value ? null : t.Color ?? new ColorRgba(90, 90, 90) });
+    }
+
+    public Brush ThreeDBrush => ToBrush(Object?.ThreeD?.Color ?? new ColorRgba(90, 90, 90));
+
+    private void ChangeThreeD(string name, Func<ThreeDStyle, ThreeDStyle> change)
+        => Change(name, o => o.ThreeD is { } style ? o with { ThreeD = change(style) } : o);
+
+    public IReadOnlyList<ThreeDPreset> ThreeDPresets => ThreeDPreset.All;
+
+    /// <summary>Gives the object the 3D look of the preset given as the command parameter.</summary>
+    public RelayCommand ApplyThreeDPresetCommand { get; }
+    public RelayCommand PickThreeDColorCommand { get; }
 
     // ------------------------------------------------------------------ commands
 

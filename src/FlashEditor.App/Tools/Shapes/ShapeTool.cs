@@ -20,8 +20,13 @@ public sealed class ShapeTool : ToolBase
     private readonly ShapeOptions _options;
     private Path? _preview;
     private PointD _start;
+    private readonly SnapDrag _snap;
 
-    public ShapeTool(IToolHost host, ShapeOptions options) : base(host) => _options = options;
+    public ShapeTool(IToolHost host, ShapeOptions options) : base(host)
+    {
+        _options = options;
+        _snap = new SnapDrag(host);
+    }
 
     public override string Name => "Shapes";
     public override string IconKey => "Shapes";
@@ -31,6 +36,7 @@ public sealed class ShapeTool : ToolBase
     public override void MouseDown(ToolMouseArgs e)
     {
         if (e.Button != MouseButton.Left) return;
+        e = e with { Position = _snap.Point(e.Position, Host.Canvas?.Zoom ?? 1, !e.Alt) };   // snap to objects, canvas, grid, guides
         _start = e.Position;
         _preview = new Path { Opacity = 0.8, IsHitTestVisible = false };
         Host.Canvas?.AddOverlay(_preview, screenStrokeThickness: 0);
@@ -39,20 +45,27 @@ public sealed class ShapeTool : ToolBase
 
     public override void MouseMove(ToolMouseArgs e)
     {
-        if (_preview != null) UpdatePreview(e);
+        if (_preview == null) return;
+        UpdatePreview(e with { Position = _snap.Point(e.Position, Host.Canvas?.Zoom ?? 1, !e.Alt) });
     }
 
     public override void MouseUp(ToolMouseArgs e)
     {
         if (_preview == null) return;
         RemovePreview();
+        e = e with { Position = _snap.Point(e.Position, Host.Canvas?.Zoom ?? 1, !e.Alt) };
+        _snap.End();
         var shape = _options.Create(BoxFor(e));
         Host.AddObjectLayer(shape, $"Add {shape.SuggestedLayerName}");
         Host.SelectTool<MoveTool>();
         Host.SetStatus("Shape added. Drag the handles to resize or rotate; change colors in the Properties panel.");
     }
 
-    public override void Deactivate() => RemovePreview();
+    public override void Deactivate()
+    {
+        RemovePreview();
+        _snap.End();
+    }
 
     /// <summary>The object box for a drag from the start point to the mouse (or a default size for a click).</summary>
     private ObjectBox BoxFor(ToolMouseArgs e)

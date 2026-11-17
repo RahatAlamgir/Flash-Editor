@@ -13,13 +13,17 @@ public static class ShadowFx
     /// itself on top. Shadow parts that would fall outside the buffer are cut off, so give the buffer
     /// enough empty room around the object (see <see cref="ShadowStyle.Extent"/>).
     /// </summary>
-    public static PixelBuffer Apply(PixelBuffer source, ColorRgba color, double offsetX, double offsetY, double blur)
+    /// <param name="size">1 = the shadow is as big as the object, 0.5 = half as big, 2 = twice as big (around <paramref name="centerX"/>, <paramref name="centerY"/>).</param>
+    /// <param name="centerX">Middle of the object in the buffer (the shadow grows and shrinks around it).</param>
+    public static PixelBuffer Apply(PixelBuffer source, ColorRgba color, double offsetX, double offsetY, double blur,
+        double size = 1.0, double centerX = 0, double centerY = 0)
     {
         int w = source.Width, h = source.Height;
         var alpha = new float[w * h];
         var data = source.Data;
         for (int p = 0; p < alpha.Length; p++) alpha[p] = data[p * 4 + 3] / 255f;
 
+        if (Math.Abs(size - 1) > 0.005) alpha = Resize(alpha, w, h, size, centerX, centerY);
         if (blur > 0) alpha = Blur(alpha, w, h, sigma: blur / 2);
 
         int dx = (int)Math.Round(offsetX), dy = (int)Math.Round(offsetY);
@@ -50,8 +54,34 @@ public static class ShadowFx
         return result;
     }
 
+    /// <summary>The plane made bigger or smaller by <paramref name="size"/> around a point (smooth, bilinear).</summary>
+    private static float[] Resize(float[] plane, int width, int height, double size, double cx, double cy)
+    {
+        var result = new float[plane.Length];
+        double inverse = 1.0 / Math.Max(size, 0.01);
+        Parallel.For(0, height, y =>
+        {
+            double sy = cy + (y + 0.5 - cy) * inverse - 0.5;
+            int y0 = (int)Math.Floor(sy);
+            double fy = sy - y0;
+            for (int x = 0; x < width; x++)
+            {
+                double sx = cx + (x + 0.5 - cx) * inverse - 0.5;
+                int x0 = (int)Math.Floor(sx);
+                double fx = sx - x0;
+                double sum = Sample(plane, width, height, x0, y0) * (1 - fx) * (1 - fy) + Sample(plane, width, height, x0 + 1, y0) * fx * (1 - fy)
+                           + Sample(plane, width, height, x0, y0 + 1) * (1 - fx) * fy + Sample(plane, width, height, x0 + 1, y0 + 1) * fx * fy;
+                result[y * width + x] = (float)sum;
+            }
+        });
+        return result;
+    }
+
+    private static float Sample(float[] plane, int width, int height, int x, int y)
+        => x < 0 || y < 0 || x >= width || y >= height ? 0f : plane[y * width + x];
+
     /// <summary>Soft blur of a 0..1 plane: three box blurs in each direction look like a Gaussian blur.</summary>
-    private static float[] Blur(float[] plane, int width, int height, double sigma)
+    internal static float[] Blur(float[] plane, int width, int height, double sigma)
     {
         // Box width that gives the wanted spread after three passes.
         int radius = Math.Max(1, (int)Math.Round((Math.Sqrt(4 * sigma * sigma + 1) - 1) / 2));

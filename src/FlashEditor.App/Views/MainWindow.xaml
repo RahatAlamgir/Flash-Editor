@@ -51,6 +51,10 @@
         <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding View.ZoomOutCommand}" />
         <KeyBinding Gesture="Ctrl+D0" Command="{Binding View.FitCommand}" />
         <KeyBinding Gesture="Ctrl+D1" Command="{Binding View.ActualSizeCommand}" />
+        <KeyBinding Gesture="Ctrl+R" Command="{Binding View.ToggleRulersCommand}" />
+        <KeyBinding Gesture="Ctrl+OemQuotes" Command="{Binding View.ToggleGridCommand}" />
+        <KeyBinding Gesture="Ctrl+OemSemicolon" Command="{Binding View.ToggleGuidesCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+OemSemicolon" Command="{Binding View.ToggleSnapCommand}" />
         <KeyBinding Gesture="F1" Command="{Binding View.ShortcutsCommand}" />
     </Window.InputBindings>
 
@@ -132,7 +136,8 @@
                 <MenuItem Header="Send Backward (Move D_own)" InputGestureText="Ctrl+[" Command="{Binding Layers.MoveDownCommand}" />
                 <MenuItem Header="Send to Bac_k" InputGestureText="Ctrl+Shift+[" Command="{Binding Layers.SendToBackCommand}" />
                 <Separator />
-                <MenuItem Header="_Merge Down" InputGestureText="Ctrl+E" Command="{Binding Layers.MergeDownCommand}" />
+                <MenuItem Header="_Merge Down" InputGestureText="Ctrl+E" Command="{Binding Layers.MergeDownCommand}" ToolTip="With several layers selected, Ctrl+E merges all of them" />
+                <MenuItem Header="Merge Selected _Layers" InputGestureText="Ctrl+E" Command="{Binding Layers.MergeSelectedCommand}" />
                 <MenuItem Header="_Flatten Image" Command="{Binding Layers.FlattenCommand}" />
                 <MenuItem Header="Convert to _Pixels" Command="{Binding Layers.ConvertToPixelsCommand}" />
                 <Separator />
@@ -176,6 +181,12 @@
                 <MenuItem Header="Zoom _Out" InputGestureText="Ctrl+-" Command="{Binding View.ZoomOutCommand}" />
                 <MenuItem Header="_Fit on Screen" InputGestureText="Ctrl+0" Command="{Binding View.FitCommand}" />
                 <MenuItem Header="_Actual Size (100%)" InputGestureText="Ctrl+1" Command="{Binding View.ActualSizeCommand}" />
+                <Separator />
+                <MenuItem Header="_Rulers" InputGestureText="Ctrl+R" IsCheckable="True" IsChecked="{Binding Aids.ShowRulers}" />
+                <MenuItem Header="_Grid" InputGestureText="Ctrl+'" IsCheckable="True" IsChecked="{Binding Aids.ShowGrid}" />
+                <MenuItem Header="G_uides" InputGestureText="Ctrl+;" IsCheckable="True" IsChecked="{Binding Aids.ShowGuides}" />
+                <MenuItem Header="_Clear Guides" Command="{Binding View.ClearGuidesCommand}" />
+                <MenuItem Header="_Snapping" InputGestureText="Ctrl+Shift+;" IsCheckable="True" IsChecked="{Binding Aids.SnapEnabled}" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard Shortcuts" InputGestureText="F1" Command="{Binding View.ShortcutsCommand}" />
@@ -232,6 +243,7 @@
         <DockPanel>
             <Border DockPanel.Dock="Top" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1">
                 <DockPanel>
+                    <panels:ViewAidsBar DockPanel.Dock="Right" />
                     <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.OpenCommand}" ToolTip="Open another image (Ctrl+O)" Margin="0,0,4,0">
                         <Path Style="{StaticResource IconPath}" Data="M3,6 L8,6 L10,8 L17,8 L17,16 L3,16 Z" />
                     </Button>

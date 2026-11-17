@@ -112,16 +112,20 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Select all" Padding="4,5" MinWidth="0" Margin="0,0,4,0"
+            <Button Grid.Column="0" Content="Select all" Padding="1,5" MinWidth="0" Margin="0,0,3,0"
                     Command="{Binding Layers.SelectAllLayersCommand}"
                     ToolTip="Select every layer (Ctrl+A with the Select / Move tool)" />
-            <Button Grid.Column="1" Content="Lock all" Padding="4,5" MinWidth="0" Margin="0,0,4,0"
+            <Button Grid.Column="1" Content="Lock all" Padding="1,5" MinWidth="0" Margin="0,0,3,0"
                     Command="{Binding Layers.LockSelectedCommand}"
                     ToolTip="Lock every selected layer that is not locked. Locked layers cannot be picked on the canvas or changed." />
-            <Button Grid.Column="2" Content="Unlock all" Padding="4,5" MinWidth="0"
+            <Button Grid.Column="2" Content="Unlock all" Padding="1,5" MinWidth="0"
                     Command="{Binding Layers.UnlockSelectedCommand}"
                     ToolTip="Unlock every selected layer that is locked" />
+            <Button Grid.Column="3" Content="Merge" Padding="1,5" MinWidth="0" Margin="3,0,0,0"
+                    Command="{Binding Layers.MergeSelectedCommand}"
+                    ToolTip="Quick merge: select two or more layers, then click to merge them into one layer (Ctrl+E). Use Group (Ctrl+G) to keep them editable." />
         </Grid>
 
         <!-- Buttons -->
@@ -139,7 +143,7 @@
                 <Button Style="{StaticResource IconButton}" Command="{Binding Layers.MoveDownCommand}" ToolTip="Move layer down">
                     <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Down}" />
                 </Button>
-                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.MergeDownCommand}" ToolTip="Merge down (Ctrl+E)">
+                <Button Style="{StaticResource IconButton}" Command="{Binding Layers.MergeDownCommand}" ToolTip="Merge down (Ctrl+E). With several layers selected: merge all of them into one.">
                     <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Merge}" />
                 </Button>
                 <Button Style="{StaticResource IconButton}" Command="{Binding Layers.DeleteCommand}" ToolTip="Delete layer">

@@ -36,18 +36,68 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Tools -->
+            <!-- Tools: similar tools share one button; the corner triangle (or a right click) opens the list of the group -->
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
-                <ListBox ItemsSource="{Binding Tools.Tools}" SelectedItem="{Binding Tools.ActiveTool}"
-                         ItemContainerStyle="{StaticResource ToolboxItem}" Background="Transparent"
-                         BorderThickness="0" Padding="0" HorizontalAlignment="Center" Focusable="False"
-                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                    <ListBox.ItemTemplate>
+                <ItemsControl ItemsSource="{Binding Tools.Groups}" HorizontalAlignment="Center" Focusable="False">
+                    <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Path Style="{StaticResource IconPath}" Data="{Binding IconKey, Converter={StaticResource IconGeometry}}" />
+                            <Grid Width="36" Height="34" Margin="0,1" ToolTip="{Binding ToolTip}">
+                                <Border x:Name="Bg" CornerRadius="5" Cursor="Hand" Background="Transparent"
+                                        MouseLeftButtonUp="OnGroupClick" MouseRightButtonUp="OnGroupRightClick">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Path Style="{StaticResource IconPath}" Data="{Binding Current.IconKey, Converter={StaticResource IconGeometry}}" IsHitTestVisible="False" />
+                                </Border>
+                                <!-- Triangle in the bottom right corner -->
+                                <Path Data="M0,6 L6,6 L6,0 Z" Fill="{StaticResource IconBrush}" Width="6" Height="6" Margin="0,0,3,3"
+                                      HorizontalAlignment="Right" VerticalAlignment="Bottom" IsHitTestVisible="False"
+                                      Visibility="{Binding HasMore, Converter={StaticResource BoolToVisibility}}" />
+                                <Border Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent" Cursor="Hand"
+                                        Visibility="{Binding HasMore, Converter={StaticResource BoolToVisibility}}"
+                                        MouseLeftButtonUp="OnGroupTriangleClick" ToolTip="More tools" />
+                                <Popup IsOpen="{Binding IsOpen, Mode=TwoWay}" StaysOpen="False" Placement="Right" HorizontalOffset="4" AllowsTransparency="True"
+                                       PlacementTarget="{Binding ElementName=Bg}">
+                                    <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1" CornerRadius="6" Padding="4" Margin="0,0,8,8">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5" />
+                                        </Border.Effect>
+                                        <ItemsControl ItemsSource="{Binding Tools}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="8,5" CornerRadius="4" Cursor="Hand" Background="Transparent" MouseLeftButtonUp="OnPickTool">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Style.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Path Style="{StaticResource IconPath}" Data="{Binding IconKey, Converter={StaticResource IconGeometry}}" />
+                                                            <TextBlock Text="{Binding ToolTip}" VerticalAlignment="Center" Margin="10,0,12,0" MinWidth="150" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                </Popup>
+                            </Grid>
                         </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </ScrollViewer>
         </DockPanel>
     </Border>

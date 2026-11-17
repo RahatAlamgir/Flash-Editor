@@ -103,14 +103,6 @@
                                        Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
 
-                        <!-- Reshape: drag the corner points of a straight-sided shape (a square becomes a trapezium...) -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" Visibility="{Binding CanReshape, Converter={StaticResource BoolToVisibility}}">
-                            <ToggleButton Content="Reshape corners" IsChecked="{Binding IsReshaping, Mode=OneWay}" Command="{Binding ToggleReshapeCommand}"
-                                          Padding="10,4" ToolTip="Drag the round corner points of the shape on the canvas to change its form. Esc or a second click finishes." />
-                            <Button Content="Reset" Command="{Binding ResetShapeCommand}" Padding="10,4" Margin="6,0,0,0"
-                                    Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}"
-                                    ToolTip="Back to the normal outline of this shape" />
-                        </StackPanel>
                         <StackPanel Style="{StaticResource Row}" Visibility="{Binding CanFill, Converter={StaticResource BoolToVisibility}}">
                             <CheckBox Content="Fill" IsChecked="{Binding FillEnabled}" Width="70" MinWidth="0" VerticalAlignment="Center" />
                             <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding FillBrush}" Command="{Binding PickFillCommand}" ToolTip="Fill color" />
@@ -176,6 +168,18 @@
                         <Button Content="Original size" Command="{Binding OriginalSizeCommand}" HorizontalAlignment="Left" Margin="0,2,0,0" />
                     </StackPanel>
 
+                    <!-- Reshape: drag the corner points of any object (a square becomes a trapezium, a picture gets a perspective...) -->
+                    <StackPanel Visibility="{Binding CanReshape, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Reshape" Style="{StaticResource Section}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
+                            <ToggleButton Content="Reshape corners" IsChecked="{Binding IsReshaping, Mode=OneWay}" Command="{Binding ToggleReshapeCommand}"
+                                          Padding="10,4" ToolTip="Drag the round corner points on the canvas to change the form of the object (also outward). Esc or a second click finishes." />
+                            <Button Content="Reset" Command="{Binding ResetShapeCommand}" Padding="10,4" Margin="6,0,0,0"
+                                    Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}"
+                                    ToolTip="Back to the normal form of this object" />
+                        </StackPanel>
+                    </StackPanel>
+
                     <!-- Shadow (shapes, text, images and groups) -->
                     <TextBlock Text="Shadow" Style="{StaticResource Section}" />
                     <StackPanel Style="{StaticResource Row}">
@@ -224,8 +228,55 @@
                             <TextBlock Text="Angle" Style="{StaticResource Label}" Width="58" />
                             <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ShadowAngle}" SliderWidth="110" BoxWidth="58" Unit="°" />
                         </StackPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Size" Style="{StaticResource Label}" Width="58" />
+                            <ctl:NumberSlider Minimum="10" Maximum="300" Value="{Binding ShadowSize}" SliderWidth="110" BoxWidth="58" Unit="%"
+                                              ToolTip="How big the shadow is: below 100 % it is smaller than the object, above 100 % bigger" />
+                        </StackPanel>
                     </StackPanel>
 
+
+                    <!-- 3D (shapes, text, images and groups): a solid side behind the object and lit / shaded edges on its face -->
+                    <TextBlock Text="3D" Style="{StaticResource Section}" />
+                    <StackPanel Style="{StaticResource Row}">
+                        <CheckBox Content="3D look" IsChecked="{Binding ThreeDEnabled}" Width="84" MinWidth="0" VerticalAlignment="Center"
+                                  ToolTip="Gives the object a solid side, like a block or a 3D letter" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding ThreeDPresets}" Margin="0,2,0,4">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Name}" ToolTip="{Binding Description}" Padding="8,3" MinWidth="0" Margin="0,0,5,5"
+                                        Command="{Binding DataContext.ApplyThreeDPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Visibility="{Binding ThreeDEnabled, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Depth" Style="{StaticResource Label}" Width="58" />
+                            <ctl:NumberSlider Minimum="0" Maximum="150" Value="{Binding ThreeDDepth}" SliderWidth="110" BoxWidth="58" Unit="px" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Angle" Style="{StaticResource Label}" Width="58" />
+                            <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ThreeDAngle}" SliderWidth="110" BoxWidth="58" Unit="°" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Edges" Style="{StaticResource Label}" Width="58" />
+                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding ThreeDBevel}" SliderWidth="110" BoxWidth="58" Unit="%"
+                                              ToolTip="Light on the top-left edge, shade on the bottom-right edge of the face" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <CheckBox Content="Auto color" IsChecked="{Binding ThreeDAutoColor}" Width="100" MinWidth="0" VerticalAlignment="Center"
+                                      ToolTip="On: the side is the object's own color, darker. Off: choose the color of the side." />
+                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding ThreeDBrush}" Command="{Binding PickThreeDColorCommand}"
+                                    ToolTip="Color of the side" Visibility="{Binding ThreeDAutoColor, Converter={StaticResource InverseBoolToVisibility}}" />
+                        </StackPanel>
+                    </StackPanel>
                     </StackPanel>
                     <!-- Group -->
                     <StackPanel Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisibility}}">

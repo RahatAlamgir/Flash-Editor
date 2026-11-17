@@ -52,6 +52,6 @@ public sealed record ShadowPreset(string Name, string Description, double Distan
     public ShadowStyle CreateStyle(ShadowStyle? current = null)
     {
         var color = (Color ?? current?.Color ?? ColorRgba.Black) with { A = Opacity };
-        return new ShadowStyle(color, Distance, Angle, Blur);
+        return new ShadowStyle(color, Distance, Angle, Blur, current?.Size ?? 1.0);
     }
 }

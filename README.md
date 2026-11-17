@@ -50,7 +50,7 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 
 ### Editable objects (Canva-style)
 * **Shapes (U)**: 36 shapes: rectangle (rounded corners), ellipse, triangle, right triangle, star, polygon, pentagon, hexagon, octagon, sparkle, burst, diamond, trapezoid, parallelogram, heart, arrow, double arrow, chevron, tag, home, cross, check, X mark, lightning bolt, cloud, teardrop, shield, speech bubble, oval bubble, line, and **ring, half ring, half circle, quarter circle, pie, crescent, frame** (with a hole-size or angle setting). Fill and border, each with its own color. Pick a shape from the grid in the tool options; the kind is chosen when you draw it.
-* **Reshape corners**: select a straight-sided shape and click **Reshape corners** in the Properties panel, then drag its round corner points: a square becomes a trapezium, a star point can be pulled out. Shift = coarser steps, Esc finishes, **Reset** brings back the normal form. One undo step per drag.
+* **Reshape corners**: select any object (shape, picture, text, group) and click **Reshape corners** in the Properties panel, then drag its round corner points, inward or outward: a square becomes a trapezium, a star point can be pulled out, a picture or text gets a perspective. Shapes with straight sides move their own corners; other objects move the four corners of their box. Shift = coarser steps, Esc finishes, **Reset** brings back the normal form. One undo step per drag.
 * **Text (T)**: any installed font, size, bold, italic, alignment, color. Double-click to edit.
 * Placed and pasted pictures are resizable without losing quality.
 * Click to select, drag handles to resize, round handle to rotate (Shift = 15° steps). **Shift+click** or **Ctrl+drag a box** selects several; **Ctrl+G** groups, **Ctrl+Shift+G** ungroups, **Ctrl+D** duplicates.
@@ -58,6 +58,10 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 
 ### Painting and selecting
 * Brush, eraser, paint bucket, eyedropper, foreground / background colors with an HSV color picker. **Brush types** (pick in the tool options, each with a preview): round, square, calligraphy, pencil, chalk, spray, splatter.
+* **Retouching tools**: **Clone Stamp (S)** (Alt+click the place to copy from, then paint; *Aligned* keeps the distance between strokes), **Spot Healing (J)** (paint over a blemish, it is healed from a clean place the program finds), **Healing Brush (J)** (like Clone Stamp, but the copied detail takes on the light and color of its new place), **Patch (J)** (draw around a blemish, drag the outline onto a clean area), **Dodge / Burn (O)** (lighten or darken shadows, midtones or highlights; Alt = the other one) and **Blur / Sharpen (Q)** (Alt = the other one). J switches between Spot Healing, Healing Brush and Patch. They paint on pixels (a placed picture is turned into pixels first; **Make editable** brings it back). One undo step per stroke; a selection limits the effect.
+* **Shadow size**: the **Size** slider of a shadow makes it smaller (below 100 %) or bigger (above 100 %) than the object, around the middle of the object.* **3D look**: tick **3D look** in the Properties panel to give any shape, text, picture or group a solid side (a block or 3D-letter look) and lit / shaded edges on its face. Pick a preset (Block, Long, Pop, Floor, Left) or set **Depth**, **Angle**, **Edges** (bevel strength) and the side color (automatic = the object's own color, darker). The side follows the real outline, works together with shadows and keeps its direction when the object is turned.
+* **Quick merge**: select two or more layers (Ctrl+click in the Layers panel, Shift+click or Ctrl+drag on the canvas) and press **Merge** in the Layers panel, **Ctrl+E**, Layer > Merge Selected Layers, or right-click > Merge N Layers. They become one layer where the top one was, with each layer's opacity kept; hidden and locked layers in the selection are left alone. One undo step. (With one layer selected Ctrl+E still merges it down. Use **Group**, Ctrl+G, to keep objects editable.)
+* **Tool groups**: similar tools share one button in the toolbox (like Photoshop). A small triangle in the button corner means more tools: click the triangle (or right-click the button) to open the list and pick one; the button then shows it. Groups: rectangle / ellipse select, lasso / polygon lasso, quick select / magic wand, brush / eraser / refine, spot healing / healing brush / patch.* **Rulers, grid, guides and snapping**: toggle buttons above the canvas (also in the View menu). **Rulers** (Ctrl+R) show pixel units; drag from a ruler onto the picture to make a **guide line**, drag a guide with Select / Move to move it, drag it back onto the ruler to remove it. **Grid** (Ctrl+') with a size you choose. **Snapping** (Ctrl+Shift+;) makes objects, pictures, new shapes and selections click into place against other objects (edges and centers), the canvas edges and center, the grid and the guides, with pink smart-guide lines. **Equal spacing** (like Canva): when you drag an object it also snaps so its gap to a neighbor equals the gaps between other objects in the same row or column, or sits exactly in the middle between two objects, and the gaps are shown in pixels. Hold **Alt** to move without snapping. The settings are remembered.
 * Selection tools: rectangle, ellipse, lasso, polygon lasso, **pen (curves)**, magic wand, **quick-select brush**, select subject (AI), select layer content. **Shift** adds, **Alt** subtracts. The program starts with **Select / Move** active.
 * Move the selected pixels, copy, cut, paste, delete, fill, invert. Nothing is cut off at the canvas edge; **Image > Reveal All** shows parts moved outside.
 
@@ -147,6 +151,8 @@ Files are checked (size and SHA-256) before use and saved only in the `models` f
 |---|---|
 | V / M / L / P / W | Select & move / rectangle-ellipse select / lasso / pen / quick select-magic wand |
 | B / E / R / G / I | Brush / eraser / refine (restore-remove) / bucket / eyedropper |
+| S / J / O / Q | Clone stamp / healing tools (press again to switch: spot, brush, patch) / dodge-burn / blur-sharpen |
+| Ctrl+R / Ctrl+' / Ctrl+; / Ctrl+Shift+; | Rulers / grid / guides / snapping |
 | U / T / C / H / Z | Shapes / text / crop / hand / zoom |
 | Ctrl+Z, Ctrl+Y | Undo, redo |
 | Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut, paste |
@@ -180,6 +186,7 @@ Flash Editor/
 │   │   ├── Sheets/                  Asset sheet splitter
 │   │   ├── History/                 Undo / redo manager and one class per kind of undo step
 │   │   ├── Painting/                Brush strokes (paint, erase, restore), flood fill, compositing
+│   │   ├── Retouch/                 Clone, heal, spot heal, patch, dodge/burn, blur/sharpen operations
 │   │   ├── Transforms/              Crop, flip, rotate, resize (Lanczos, Bicubic...)
 │   │   ├── Effects/                 Effect framework, Adjustments/, Filters/, Background/
 │   │   └── IO/                      Decoder, encoder (PNG/JPG/WebP/ICO/BMP/GIF), exporter; TIFF and unusual formats through Windows codecs

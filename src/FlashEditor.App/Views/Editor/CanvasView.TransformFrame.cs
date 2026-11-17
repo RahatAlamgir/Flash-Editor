@@ -85,7 +85,7 @@ public partial class CanvasView
     }
 
     /// <summary>Reshape mode: the outline through the shape's corner points, with a round handle on each point (same size on screen at every zoom).</summary>
-    private void DrawCornerPoints(ShapeObject shape, IReadOnlyList<PointD> corners)
+    private void DrawCornerPoints(LayerObject shape, IReadOnlyList<PointD> corners)
     {
         var canvasPoints = corners.Select(shape.FromUnit).ToList();
 
@@ -120,7 +120,7 @@ public partial class CanvasView
         }
 
         // Reshape: the shape's own outline and a round point at each corner (instead of the box with square handles).
-        if (_main?.IsReshaping == true && _frameObject is ShapeObject reshaping && reshaping.CurrentVertices is { Count: >= 3 } points)
+        if (_main?.IsReshaping == true && _frameObject is { } reshaping && reshaping.ReshapePoints is { Count: >= 3 } points)
         {
             DrawCornerPoints(reshaping, points);
             return;

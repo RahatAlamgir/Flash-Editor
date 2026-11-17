@@ -1,5 +1,6 @@
 using FlashEditor.App.ViewModels.Infrastructure;
 using FlashEditor.Core.Documents;
+using FlashEditor.Core.Imaging;
 using FlashEditor.Core.History;
 using FlashEditor.Core.Objects;
 using FlashEditor.Core.Painting;
@@ -33,8 +34,13 @@ public sealed class LayerCommands
         SendToBackCommand = new RelayCommand(() => MoveTo(0, "Send to Back"), () => Doc.ActiveLayerIndex > 0);
         ConvertToPixelsCommand = new RelayCommand(() => { if (Doc.ActiveLayer is { } l) _main.ConvertToPixels(l, announce: true); },
             () => Doc.ActiveLayer?.Object != null);
-        MergeDownCommand = new RelayCommand(MergeDown, () => Doc.ActiveLayerIndex > 0
-            && !Doc.ActiveLayer!.IsLocked && !Doc.Layers[Doc.ActiveLayerIndex - 1].IsLocked);
+        MergeSelectedCommand = new RelayCommand(MergeSelected, () => MergeCandidates().Count >= 2);
+        // Ctrl+E: with several layers selected it merges them all, otherwise the active layer goes into the one below it.
+        MergeDownCommand = new RelayCommand(
+            () => { if (_main.SelectedLayers.Count >= 2) MergeSelected(); else MergeDown(); },
+            () => _main.SelectedLayers.Count >= 2
+                ? MergeCandidates().Count >= 2
+                : Doc.ActiveLayerIndex > 0 && !Doc.ActiveLayer!.IsLocked && !Doc.Layers[Doc.ActiveLayerIndex - 1].IsLocked);
         FlattenCommand = new RelayCommand(Flatten, () => Doc.Layers.Count > 1);
         FlipLayerHorizontalCommand = new RelayCommand(() => FlipLayer(true), () => Doc.ActiveLayer != null);
         FlipLayerVerticalCommand = new RelayCommand(() => FlipLayer(false), () => Doc.ActiveLayer != null);
@@ -51,6 +57,9 @@ public sealed class LayerCommands
     public RelayCommand MoveUpCommand { get; }
     public RelayCommand MoveDownCommand { get; }
     public RelayCommand MergeDownCommand { get; }
+
+    /// <summary>Merges every selected (visible, unlocked) layer into one new layer.</summary>
+    public RelayCommand MergeSelectedCommand { get; }
     public RelayCommand ToggleLockCommand { get; }
 
     /// <summary>Selects every layer (the Select all button of the Layers panel).</summary>
@@ -302,6 +311,39 @@ public sealed class LayerCommands
             Doc.SetLayers(Doc.Layers.Where(l => l != upper).ToList(), lower));
 
         _main.Push(new CompositeAction("Merge Down", new IHistoryAction?[] { pixelStep, structureStep }));
+    }
+
+    /// <summary>The selected layers that can be merged: visible and unlocked, bottom to top.</summary>
+    private List<Layer> MergeCandidates()
+        => Doc.Layers.Where(l => _main.SelectedLayers.Contains(l) && l.IsVisible && !l.IsLocked).ToList();
+
+    /// <summary>
+    /// Quick merge: paints all selected layers together into one new layer that takes the place of the top-most one. The result is made
+    /// of pixels (use Group instead to keep the objects editable). Hidden and locked layers in the selection are left alone.
+    /// </summary>
+    private void MergeSelected()
+    {
+        var layers = MergeCandidates();
+        if (layers.Count < 2)
+        {
+            _main.SetStatus("Select at least two visible, unlocked layers to merge (Ctrl+click in the Layers panel, or Shift+click / Ctrl+drag on the canvas).");
+            return;
+        }
+
+        var flat = new PixelBuffer(Doc.Width, Doc.Height);
+        foreach (var layer in layers) Compositor.DrawLayer(flat, layer);   // bottom to top, with each layer's opacity
+        var merged = new Layer("Merged", flat);
+
+        int top = Doc.Layers.IndexOf(layers[^1]);
+        _main.Push(LayerStructureAction.Record("Merge Layers", Doc, () =>
+        {
+            var list = Doc.Layers.ToList();
+            list.Insert(top + 1, merged);
+            list.RemoveAll(l => layers.Contains(l));
+            Doc.SetLayers(list, merged);
+        }));
+        _main.SelectOnly(merged);
+        _main.SetStatus($"Merged {layers.Count} layers into one. Ctrl+Z undoes it. (Group, Ctrl+G, keeps objects editable instead.)");
     }
 
     /// <summary>Merges all visible layers into one "Background" layer.</summary>

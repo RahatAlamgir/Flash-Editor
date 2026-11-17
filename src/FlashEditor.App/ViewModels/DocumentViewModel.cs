@@ -111,6 +111,13 @@ public sealed class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>Zoom and pan of this document, remembered while another tab is shown (null = fit to window).</summary>
     public double? ViewZoom { get; set; }
+
+    /// <summary>Guide lines pulled out of the rulers: x positions of vertical ones, y positions of horizontal ones (not saved in the file).</summary>
+    public List<double> VerticalGuides { get; } = new();
+    public List<double> HorizontalGuides { get; } = new();
+    public event EventHandler? GuidesChanged;
+    public void NotifyGuidesChanged() => GuidesChanged?.Invoke(this, EventArgs.Empty);
+    public void ClearGuides() { VerticalGuides.Clear(); HorizontalGuides.Clear(); NotifyGuidesChanged(); }
     public System.Windows.Vector ViewOffset { get; set; }
 
     public LayerViewModel? ActiveLayer

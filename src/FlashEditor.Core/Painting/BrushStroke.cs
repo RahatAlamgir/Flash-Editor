@@ -1,4 +1,5 @@
 using FlashEditor.Core.Imaging;
+using FlashEditor.Core.Retouch;
 using FlashEditor.Core.Selections;
 
 namespace FlashEditor.Core.Painting;
@@ -19,6 +20,7 @@ public sealed class BrushStroke
     private readonly bool _erase;
     private readonly Selection? _selection;
     private readonly PixelBuffer? _restoreFrom;
+    private IRetouchOp? _op;
     private readonly float[] _coverage;
     private PointD? _last;
     private double _carry; // distance left over from the previous segment, keeps dab spacing even
@@ -44,6 +46,30 @@ public sealed class BrushStroke
         if (restoreFrom.Width != target.Width || restoreFrom.Height != target.Height)
             throw new ArgumentException("The restore source must be the same size as the layer.");
         _restoreFrom = restoreFrom;
+    }
+
+    /// <summary>
+    /// A retouching stroke (clone, heal, dodge, blur...): the brush decides where and how strongly, <paramref name="op"/> what happens
+    /// to the pixels.
+    /// </summary>
+    public BrushStroke(PixelBuffer target, BrushSettings brush, IRetouchOp op, Selection? selection)
+        : this(target, brush, ColorRgba.Transparent, erase: false, selection)
+    {
+        _op = op;
+        op.Attach(IsPainted);
+    }
+
+    /// <summary>True where the stroke has painted (so far).</summary>
+    public bool IsPainted(int x, int y)
+        => x >= 0 && y >= 0 && x < _target.Width && y < _target.Height && _coverage[y * _target.Width + x] > 0;
+
+    /// <summary>Does everything the stroke touched again with another operation (from the untouched pixels). Returns that area.</summary>
+    public PixelRect Reapply(IRetouchOp op)
+    {
+        _op = op;
+        op.Attach(IsPainted);
+        if (!TotalDirty.IsEmpty) Composite(TotalDirty);
+        return TotalDirty;
     }
 
     /// <summary>Copy of the pixels before the stroke started (needed for undo).</summary>
@@ -227,7 +253,9 @@ public sealed class BrushStroke
                 dst[i] = src[i]; dst[i + 1] = src[i + 1]; dst[i + 2] = src[i + 2]; dst[i + 3] = src[i + 3];
                 if (strength <= 0) continue;
 
-                if (_restoreFrom != null)
+                if (_op != null)
+                    _op.Apply(Original, dst, x, y, strength);
+                else if (_restoreFrom != null)
                     BlendMath.Lerp(dst, i, src, i, _restoreFrom.Data, i, strength);
                 else if (_erase)
                     dst[i + 3] = ColorMath.ClampByte(src[i + 3] * (1 - strength));

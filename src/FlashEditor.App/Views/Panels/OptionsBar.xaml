@@ -93,6 +93,37 @@
             </StackPanel>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type opt:RetouchOptions}">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Visibility="{Binding HasDodgeBurn, Converter={StaticResource BoolToVisibility}}">
+                    <RadioButton Content="Dodge" IsChecked="{Binding Dodge}" GroupName="ToneMode" VerticalAlignment="Center" Margin="10,0,0,0" ToolTip="Lighten (Alt = Burn while painting)" />
+                    <RadioButton Content="Burn" IsChecked="{Binding Burn}" GroupName="ToneMode" VerticalAlignment="Center" Margin="12,0,0,0" ToolTip="Darken (Alt = Dodge while painting)" />
+                    <TextBlock Text="Range" Style="{StaticResource OptionLabel}" />
+                    <ComboBox ItemsSource="{Binding Ranges}" SelectedItem="{Binding Range}" Width="116" Margin="6,0,4,0" VerticalAlignment="Center"
+                              ToolTip="Which part of the brightness is changed most" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Visibility="{Binding HasBlurSharpen, Converter={StaticResource BoolToVisibility}}">
+                    <RadioButton Content="Blur" IsChecked="{Binding Blur}" GroupName="BlurMode" VerticalAlignment="Center" Margin="10,0,0,0" ToolTip="Soften (Alt = Sharpen while painting)" />
+                    <RadioButton Content="Sharpen" IsChecked="{Binding Sharpen}" GroupName="BlurMode" VerticalAlignment="Center" Margin="12,0,0,0" ToolTip="Crisper detail (Alt = Blur while painting)" />
+                </StackPanel>
+                <TextBlock Text="Size" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="1" Maximum="500" Value="{Binding Size}" SliderWidth="100" BoxWidth="58" Unit="px" Margin="6,0,4,0" />
+                <TextBlock Text="Hardness" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding Hardness}" SliderWidth="90" BoxWidth="58" Unit="%" Margin="6,0,4,0" />
+                <StackPanel Orientation="Horizontal" Visibility="{Binding HasStrength, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding StrengthLabel}" Style="{StaticResource OptionLabel}" />
+                    <ctl:NumberSlider Minimum="1" Maximum="100" Value="{Binding Strength}" SliderWidth="90" BoxWidth="58" Unit="%" Margin="6,0,4,0" />
+                </StackPanel>
+                <CheckBox Content="Aligned" IsChecked="{Binding Aligned}" VerticalAlignment="Center" Margin="12,0,0,0"
+                          Visibility="{Binding HasAligned, Converter={StaticResource BoolToVisibility}}"
+                          ToolTip="On: every stroke keeps the same distance to the copied place. Off: every stroke starts from the copied place again." />
+                <TextBlock Text="  Alt+click = choose the place to copy from.  [ ] = size" Style="{StaticResource OptionLabel}"
+                           Visibility="{Binding HasAligned, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Text="  Paint over the blemish; it is healed when you let go.  [ ] = size" Style="{StaticResource OptionLabel}"
+                           Visibility="{Binding IsSpot, Converter={StaticResource BoolToVisibility}}" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type opt:RefineOptions}">
             <StackPanel Orientation="Horizontal">
                 <RadioButton Content="Restore" IsChecked="{Binding Restore}" GroupName="RefineMode" VerticalAlignment="Center" Margin="10,0,0,0"

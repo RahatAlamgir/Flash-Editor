@@ -42,6 +42,7 @@ public partial class CanvasView
         bool locked = layer?.IsLocked == true;
         Add(locked ? "Unlock" : "Lock", _main.Layers.ToggleLockCommand, "Ctrl+L");
         if (count > 1) Add($"Group {count} Layers", _main.Layers.GroupCommand, "Ctrl+G");
+        if (count > 1) Add($"Merge {count} Layers", _main.Layers.MergeSelectedCommand, "Ctrl+E");
         if (obj is GroupObject) Add("Ungroup", _main.Layers.UngroupCommand, "Ctrl+Shift+G");
         Separator();
         if (obj is TextObject && !locked) Add("Edit Text...", _main.Properties.EditTextCommand);

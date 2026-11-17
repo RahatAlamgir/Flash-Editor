@@ -31,9 +31,10 @@ public class ShapeReshapeTests
     [InlineData(ShapeKind.Ellipse), InlineData(ShapeKind.Heart), InlineData(ShapeKind.Ring), InlineData(ShapeKind.Cloud),
      InlineData(ShapeKind.SpeechBubble), InlineData(ShapeKind.Crescent), InlineData(ShapeKind.Pie), InlineData(ShapeKind.Line),
      InlineData(ShapeKind.Shield), InlineData(ShapeKind.OvalBubble), InlineData(ShapeKind.Teardrop), InlineData(ShapeKind.HalfCircle)]
-    public void Curved_shapes_cannot_be_reshaped(ShapeKind kind)
+    public void Curved_shapes_have_no_corner_points_of_their_own(ShapeKind kind)
     {
-        Assert.False(Shape(kind).CanReshape);
+        Assert.False(Shape(kind).HasStraightSides);
+        Assert.Equal(kind != ShapeKind.Line, Shape(kind).CanReshape); // curved shapes are reshaped by the four corners of the box
         Assert.Null(ShapeVertices.For(Shape(kind)));
     }
 

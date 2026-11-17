@@ -60,9 +60,9 @@ public static class TransformHandles
     /// <summary>
     /// Which corner point of a shape is under the point (while reshaping), or null. Points are the shape's current corners.
     /// </summary>
-    public static int? VertexAt(ShapeObject shape, PointD canvasPoint, double zoom)
+    public static int? VertexAt(LayerObject shape, PointD canvasPoint, double zoom)
     {
-        var points = shape.CurrentVertices;
+        var points = shape.ReshapePoints;
         if (points == null) return null;
 
         double radius = (HandleSize / 2 + 4) / zoom;

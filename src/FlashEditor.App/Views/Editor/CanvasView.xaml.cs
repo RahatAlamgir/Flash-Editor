@@ -76,6 +76,7 @@ public partial class CanvasView : UserControl, ICanvasView
     {
         _main = main;
         main.Canvas = this;
+        AttachAids(main);
         main.PropertyChanged += OnMainPropertyChanged;
         main.Tools.PropertyChanged += (_, e) =>
         {
@@ -115,6 +116,7 @@ public partial class CanvasView : UserControl, ICanvasView
         }
         _document = document;
         DataContext = document;
+        FollowGuidesOf(document);
         document.Model.PropertyChanged += OnDocumentPropertyChanged;
         UpdatePageSize();
         UpdateSelectionOutline();
@@ -148,6 +150,7 @@ public partial class CanvasView : UserControl, ICanvasView
         double w = _document.Width, h = _document.Height;
         PageBackground.Width = PageBorder.Width = w;
         PageBackground.Height = PageBorder.Height = h;
+        UpdateAids();
     }
 
     private void UpdateSelectionOutline()
@@ -262,6 +265,7 @@ public partial class CanvasView : UserControl, ICanvasView
 
         if (_main != null) _main.Zoom = _zoom;
         DrawTransformFrame(); // handles keep their screen size
+        UpdateAids();
     }
 
     private void RegisterOverlay(Shape shape, double thickness)
@@ -315,7 +319,7 @@ public partial class CanvasView : UserControl, ICanvasView
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
         Viewport.Focus();
-        if (_panLast != null || _toolDragging) return;
+        if (_panLast != null || _toolDragging || _guideDrag != null) return;
 
         if (e.ChangedButton == MouseButton.Middle || (_spaceHeld && e.ChangedButton == MouseButton.Left))
         {
@@ -326,6 +330,8 @@ public partial class CanvasView : UserControl, ICanvasView
             e.Handled = true;
             return;
         }
+
+        if (TryBeginGuideDrag(e)) return;
 
         if (e.ChangedButton == MouseButton.Right && !ToolUsesRightButton)
         {
@@ -347,6 +353,8 @@ public partial class CanvasView : UserControl, ICanvasView
     {
         var args = CreateArgs(e, null);
         UpdateStatus(args);
+        UpdateRulerMarkers(e.GetPosition(Viewport));
+        if (DragGuide(e)) return;
 
         if (_panLast is Point last)
         {
@@ -359,10 +367,12 @@ public partial class CanvasView : UserControl, ICanvasView
         UpdateBrushCursor(args.Position);
         _lastArgs = args;
         ActiveTool?.MouseMove(args);
+        UpdateGuideCursor(e.GetPosition(Viewport));
     }
 
     private void OnMouseUp(object sender, MouseButtonEventArgs e)
     {
+        if (EndGuideDrag(e)) return;
         if (_panLast != null)
         {
             if (e.ChangedButton is MouseButton.Middle or MouseButton.Left)
@@ -410,6 +420,7 @@ public partial class CanvasView : UserControl, ICanvasView
 
     private void OnMouseLeave(object sender, MouseEventArgs e)
     {
+        UpdateRulerMarkers(null);
         UpdateBrushCursor(null);
         if (_main != null) _main.CursorText = "";
     }
@@ -417,6 +428,7 @@ public partial class CanvasView : UserControl, ICanvasView
     private void OnViewportSizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (_fitPending) FitToWindow();
+        UpdateAids();
     }
 
     private void UpdateStatus(ToolMouseArgs args)

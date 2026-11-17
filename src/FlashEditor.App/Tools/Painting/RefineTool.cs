@@ -61,7 +61,7 @@ public sealed class RefineTool : ToolBase
         if (e.Button != MouseButton.Left) return;
 
         // A picture object (the cut-out left by Remove Background, or a placed picture): paint on the picture itself.
-        if (Document.ActiveLayer is { Object: ImageObject picture } pictureLayer)
+        if (Document.ActiveLayer is { Object: ImageObject { Warp: null } picture } pictureLayer)
         {
             BeginOnPicture(pictureLayer, picture, e);
             return;

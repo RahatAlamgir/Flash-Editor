@@ -3,6 +3,7 @@ using FlashEditor.App.Tools;
 using FlashEditor.App.Tools.Navigation;
 using FlashEditor.App.Tools.Options;
 using FlashEditor.App.Tools.Painting;
+using FlashEditor.App.Tools.Retouch;
 using FlashEditor.App.Tools.Selecting;
 using FlashEditor.App.Tools.Shapes;
 using FlashEditor.App.Tools.Text;
@@ -32,6 +33,12 @@ public sealed class ToolsViewModel : ObservableObject
             new BrushTool(host),
             new EraserTool(host),
             new RefineTool(host),
+            new CloneStampTool(host),
+            new SpotHealingTool(host),
+            new HealingBrushTool(host),
+            new PatchTool(host),
+            new DodgeBurnTool(host),
+            new BlurSharpenTool(host),
             new BucketTool(host),
             new EyedropperTool(host),
             new ShapeTool(host, new ShapeOptions(host.Dialogs)),
@@ -41,9 +48,22 @@ public sealed class ToolsViewModel : ObservableObject
         };
         _activeTool = Get<MoveTool>(); // the program starts on Select / Move
         _activeTool.IsActive = true;
+
+        // Similar tools share one button in the toolbox (indexes into the list above).
+        int[][] layout =
+        {
+            new[] { 0 }, new[] { 1, 2 }, new[] { 3, 4 }, new[] { 5 }, new[] { 6, 7 }, new[] { 8 },
+            new[] { 9, 10, 11 }, new[] { 13, 14, 15 }, new[] { 12 }, new[] { 16 }, new[] { 17 },
+            new[] { 18 }, new[] { 19 }, new[] { 20 }, new[] { 21 }, new[] { 22 }, new[] { 23 },
+        };
+        Groups = layout.Select(ix => new ToolGroup(ix.Select(i => Tools[i]).ToList(), t => ActiveTool = t)).ToList();
+        foreach (var group in Groups) group.OnActiveToolChanged(_activeTool);
     }
 
     public IReadOnlyList<ToolBase> Tools { get; }
+
+    /// <summary>The toolbox buttons: each holds one tool or a group of similar tools.</summary>
+    public IReadOnlyList<ToolGroup> Groups { get; }
 
     public ToolBase ActiveTool
     {
@@ -56,6 +76,7 @@ public sealed class ToolsViewModel : ObservableObject
             _activeTool = value;
             _activeTool.IsActive = true;
             _activeTool.Activate();
+            foreach (var group in Groups) group.OnActiveToolChanged(_activeTool);
             OnPropertyChanged();
         }
     }
