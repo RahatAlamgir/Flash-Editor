@@ -4,12 +4,13 @@ using FlashEditor.Core.Documents;
 using FlashEditor.Core.Effects;
 using FlashEditor.Core.History;
 using FlashEditor.Core.IO;
+using FlashEditor.Core.IO.Project;
 using FlashEditor.Core.Objects;
 using FlashEditor.Core.Painting;
 
 namespace FlashEditor.App.ViewModels.Commands;
 
-/// <summary>File menu: New, Open, Place, Save, Save As, Export.</summary>
+/// <summary>File menu: New, Open, Place, Save / Save As (the editable project) and Export (a normal picture).</summary>
 public sealed class FileCommands
 {
     private readonly MainViewModel _main;
@@ -44,20 +45,34 @@ public sealed class FileCommands
 
     private void Open()
     {
-        var path = _main.Dialogs.ShowOpenImage("Open Image");
+        var path = _main.Dialogs.ShowOpenFile("Open");
         if (path != null) OpenPath(path);
     }
 
-    /// <summary>Opens an image file (menu, drag &amp; drop, or command line).</summary>
-    /// <summary>Opens an image file in a new tab (or shows its tab if it is already open).</summary>
+    /// <summary>Opens a picture or a saved project in a new tab (or shows its tab if it is already open). Used by the menu, drag &amp; drop and the command line.</summary>
     public void OpenPath(string path)
     {
         if (_main.ActivateIfOpen(path)) return;
+        if (ProjectFile.IsProject(path))
+        {
+            OpenProject(path);
+            return;
+        }
         _main.RunAsync("Opening the image", async () =>
         {
             var pixels = await Task.Run(() => ImageDecoder.Load(path));
             _main.LoadDocument(Document.FromImage(pixels), path, "Open");
             _main.SetStatus($"Opened {Path.GetFileName(path)} ({pixels.Width} x {pixels.Height})");
+        });
+    }
+
+    private void OpenProject(string path)
+    {
+        _main.RunAsync("Opening the project", async () =>
+        {
+            var document = await Task.Run(() => ProjectReader.Open(path));
+            _main.LoadDocument(document, path, "Open Project");
+            _main.SetStatus($"Opened {Path.GetFileName(path)} ({document.Width} x {document.Height}, {document.Layers.Count} layers)");
         });
     }
 
@@ -82,61 +97,44 @@ public sealed class FileCommands
         });
     }
 
-    /// <summary>Saves (merging all visible layers). Returns false if cancelled or failed.</summary>
+    /// <summary>
+    /// Saves the project (a .flash file with every layer, shape and text still editable). To get a normal picture
+    /// (PNG, JPG...) use Export. Returns false if cancelled or failed.
+    /// </summary>
     public bool Save(bool saveAs)
     {
         string? path = Doc.FilePath;
-        var format = Doc.FileFormat;
-        int quality = Doc.SaveQuality;
+        bool isProject = path != null && ProjectFile.IsProject(path);
 
-        if (saveAs || path == null || format == null)
+        if (saveAs || !isProject)
         {
             var suggested = Path.GetFileNameWithoutExtension(Doc.DisplayName);
-            var target = _main.Dialogs.ShowSaveImage(suggested, format);
-            if (target == null) return false;
-            path = target.Path;
-            format = target.Format;
-
-            if (ImageFileFormats.HasQuality(format.Value))
-            {
-                var parameter = new EffectParameter("quality", "Quality", 1, 100, quality, 1, "%");
-                var values = new EffectValues(new[] { parameter });
-                var note = format == ImageFileFormat.Webp
-                    ? "Higher = better looking but bigger file. 100 saves WebP without any loss."
-                    : "Higher = better looking but bigger file. 85-92 is a good balance.";
-                var chosen = _main.Dialogs.ShowParameters($"{format} Quality", new[] { parameter }, values, null, note);
-                if (chosen == null) return false;
-                quality = (int)chosen["quality"];
-            }
+            string? folder = path != null ? Path.GetDirectoryName(path) : null;
+            path = _main.Dialogs.ShowSaveProject(suggested, folder);
+            if (path == null) return false;
+            if (!ProjectFile.IsProject(path)) path += ProjectFile.Extension;
         }
 
         bool ok = false;
         _main.Run("Saving", () =>
         {
-            var flat = Compositor.Flatten(Doc.Model);
-            ImageEncoder.Save(flat, path, format!.Value, quality, _main.Colors.Background);
+            ProjectWriter.Save(Doc.Model, path!);
             Doc.FilePath = path;
-            Doc.FileFormat = format;
-            Doc.SaveQuality = quality;
             Doc.Model.History.MarkSaved();
             ok = true;
         });
-        if (ok)
-        {
-            string extra = format == ImageFileFormat.Ico ? " (icon sizes 16-256 px)" : "";
-            _main.SetStatus($"Saved {Path.GetFileName(path)}{extra}");
-        }
+        if (ok) _main.SetStatus($"Saved project {Path.GetFileName(path)}. Use File > Export to make a PNG, JPG or other picture.");
         return ok;
     }
 
     /// <summary>
-    /// Saves a copy with a chosen format, quality and size (e.g. a smaller JPG for the web, or an enlarged PNG).
-    /// The open document is not changed and keeps its own file name.
+    /// Makes a normal picture from the project with a chosen format, quality and size (e.g. a smaller JPG for the web,
+    /// or an enlarged PNG). The open document is not changed and keeps its own file name.
     /// </summary>
     private void Export()
     {
         var flat = Compositor.Flatten(Doc.Model);
-        var format = Doc.FileFormat ?? ImageFileFormat.Jpeg;
+        var format = Doc.FileFormat ?? ImageFileFormat.Png;
         var settings = _main.Dialogs.ShowExport(flat, format, Doc.SaveQuality, _main.Colors.Background);
         if (settings == null) return;
 

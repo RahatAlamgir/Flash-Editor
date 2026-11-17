@@ -195,17 +195,48 @@ public sealed class Layer : ObservableObject
         var from = renderer.DrawingBounds(old);
         var to = renderer.DrawingBounds(obj);
         var canvas = Pixels.Bounds;
-        if (from.IsEmpty || to.IsEmpty || from.Intersect(canvas) != from || to.Intersect(canvas) != to) return false;
+        if (from.IsEmpty || to.IsEmpty) return false;
         if (to.X - from.X != (int)dx || to.Y - from.Y != (int)dy) return false;
 
-        var content = Pixels.Crop(from);   // a copy: the old and the new place may overlap
-        Pixels.ClearRegion(from);
-        Pixels.CopyFrom(content, to.X, to.Y);
+        if (from.Intersect(canvas) == from && to.Intersect(canvas) == to)
+        {
+            var content = Pixels.Crop(from);   // a copy: the old and the new place may overlap
+            Pixels.ClearRegion(from);
+            Pixels.CopyFrom(content, to.X, to.Y);
+        }
+        else
+        {
+            // Part of the drawing is (or was) beyond the canvas edge, so the canvas pixels are not the whole picture of the object.
+            // Keep one complete drawing of it and place that: moving an object over the edge costs no more than moving it inside.
+            var sprite = SpriteFor(renderer, old, from);
+            Pixels.ClearRegion(from);
+            Pixels.CopyFrom(sprite, to.X, to.Y);
+        }
 
         Object = obj;
         NotifyPixelsChanged(from.Union(to));
         OnPropertyChanged(nameof(Object));
         return true;
+    }
+
+    // A complete drawing of an object that is partly off the canvas (see TryShiftObject), valid for any object that only differs by position.
+    private PixelBuffer? _sprite;
+    private LayerObject? _spriteObject;
+
+    private PixelBuffer SpriteFor(IObjectRenderer renderer, LayerObject obj, PixelRect bounds)
+    {
+        if (_sprite != null && _spriteObject != null && _sprite.Width == bounds.Width && _sprite.Height == bounds.Height
+            && Equals(obj with { Box = _spriteObject.Box }, _spriteObject)
+            && obj.Box.Width == _spriteObject.Box.Width && obj.Box.Height == _spriteObject.Box.Height && obj.Box.Rotation == _spriteObject.Box.Rotation)
+        {
+            return _sprite;
+        }
+
+        // Draw the object alone on a buffer exactly as big as its drawing, with that drawing's top-left corner at (0, 0).
+        var moved = obj with { Box = obj.Box.Offset(-bounds.X, -bounds.Y) };
+        _sprite = renderer.Render(moved, bounds.Width, bounds.Height);
+        _spriteObject = obj;
+        return _sprite;
     }
 
     /// <summary>The layer state for <paramref name="obj"/> drawn on a canvas of the given size.</summary>
@@ -216,6 +247,7 @@ public sealed class Layer : ObservableObject
     public void RestoreState(LayerState state)
     {
         _ownsPixels = false; // these buffers also belong to an undo step (or the caller)
+        _sprite = null; _spriteObject = null; // a different layer content: drop the cached drawing
         Pixels = state.Pixels;
         _extended = state.Extended;
         _extendedX = state.ExtendedX;

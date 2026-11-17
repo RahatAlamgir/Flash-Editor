@@ -14,6 +14,9 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
 
+        // Avoid long "stop everything" cleanups while the user drags things around.
+        System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
+
         // Lets the program open and save more image formats through Windows' own codecs (TIFF, HEIC, RAW, GIF...).
         Services.WicImageCodec.Register();
 

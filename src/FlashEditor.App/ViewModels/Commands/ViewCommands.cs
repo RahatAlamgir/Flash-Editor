@@ -49,8 +49,9 @@ public sealed class ViewCommands
         "Ctrl+A Select all layers (Select / Move tool) or all pixels (other tools)   Ctrl+Shift+D Deselect   Ctrl+Shift+I Invert selection\n" +
         "Ctrl+D Duplicate the selected layer or object\n\n" +
         "FILE\n" +
-        "Ctrl+N New   Ctrl+O Open   Ctrl+S Save   Ctrl+Shift+S Save As\n" +
-        "Ctrl+Alt+S Export (choose quality and size)\n\n" +
+        "Ctrl+N New   Ctrl+O Open (picture or project)\n" +
+        "Ctrl+S Save project (.flash, everything stays editable)   Ctrl+Shift+S Save project as\n" +
+        "Ctrl+Alt+S Export as a picture (PNG, JPG... choose quality and size)\n\n" +
         "SELECT / MOVE (V)\n" +
         "Click to select   Drag to move   Handles resize / rotate (Shift = free / 15°)\n" +
         "Double-click text to edit   Right-click for quick actions   Delete removes a selected object\n" +

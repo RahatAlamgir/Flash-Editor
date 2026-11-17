@@ -127,24 +127,33 @@ public sealed class PixelBuffer
     /// </summary>
     public PixelRect VisibleBounds()
     {
-        int minX = Width, minY = Height, maxX = -1, maxY = -1;
-        for (int y = 0; y < Height; y++)
+        int top = FirstVisibleRow(0, 1);
+        if (top < 0) return PixelRect.Empty;
+        int bottom = FirstVisibleRow(Height - 1, -1);
+
+        // Only the rows between the first and last visible row can change the left and right edge.
+        int minX = Width, maxX = -1;
+        for (int y = top; y <= bottom && (minX > 0 || maxX < Width - 1); y++)
         {
-            int row = y * Stride;
-            int first = -1, last = -1;
-            for (int x = 0; x < Width; x++)
-            {
-                if (Data[row + x * 4 + 3] == 0) continue;
-                if (first < 0) first = x;
-                last = x;
-            }
-            if (first < 0) continue;
-            if (first < minX) minX = first;
-            if (last > maxX) maxX = last;
-            if (y < minY) minY = y;
-            maxY = y;
+            var row = Data.AsSpan(y * Stride, Stride);
+            for (int x = 0; x < minX; x++)
+                if (row[x * 4 + 3] != 0) { minX = x; break; }
+            for (int x = Width - 1; x > maxX; x--)
+                if (row[x * 4 + 3] != 0) { maxX = x; break; }
         }
-        return maxX < 0 ? PixelRect.Empty : new PixelRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        return new PixelRect(minX, top, maxX - minX + 1, bottom - top + 1);
+    }
+
+    /// <summary>The first row (going from <paramref name="start"/> in direction <paramref name="step"/>) that has a visible pixel, or -1.</summary>
+    private int FirstVisibleRow(int start, int step)
+    {
+        for (int y = start; y >= 0 && y < Height; y += step)
+        {
+            var row = Data.AsSpan(y * Stride, Stride);
+            for (int i = 3; i < row.Length; i += 4)
+                if (row[i] != 0) return y;
+        }
+        return -1;
     }
 
     /// <summary>True if both buffers have the same size and identical bytes.</summary>

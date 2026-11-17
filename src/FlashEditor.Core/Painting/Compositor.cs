@@ -47,7 +47,7 @@ public static class Compositor
         var src = source.Data;
         bool plain = selection == null && opacity >= 1.0;
 
-        Parallel.For(area.Y, area.Bottom, ty =>
+        void Row(int ty)
         {
             int sy = ty - y;
             for (int tx = area.X; tx < area.Right; tx++)
@@ -72,7 +72,11 @@ public static class Compositor
                 }
                 BlendMath.OverPixel(dst, di, src, si, factor);
             }
-        });
+        }
+
+        // Starting threads costs more than a small area (a brush dab, a small object) takes to paint.
+        if ((long)area.Width * area.Height < 16384) for (int ty = area.Y; ty < area.Bottom; ty++) Row(ty);
+        else Parallel.For(area.Y, area.Bottom, Row);
         return area;
     }
 

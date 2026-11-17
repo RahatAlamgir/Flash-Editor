@@ -38,7 +38,8 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 
 ### Files and pictures
 * Open **PNG, JPG, WEBP, ICO, BMP, GIF, TIFF, JPEG XR, DDS** and, when Windows has the free codec from the Microsoft Store, **HEIC, AVIF, JPEG XL and camera RAW** (DNG, CR2, NEF, ARW...). Drag files onto the window; hold **Ctrl** while dropping to add them as layers.
-* Save as **PNG, JPG, WEBP, ICO** (16 to 256 px), **BMP**, **TIFF** or **GIF** (256 colors, with smart color reduction). **Export** (Ctrl+Alt+S) adds format, quality, output size and crop.
+* **Save** (Ctrl+S) keeps your work as a **project** (a `.flash` file): every layer, shape, text, picture, group, shadow and 3D look stays editable, so you can close the program and carry on later. Open it again with **Open** (Ctrl+O) or by dragging it onto the window.
+* **Export** (Ctrl+Alt+S) makes a normal picture: **PNG, JPG, WEBP, ICO** (16 to 256 px), **BMP**, **TIFF** or **GIF** (256 colors, with smart color reduction), with format, quality, output size and crop.
 * **Several pictures at once**, one tab each, with their own layers, undo history and zoom. Double-click a tab to rename it.
 
 ### AI tools (offline, GPU accelerated)
@@ -70,6 +71,7 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 * A layer of plain pixels (painted, or after "To pixels") has no shadow, size or rotation settings: click **Make editable** in the Properties panel to turn it into a picture object that has them. "To pixels" does the opposite: it makes an object paintable but no longer editable as an object.
 * **Groups show their parts** (like Canva): a grouped layer has an arrow to open or close the list of its parts, each with a small picture and its name (double-click to rename).
 * **Edit inside a group** (like Canva): double-click a group, or click one of its parts in the Layers panel, to select just that part. Move, resize, rotate, recolor, change text, add a shadow or delete it (Delete) while it stays in the group. **Esc** goes back to the whole group. All undoable.
+* **Gradient colors**: tick **Gradient** (Properties) to fill a shape or color a text with a fade through **two to eight colors**. Click a color to change it, drag its slider to move it along the gradient, **+ Add color** for another one, the cross removes one, **Reverse** flips the direction. Or pick one of eleven ready-made looks (Sunset, Ocean, Forest, Candy, Fire, Night, Gold, Glow, Rainbow, Aurora, Sunrise). Set the **Angle**, or tick **Radial** to fade from the middle outward. The gradient turns and mirrors with the object and works together with shadows and 3D.
 * **Drop shadow** on any shape, text, picture or group (Properties > Shadow): color, opacity, blur, distance and angle. The shadow follows the real outline of the object. Ten one-click presets, each shown as a small picture of the shadow: Soft, Hard, Lifted, Subtle, Contact, Sticker, Long, Glow, Neon and Left.
 * **Drag layers up and down** in the Layers panel to change their order (drag one of several selected layers to move them all). A line shows where the layer will land; one undo step.
 * Layer icons are redrawn when you finish a change (a moment after you let go of the mouse), not while you drag, which keeps moving objects smooth.
@@ -162,7 +164,8 @@ Files are checked (size and SHA-256) before use and saved only in the `models` f
 | Ctrl+L | Lock / unlock |
 | Ctrl+Alt+B | Remove background (AI) |
 | Ctrl+Shift+R | Recolor |
-| Ctrl+Alt+S | Export |
+| Ctrl+S / Ctrl+Shift+S | Save project (.flash) / save project as |
+| Ctrl+Alt+S | Export as a picture (PNG, JPG...) |
 | Ctrl+Tab, Ctrl+W | Next picture, close picture |
 | Space + drag, mouse wheel | Pan, zoom |
 
@@ -189,7 +192,7 @@ Flash Editor/
 │   │   ├── Retouch/                 Clone, heal, spot heal, patch, dodge/burn, blur/sharpen operations
 │   │   ├── Transforms/              Crop, flip, rotate, resize (Lanczos, Bicubic...)
 │   │   ├── Effects/                 Effect framework, Adjustments/, Filters/, Background/
-│   │   └── IO/                      Decoder, encoder (PNG/JPG/WebP/ICO/BMP/GIF), exporter; TIFF and unusual formats through Windows codecs
+│   │   └── IO/                      Decoder, encoder (PNG/JPG/WebP/ICO/BMP/GIF), exporter; TIFF and unusual formats through Windows codecs; `Project/` reads and writes .flash projects
 │   │
 │   ├── FlashEditor.AI/              AI features (ONNX Runtime + DirectML). Kept out of Core.
 │   │   ├── Models/                  Which model, where from; download once and verify

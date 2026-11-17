@@ -16,7 +16,16 @@
     <ApplicationIcon>Assets\FlashEditor.ico</ApplicationIcon>
     <!-- WPF0001: the built-in Fluent (dark) theme is marked experimental. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <!-- Profile-guided tuning makes the first seconds of dragging / resizing about twice as slow (code is first run in a slow
+         "measuring" form). Off = full speed from the first frame. -->
+    <TieredPGO>false</TieredPGO>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pictures are big arrays. Normally every array over 85 KB goes to the "large object heap", whose cleanup stalls the editor for a
+         moment while dragging or resizing. Raising the limit to 32 MB keeps working buffers in the fast ordinary heap. -->
+    <RuntimeHostConfigurationOption Include="System.GC.LOHThreshold" Value="33554432" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Window / title-bar icon. -->

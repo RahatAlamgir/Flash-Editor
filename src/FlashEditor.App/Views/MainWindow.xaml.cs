@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using FlashEditor.App.ViewModels;
 using FlashEditor.Core.IO;
+using FlashEditor.Core.IO.Project;
 
 namespace FlashEditor.App.Views;
 
@@ -111,18 +112,20 @@ public partial class MainWindow : Window
     private void OnDrop(object sender, DragEventArgs e)
     {
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] files) return;
-        foreach (var path in files.Where(ImageFileFormats.CanOpen))
+        foreach (var path in files.Where(CanOpenDropped))
         {
-            // Ctrl = add as a layer to the current picture; otherwise each file opens in its own tab.
-            if (e.KeyStates.HasFlag(DragDropKeyStates.ControlKey)) _viewModel.File.PlacePath(path);
+            // Ctrl = add as a layer to the current picture; otherwise each file opens in its own tab (projects always open).
+            if (e.KeyStates.HasFlag(DragDropKeyStates.ControlKey) && !ProjectFile.IsProject(path)) _viewModel.File.PlacePath(path);
             else _viewModel.File.OpenPath(path);
         }
     }
 
     private static string? GetDroppedImage(DragEventArgs e)
-        => e.Data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files && ImageFileFormats.CanOpen(files[0])
+        => e.Data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files && CanOpenDropped(files[0])
             ? files[0]
             : null;
+
+    private static bool CanOpenDropped(string path) => ImageFileFormats.CanOpen(path) || ProjectFile.IsProject(path);
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {

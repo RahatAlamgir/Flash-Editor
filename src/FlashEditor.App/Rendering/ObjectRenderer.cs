@@ -123,7 +123,9 @@ public sealed class ObjectRenderer : IObjectRenderer
             case ShapeObject shape:
             {
                 var geometry = ShapeGeometryFactory.Build(shape, b.Width, b.Height);
-                Brush? fill = shape.Fill is { } f && shape.CanFill ? Frozen(new SolidColorBrush(BitmapConverter.ToWpf(f))) : null;
+                Brush? fill = !shape.CanFill ? null
+                    : shape.Gradient is { } gradient ? GradientBrushFor(gradient, b.Width, b.Height)
+                    : shape.Fill is { } f ? Frozen(new SolidColorBrush(BitmapConverter.ToWpf(f))) : null;
                 Pen? pen = null;
                 var strokeColor = shape.Stroke ?? (shape.IsLineLike ? shape.Fill : null);
                 if (strokeColor is { } sc && shape.StrokeWidth > 0)
@@ -144,6 +146,7 @@ public sealed class ObjectRenderer : IObjectRenderer
                 var formatted = CreateText(text);
                 var (naturalW, naturalH) = (Math.Ceiling(formatted.WidthIncludingTrailingWhitespace) + 2, Math.Ceiling(formatted.Height) + 2);
                 // The box may have been resized: stretch the text to fill it.
+                if (text.Gradient is { } textGradient) formatted.SetForegroundBrush(GradientBrushFor(textGradient, naturalW, naturalH));
                 dc.PushTransform(new ScaleTransform(b.Width / naturalW, b.Height / naturalH));
                 double originX = text.Align switch
                 {
@@ -280,6 +283,51 @@ public sealed class ObjectRenderer : IObjectRenderer
         }
 
         dc.DrawImage(BitmapConverter.ToFrozenBitmap(drawn), new Rect(-pad / res, -pad / res, width / res, height / res));
+    }
+
+    /// <summary>
+    /// A gradient laid over a <paramref name="width"/> x <paramref name="height"/> area at the origin. A straight gradient is stretched
+    /// so its ends touch the corners of the area whatever the angle (the way CSS does it); a radial one grows from the middle to the edges.
+    /// </summary>
+    private static Brush GradientBrushFor(GradientStyle gradient, double width, double height)
+    {
+        width = Math.Max(1, width);
+        height = Math.Max(1, height);
+        var stops = StopsOf(gradient);
+
+        Brush brush;
+        if (gradient.Radial)
+        {
+            brush = new RadialGradientBrush(stops)
+            {
+                MappingMode = BrushMappingMode.Absolute,
+                Center = new Point(width / 2, height / 2),
+                GradientOrigin = new Point(width / 2, height / 2),
+                RadiusX = width / 2,
+                RadiusY = height / 2,
+            };
+        }
+        else
+        {
+            double angle = gradient.Angle * Math.PI / 180, dx = Math.Cos(angle), dy = Math.Sin(angle);
+            double half = (Math.Abs(width * dx) + Math.Abs(height * dy)) / 2;       // reaches the corner that is furthest along the direction
+            var center = new Point(width / 2, height / 2);
+            brush = new LinearGradientBrush(stops, 0)
+            {
+                MappingMode = BrushMappingMode.Absolute,
+                StartPoint = new Point(center.X - dx * half, center.Y - dy * half),
+                EndPoint = new Point(center.X + dx * half, center.Y + dy * half),
+            };
+        }
+        return Frozen(brush);
+    }
+
+    /// <summary>The colors of a gradient as WPF gradient stops (shared with the small previews in the Properties panel).</summary>
+    public static GradientStopCollection StopsOf(GradientStyle gradient)
+    {
+        var stops = new GradientStopCollection();
+        foreach (var stop in gradient.Sorted) stops.Add(new System.Windows.Media.GradientStop(BitmapConverter.ToWpf(stop.Color), Math.Clamp(stop.Position, 0, 1)));
+        return stops;
     }
 
     private static FormattedText CreateText(TextObject text)

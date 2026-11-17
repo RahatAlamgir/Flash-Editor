@@ -13,6 +13,9 @@ public abstract record LayerObject(ObjectBox Box, bool FlipX = false, bool FlipY
     /// <summary>The drop shadow behind the object, or null for none (any kind of object can have one).</summary>
     public ShadowStyle? Shadow { get; init; }
 
+    /// <summary>A fading color for the fill of a shape or the color of a text, or null for a flat color. (Pictures and groups ignore it.)</summary>
+    public GradientStyle? Gradient { get; init; }
+
     /// <summary>The 3D look (a solid side and a bevel), or null for a flat object (any kind of object can have one).</summary>
     public ThreeDStyle? ThreeD { get; init; }
 

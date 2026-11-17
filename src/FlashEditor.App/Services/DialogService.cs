@@ -2,7 +2,9 @@ using System.Windows;
 using FlashEditor.App.Views.Dialogs;
 using FlashEditor.Core.Effects;
 using FlashEditor.Core.Imaging;
+using System.IO;
 using FlashEditor.Core.IO;
+using FlashEditor.Core.IO.Project;
 using Microsoft.Win32;
 
 namespace FlashEditor.App.Services;
@@ -15,6 +17,27 @@ public sealed class DialogService : IDialogService
     public string? ShowOpenImage(string title)
     {
         var dialog = new OpenFileDialog { Title = title, Filter = ImageFileFormats.OpenFilter };
+        return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+    }
+
+    public string? ShowOpenFile(string title)
+    {
+        var dialog = new OpenFileDialog { Title = title, Filter = ImageFileFormats.OpenAnyFilter };
+        return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+    }
+
+    public string? ShowSaveProject(string suggestedName, string? folder)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save Project",
+            Filter = ProjectFile.Filter,
+            DefaultExt = ProjectFile.Extension,
+            FileName = suggestedName,
+            AddExtension = true,
+            OverwritePrompt = true,
+        };
+        if (folder != null && Directory.Exists(folder)) dialog.InitialDirectory = folder;
         return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
     }
 

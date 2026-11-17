@@ -63,12 +63,14 @@
         <Menu DockPanel.Dock="Top" Background="{StaticResource PanelBrush}">
             <MenuItem Header="_File">
                 <MenuItem Header="_New..." InputGestureText="Ctrl+N" Command="{Binding File.NewCommand}" />
-                <MenuItem Header="_Open..." InputGestureText="Ctrl+O" Command="{Binding File.OpenCommand}" />
+                <MenuItem Header="_Open (picture or project)..." InputGestureText="Ctrl+O" Command="{Binding File.OpenCommand}" />
                 <MenuItem Header="_Place Image as Layer..." Command="{Binding File.PlaceCommand}" />
                 <Separator />
-                <MenuItem Header="_Save" InputGestureText="Ctrl+S" Command="{Binding File.SaveCommand}" />
-                <MenuItem Header="Save _As..." InputGestureText="Ctrl+Shift+S" Command="{Binding File.SaveAsCommand}" />
-                <MenuItem Header="_Export (choose quality and size)..." InputGestureText="Ctrl+Alt+S" Command="{Binding File.ExportCommand}" />
+                <MenuItem Header="_Save Project" InputGestureText="Ctrl+S" Command="{Binding File.SaveCommand}"
+                          ToolTip="Saves a .flash file that keeps every layer, shape and text editable" />
+                <MenuItem Header="Save Project _As..." InputGestureText="Ctrl+Shift+S" Command="{Binding File.SaveAsCommand}" />
+                <MenuItem Header="_Export as Picture (PNG, JPG...)..." InputGestureText="Ctrl+Alt+S" Command="{Binding File.ExportCommand}"
+                          ToolTip="Makes a normal picture file; choose format, quality and size" />
                 <Separator />
                 <MenuItem Header="_Close" InputGestureText="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
                 <MenuItem Header="Next Picture" InputGestureText="Ctrl+Tab" Command="{Binding NextDocumentCommand}" />

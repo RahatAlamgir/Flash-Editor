@@ -28,6 +28,11 @@ public static class ImageFileFormats
         "TIFF|*.tif;*.tiff|HEIC / AVIF / JPEG XL|*.heic;*.heif;*.avif;*.jxl|" +
         "Camera RAW|*.dng;*.cr2;*.cr3;*.nef;*.arw;*.orf;*.rw2;*.raf|JPEG XR|*.jxr;*.wdp;*.hdp|DDS texture|*.dds|All files|*.*";
 
+    /// <summary>File > Open: pictures and Flash Editor projects.</summary>
+    public static readonly string OpenAnyFilter =
+        "Pictures and projects|*" + Project.ProjectFile.Extension + ";" + Pattern(OpenExtensions) + "|" +
+        Project.ProjectFile.Filter + "|" + OpenFilter;
+
     /// <summary>Order matches <see cref="FromFilterIndex"/>.</summary>
     public const string SaveFilter =
         "PNG image|*.png|JPEG image|*.jpg|WebP image|*.webp|Windows icon|*.ico|Bitmap (BMP)|*.bmp|TIFF image|*.tif|GIF image (256 colors)|*.gif";

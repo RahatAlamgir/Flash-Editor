@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Media;
 using FlashEditor.App.Rendering;
@@ -52,6 +53,13 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         {
             if (p is ThreeDPreset preset) Change($"3D: {preset.Name}", o => o with { ThreeD = preset.CreateStyle(o.ThreeD) });
         }, _ => HasObject);
+        AddGradientStopCommand = new RelayCommand(() => ChangeGradient("Add Gradient Color", g => g.WithStopAdded()),
+            () => HasGradient && Object!.Gradient!.Stops.Count < GradientStyle.MaxStops);
+        SwapGradientCommand = new RelayCommand(() => ChangeGradient("Reverse Gradient", g => g.Reversed()), () => HasGradient);
+        ApplyGradientPresetCommand = new RelayCommand(p =>
+        {
+            if (p is GradientPresetItem item) Change($"Gradient: {item.Name}", o => WithGradient(o, item.Preset.CreateStyle()));
+        }, _ => CanGradient);
         MakeEditableCommand = new RelayCommand(MakeEditable, () => IsPixelLayer);
         ToggleReshapeCommand = new RelayCommand(() => _main.ToggleReshape(), () => CanReshape && CanEdit);
         ResetShapeCommand = new RelayCommand(() => Change("Reset Shape", o => o.WithoutReshape()), () => HasCustomOutline && CanEdit);
@@ -341,6 +349,84 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     /// <summary>Gives the object the 3D look of the preset given as the command parameter.</summary>
     public RelayCommand ApplyThreeDPresetCommand { get; }
     public RelayCommand PickThreeDColorCommand { get; }
+
+    // ------------------------------------------------------------------ gradient (shapes with a fill, and text)
+
+    /// <summary>Shapes that can be filled and text can have a fading color instead of a flat one.</summary>
+    public bool CanGradient => Shape?.CanFill == true || IsText;
+
+    public bool HasGradient => CanGradient && Object?.Gradient != null;
+
+    public bool GradientEnabled
+    {
+        get => HasGradient;
+        set => Change("Gradient", o => value
+            ? WithGradient(o, o.Gradient ?? GradientStyle.Starting(o is TextObject t ? t.Color : o is ShapeObject { Fill: { } f } ? f : new ColorRgba(59, 130, 246)))
+            : o with { Gradient = null });
+    }
+
+    /// <summary>One row for each color of the gradient (kept and updated in place, so dragging a slider is not interrupted).</summary>
+    public IReadOnlyList<GradientStopItem> GradientStops
+    {
+        get
+        {
+            var stops = Object?.Gradient?.Stops ?? Array.Empty<ColorStop>();
+            if (_stopItems.Count != stops.Count)
+            {
+                _stopItems.Clear();
+                for (int i = 0; i < stops.Count; i++)
+                    _stopItems.Add(new GradientStopItem(i, PickGradientStop, MoveGradientStop, RemoveGradientStop));
+            }
+            for (int i = 0; i < stops.Count; i++) _stopItems[i].Show(stops[i], stops.Count > GradientStyle.MinStops);
+            return _stopItems;
+        }
+    }
+
+    private readonly ObservableCollection<GradientStopItem> _stopItems = new();
+
+    private void PickGradientStop(int index)
+    {
+        var current = Object?.Gradient?.Stops;
+        if (current == null || index >= current.Count) return;
+        PickColor("Gradient color", current[index].Color, c => ChangeGradient("Gradient Color", g => g.WithStop(index, st => st with { Color = c })));
+    }
+
+    private void MoveGradientStop(int index, double position)
+        => ChangeGradient("Gradient Position", g => g.WithStop(index, st => st with { Position = position }));
+
+    private void RemoveGradientStop(int index) => ChangeGradient("Remove Gradient Color", g => g.WithStopRemoved(index));
+
+    /// <summary>Direction of a straight gradient: 0 = left to right, 90 = top to bottom.</summary>
+    public double GradientAngle
+    {
+        get => Math.Round(Object?.Gradient?.Angle ?? 0);
+        set => ChangeGradient("Gradient Angle", g => g with { Angle = ObjectBox.NormalizeAngle(value) });
+    }
+
+    /// <summary>True: from the middle outward instead of along a line.</summary>
+    public bool GradientRadial
+    {
+        get => Object?.Gradient?.Radial == true;
+        set => ChangeGradient("Gradient Type", g => g with { Radial = value });
+    }
+
+    public bool GradientIsLinear => !GradientRadial;
+
+    public IReadOnlyList<GradientPresetItem> GradientPresets { get; } = GradientPreset.All.Select(p => new GradientPresetItem(p)).ToList();
+
+    public RelayCommand AddGradientStopCommand { get; }
+    public RelayCommand SwapGradientCommand { get; }
+    public RelayCommand ApplyGradientPresetCommand { get; }
+
+    /// <summary>The object with the gradient; a shape also gets a fill (what the gradient fills), so it stays filled if the gradient is turned off.</summary>
+    private static LayerObject WithGradient(LayerObject o, GradientStyle gradient) => o switch
+    {
+        ShapeObject s => s with { Gradient = gradient, Fill = s.Fill ?? gradient.From },
+        _ => o with { Gradient = gradient },
+    };
+
+    private void ChangeGradient(string name, Func<GradientStyle, GradientStyle> change)
+        => Change(name, o => o.Gradient is { } gradient ? o with { Gradient = change(gradient) } : o);
 
     // ------------------------------------------------------------------ commands
 

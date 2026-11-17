@@ -23,6 +23,12 @@ public enum SaveChangesAnswer { Save, Discard, Cancel }
 public interface IDialogService
 {
     string? ShowOpenImage(string title);
+
+    /// <summary>File > Open: a picture or a saved project.</summary>
+    string? ShowOpenFile(string title);
+
+    /// <summary>File > Save As: where to save the project (always a .flash file). Null when cancelled.</summary>
+    string? ShowSaveProject(string suggestedName, string? folder);
     SaveTarget? ShowSaveImage(string suggestedName, ImageFileFormat? format);
     SaveChangesAnswer AskSaveChanges(string documentName);
     void ShowError(string message);

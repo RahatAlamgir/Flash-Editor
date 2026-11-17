@@ -105,7 +105,8 @@
 
                         <StackPanel Style="{StaticResource Row}" Visibility="{Binding CanFill, Converter={StaticResource BoolToVisibility}}">
                             <CheckBox Content="Fill" IsChecked="{Binding FillEnabled}" Width="70" MinWidth="0" VerticalAlignment="Center" />
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding FillBrush}" Command="{Binding PickFillCommand}" ToolTip="Fill color" />
+                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding FillBrush}" Command="{Binding PickFillCommand}" ToolTip="Fill color"
+                                    Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}" />
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
                             <CheckBox Content="{Binding IsLine, Converter={StaticResource LineOrBorder}}" IsChecked="{Binding StrokeEnabled}" Width="70" MinWidth="0" VerticalAlignment="Center"
@@ -153,7 +154,8 @@
                         <StackPanel Style="{StaticResource Row}">
                             <TextBlock Text="Size" Style="{StaticResource Label}" />
                             <ctl:NumberSlider Minimum="4" Maximum="1000" Value="{Binding FontSize}" SliderWidth="76" BoxWidth="58" Unit="px" />
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding TextBrush}" Command="{Binding PickTextColorCommand}" ToolTip="Text color" Margin="10,0,0,0" />
+                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding TextBrush}" Command="{Binding PickTextColorCommand}" ToolTip="Text color" Margin="10,0,0,0"
+                                    Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}" />
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
                             <ToggleButton Content="B" FontWeight="Bold" Width="36" Padding="0" IsChecked="{Binding Bold}" ToolTip="Bold" />
@@ -177,6 +179,57 @@
                             <Button Content="Reset" Command="{Binding ResetShapeCommand}" Padding="10,4" Margin="6,0,0,0"
                                     Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}"
                                     ToolTip="Back to the normal form of this object" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Gradient (filled shapes and text) -->
+                    <StackPanel Visibility="{Binding CanGradient, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Gradient" Style="{StaticResource Section}" />
+                        <StackPanel Style="{StaticResource Row}">
+                            <CheckBox Content="Gradient" IsChecked="{Binding GradientEnabled}" Width="84" MinWidth="0" VerticalAlignment="Center"
+                                      ToolTip="Fade through two or more colors instead of one flat color" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl ItemsSource="{Binding GradientStops}" Margin="0,2,0,2">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
+                                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding Brush}" Command="{Binding PickCommand}" ToolTip="Change this color" />
+                                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding Percent}" SliderWidth="86" BoxWidth="52" Unit="%" Margin="6,0,0,0"
+                                                              ToolTip="Where this color sits along the gradient" />
+                                            <Button Content="&#x2715;" Command="{Binding RemoveCommand}" Width="26" MinWidth="0" Padding="0" Margin="6,0,0,0" ToolTip="Remove this color" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
+                                <Button Content="+ Add color" Command="{Binding AddGradientStopCommand}" Padding="10,3" MinWidth="0" ToolTip="Add one more color to the gradient (up to 8)" />
+                                <Button Content="&#x21C4; Reverse" Command="{Binding SwapGradientCommand}" Padding="10,3" MinWidth="0" Margin="6,0,0,0" ToolTip="Run the gradient the other way" />
+                            </StackPanel>
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding GradientPresets}" Margin="0,2,0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Background="{Binding Preview}" ToolTip="{Binding Name}" Width="34" Height="22" MinWidth="0" Padding="0" Margin="0,0,5,5"
+                                            Command="{Binding DataContext.ApplyGradientPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Style="{StaticResource Row}">
+                                <CheckBox Content="Radial (from the middle)" IsChecked="{Binding GradientRadial}" MinWidth="0" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Style="{StaticResource Row}" Visibility="{Binding GradientIsLinear, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Angle" Style="{StaticResource Label}" Width="58" />
+                                <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding GradientAngle}" SliderWidth="110" BoxWidth="58" Unit="&#xB0;"
+                                                  ToolTip="0 = left to right, 90 = top to bottom" />
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
 

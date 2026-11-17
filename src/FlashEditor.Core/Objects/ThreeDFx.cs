@@ -22,22 +22,31 @@ public static class ThreeDFx
     {
         int w = source.Width, h = source.Height;
         var data = source.Data;
-        var alpha = new float[w * h];
-        for (int p = 0; p < alpha.Length; p++) alpha[p] = data[p * 4 + 3] / 255f;
+        var alpha = ShadowFx.AlphaPlane(source);
 
-        var front = bevel > 0.001 ? Bevelled(source, alpha, bevel, bevelSize) : source.Data;
+        // Only the object and the way its side runs can hold anything; the rest of the buffer stays empty and is never visited.
+        var face = ShadowFx.ContentWindow(alpha, w, h);
+        if (face.IsEmpty) { return new PixelBuffer(w, h); }
+
+        var front = bevel > 0.001 ? Bevelled(source, alpha, bevel, bevelSize, face) : source.Data;
 
         int depth = (int)Math.Round(Math.Sqrt(offsetX * offsetX + offsetY * offsetY));
         float[]? side = null, distance = null;
-        if (depth >= 1) Extrude(alpha, w, h, offsetX, offsetY, depth, out side, out distance);
+        var work = face;
+        if (depth >= 1)
+        {
+            int sx = (int)Math.Ceiling(Math.Abs(offsetX)) + 2, sy = (int)Math.Ceiling(Math.Abs(offsetY)) + 2;
+            work = face.Grow(offsetX < 0 ? sx : 0, offsetY < 0 ? sy : 0, offsetX > 0 ? sx : 0, offsetY > 0 ? sy : 0, w, h);
+            Extrude(alpha, w, h, offsetX, offsetY, depth, work, out side, out distance);
+        }
 
         var result = new PixelBuffer(w, h);
         var output = result.Data;
-        var sideColor = color ?? AutoColor(source, alpha);
+        var sideColor = color ?? AutoColor(source, alpha, w * h);
 
-        Parallel.For(0, h, y =>
+        Parallel.For(work.Y0, work.Y1, y =>
         {
-            for (int x = 0; x < w; x++)
+            for (int x = work.X0; x < work.X1; x++)
             {
                 int p = y * w + x, i = p * 4;
                 float frontA = alpha[p];
@@ -57,11 +66,11 @@ public static class ThreeDFx
     }
 
     /// <summary>The object's own color (average of what is visible), made darker, for the side.</summary>
-    private static ColorRgba AutoColor(PixelBuffer source, float[] alpha)
+    private static ColorRgba AutoColor(PixelBuffer source, float[] alpha, int count)
     {
         double r = 0, g = 0, b = 0, total = 0;
         var d = source.Data;
-        for (int p = 0; p < alpha.Length; p += 3)          // every third pixel is plenty
+        for (int p = 0; p < count; p += 3)          // every third pixel is plenty
         {
             double a = alpha[p];
             if (a <= 0) continue;
@@ -77,39 +86,53 @@ public static class ThreeDFx
     /// <paramref name="distance"/> how far each pixel is from the face along the way. Done by doubling (each pass doubles the length
     /// covered), so even a very deep side needs only a handful of passes.
     /// </summary>
-    private static void Extrude(float[] alpha, int w, int h, double offsetX, double offsetY, int depth, out float[] side, out float[] distance)
+    private static void Extrude(float[] alpha, int w, int h, double offsetX, double offsetY, int depth, ShadowFx.Window window,
+        out float[] side, out float[] distance)
     {
         double length = Math.Sqrt(offsetX * offsetX + offsetY * offsetY);
         double ux = offsetX / length, uy = offsetY / length;
 
-        var e = (float[])alpha.Clone();
-        var d = new float[alpha.Length];
-        for (int p = 0; p < d.Length; p++) d[p] = alpha[p] > 0.004f ? 0f : Far;
+        // Two pairs of buffers swap roles every pass (no new buffers per pass). Outside the window nothing is ever written, so they
+        // keep their start values: no coverage and "far away".
+        int count = w * h;
+        var e = new float[count];
+        Array.Copy(alpha, e, count);
+        var d = new float[count];
+        var e2 = new float[count];
+        var d2 = new float[count];
+        Array.Fill(d, Far, 0, count);
+        Array.Fill(d2, Far, 0, count);
+        for (int y = window.Y0; y < window.Y1; y++)
+            for (int x = window.X0, p = y * w + window.X0; x < window.X1; x++, p++)
+                if (alpha[p] > 0.004f) d[p] = 0f;
 
         int covered = 1;                                      // the face plus (covered - 1) steps along the way
         while (covered * 2 <= depth + 1)
         {
-            (e, d) = Doubled(e, d, w, h, (int)Math.Round(ux * covered), (int)Math.Round(uy * covered), covered);
+            Doubled(e, d, e2, d2, w, window, (int)Math.Round(ux * covered), (int)Math.Round(uy * covered), covered);
+            (e, e2) = (e2, e);
+            (d, d2) = (d2, d);
             covered *= 2;
         }
         if (covered < depth + 1)
         {
             int rest = depth + 1 - covered;
-            (e, d) = Doubled(e, d, w, h, (int)Math.Round(ux * rest), (int)Math.Round(uy * rest), rest);
+            Doubled(e, d, e2, d2, w, window, (int)Math.Round(ux * rest), (int)Math.Round(uy * rest), rest);
+            (e, e2) = (e2, e);
+            (d, d2) = (d2, d);
         }
         side = e;
         distance = d;
     }
 
     /// <summary>Each pixel also takes what lies <paramref name="steps"/> steps behind it (at (dx, dy)): more coverage, a longer way.</summary>
-    private static (float[] Coverage, float[] Distance) Doubled(float[] e, float[] d, int w, int h, int dx, int dy, int steps)
+    private static void Doubled(float[] e, float[] d, float[] ne, float[] nd, int w, ShadowFx.Window window, int dx, int dy, int steps)
     {
-        var ne = new float[e.Length];
-        var nd = new float[d.Length];
-        Parallel.For(0, h, y =>
+        int h = window.Y1;
+        Parallel.For(window.Y0, window.Y1, y =>
         {
             int sy = y - dy;
-            for (int x = 0; x < w; x++)
+            for (int x = window.X0; x < window.X1; x++)
             {
                 int p = y * w + x, sx = x - dx;
                 float coverage = e[p], way = d[p];
@@ -123,14 +146,13 @@ public static class ThreeDFx
                 nd[p] = way;
             }
         });
-        return (ne, nd);
     }
 
     /// <summary>
     /// The face with a lit top-left edge and a shaded bottom-right edge, as if it were raised. The edge is found from the slope of the
     /// blurred transparency.
     /// </summary>
-    private static byte[] Bevelled(PixelBuffer source, float[] alpha, double strength, double size)
+    private static byte[] Bevelled(PixelBuffer source, float[] alpha, double strength, double size, ShadowFx.Window face)
     {
         int w = source.Width, h = source.Height;
         var soft = ShadowFx.Blur(alpha, w, h, sigma: Math.Max(0.8, size / 2));
@@ -138,9 +160,9 @@ public static class ThreeDFx
         var output = (byte[])source.Data.Clone();
         const double lx = -0.7071, ly = -0.7071;              // the light comes from the top left
 
-        Parallel.For(1, h - 1, y =>
+        Parallel.For(Math.Max(1, face.Y0), Math.Min(h - 1, face.Y1), y =>
         {
-            for (int x = 1; x < w - 1; x++)
+            for (int x = Math.Max(1, face.X0); x < Math.Min(w - 1, face.X1); x++)
             {
                 int p = y * w + x, i = p * 4;
                 if (alpha[p] <= 0.004f) continue;
