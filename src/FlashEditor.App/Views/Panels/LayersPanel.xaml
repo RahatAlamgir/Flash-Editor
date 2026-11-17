@@ -106,6 +106,42 @@
                               Value="{Binding Document.ActiveLayer.OpacityPercent}" />
         </Grid>
 
+        <!-- How the selected layer mixes with the layers below -->
+        <Grid DockPanel.Dock="Top" Margin="10,0,10,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Mix" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,16,0"
+                       ToolTip="Blend mode: how this layer's colors mix with the layers below it" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding Document.ActiveLayer.BlendModeNames}" SelectedItem="{Binding Document.ActiveLayer.BlendModeName}"
+                      ToolTip="Blend mode: how this layer's colors mix with the layers below it" />
+            <!-- A plain-words explanation of the chosen mode -->
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Document.ActiveLayer.BlendModeHelp}" TextWrapping="Wrap" FontSize="11"
+                       Foreground="{StaticResource SubtleTextBrush}" Margin="0,3,0,0" />
+        </Grid>
+
+        <!-- Settings of an adjustment layer -->
+        <StackPanel DockPanel.Dock="Top" Margin="10,0,10,6" Visibility="{Binding Document.ActiveLayer.IsAdjustment, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="Adjustment: changes the colors of the layers below" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap" Margin="0,0,0,4" />
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Brightness" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustBrightness}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Contrast" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustContrast}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Saturation" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustSaturation}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Hue" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-180" Maximum="180" SliderWidth="96" BoxWidth="58" Unit="&#xB0;" Value="{Binding Document.ActiveLayer.AdjustHue}" /></Grid>
+        </StackPanel>
+
         <!-- Select every layer, and lock / unlock the selected layers -->
         <Grid DockPanel.Dock="Top" Margin="10,0,10,8">
             <Grid.ColumnDefinitions>

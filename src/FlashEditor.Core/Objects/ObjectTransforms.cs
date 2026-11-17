@@ -17,7 +17,7 @@ public static class ObjectTransforms
         var box = new ObjectBox(b.X * sx, b.Y * sy, b.Width * sx, b.Height * sy, b.Rotation);
         var scaled = obj switch
         {
-            TextObject t => t with { Box = box, FontSize = t.FontSize * Math.Sqrt(sx * sy) },
+            TextObject t => t with { Box = box, FontSize = t.FontSize * Math.Sqrt(sx * sy), OutlineWidth = t.OutlineWidth * Math.Sqrt(sx * sy) },
             ShapeObject s => s with { Box = box, StrokeWidth = s.StrokeWidth * Math.Sqrt(sx * sy), CornerRadius = s.CornerRadius * Math.Sqrt(sx * sy) },
             _ => WithBox(obj, box),
         };

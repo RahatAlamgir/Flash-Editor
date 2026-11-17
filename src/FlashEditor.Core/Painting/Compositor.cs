@@ -14,9 +14,27 @@ public static class Compositor
         foreach (var layer in document.Layers)
         {
             if (!layer.IsVisible || layer.Opacity <= 0) continue;
-            DrawOver(result, layer.Pixels, 0, 0, layer.Opacity);
+            if (layer.Adjustment is { } adjustment) adjustment.Apply(result, result.Bounds, layer.Opacity);
+            else DrawOver(result, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode);
         }
         return result;
+    }
+
+    /// <summary>
+    /// Redraws one rectangle of <paramref name="target"/> from the visible layers (with their opacity and blend modes), leaving the rest
+    /// alone. The canvas uses this to show blend modes while you work.
+    /// </summary>
+    public static void FlattenRegion(Document document, PixelRect region, PixelBuffer target)
+    {
+        region = region.Intersect(target.Bounds);
+        if (region.IsEmpty) return;
+        target.ClearRegion(region);
+        foreach (var layer in document.Layers)
+        {
+            if (!layer.IsVisible || layer.Opacity <= 0) continue;
+            if (layer.Adjustment is { } adjustment) adjustment.Apply(target, region, layer.Opacity);
+            else DrawOver(target, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode, region);
+        }
     }
 
     /// <summary>Color of the merged visible image at one pixel.</summary>
@@ -27,7 +45,12 @@ public static class Compositor
         foreach (var layer in document.Layers)
         {
             if (!layer.IsVisible || layer.Opacity <= 0) continue;
-            BlendMath.OverPixel(pixel, 0, layer.Pixels.Data, layer.Pixels.IndexOf(x, y), layer.Opacity);
+            if (layer.Adjustment is { } adjustment)
+            {
+                if (pixel[3] != 0) adjustment.Apply(ref pixel[0], ref pixel[1], ref pixel[2], layer.Opacity);
+                continue;
+            }
+            BlendMath.BlendPixel(pixel, 0, layer.Pixels.Data, layer.Pixels.IndexOf(x, y), layer.Opacity, layer.BlendMode);
         }
         return new ColorRgba(pixel[2], pixel[1], pixel[0], pixel[3]);
     }
@@ -37,15 +60,16 @@ public static class Compositor
     /// When a selection is given, only selected pixels are affected. Returns the changed rectangle.
     /// </summary>
     public static PixelRect DrawOver(PixelBuffer target, PixelBuffer source, int x, int y,
-        double opacity = 1.0, Selection? selection = null)
+        double opacity = 1.0, Selection? selection = null, BlendMode mode = BlendMode.Normal, PixelRect? clip = null)
     {
         var area = new PixelRect(x, y, source.Width, source.Height).Intersect(target.Bounds);
         if (selection != null) area = area.Intersect(selection.Bounds);
+        if (clip is { } limit) area = area.Intersect(limit);
         if (area.IsEmpty || opacity <= 0) return PixelRect.Empty;
 
         var dst = target.Data;
         var src = source.Data;
-        bool plain = selection == null && opacity >= 1.0;
+        bool plain = selection == null && opacity >= 1.0 && mode == BlendMode.Normal;
 
         void Row(int ty)
         {
@@ -70,7 +94,7 @@ public static class Compositor
                     factor *= selection.Coverage(tx, ty);
                     if (factor <= 0) continue;
                 }
-                BlendMath.OverPixel(dst, di, src, si, factor);
+                BlendMath.BlendPixel(dst, di, src, si, factor, mode);
             }
         }
 
@@ -82,5 +106,9 @@ public static class Compositor
 
     /// <summary>Paints <paramref name="layer"/>'s content onto <paramref name="target"/> (used by Merge Down).</summary>
     public static void DrawLayer(PixelBuffer target, Layer layer)
-        => DrawOver(target, layer.Pixels, 0, 0, layer.Opacity);
+    {
+        // An adjustment layer changes what is already in the target (Merge Down bakes it into the layer below).
+        if (layer.Adjustment is { } adjustment) adjustment.Apply(target, target.Bounds, layer.Opacity);
+        else DrawOver(target, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode);
+    }
 }

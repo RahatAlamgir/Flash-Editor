@@ -14,14 +14,16 @@
         <KeyBinding Gesture="Ctrl+S" Command="{Binding File.SaveCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding File.SaveAsCommand}" />
         <KeyBinding Gesture="Ctrl+Alt+S" Command="{Binding File.ExportCommand}" />
-        <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
-        <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseDocumentCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+N" Command="{Binding File.AddPageCommand}" />
+        <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseProjectCommand}" />
+        <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseProjectCommand}" />
         <KeyBinding Gesture="Ctrl+Tab" Command="{Binding NextDocumentCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding PreviousDocumentCommand}" />
         <!-- Image -->
         <KeyBinding Gesture="Ctrl+Alt+I" Command="{Binding Image.ImageSizeCommand}" />
         <KeyBinding Gesture="Ctrl+Alt+C" Command="{Binding Image.CanvasSizeCommand}" />
         <KeyBinding Gesture="Ctrl+Alt+B" Command="{Binding Effects.RemoveBackgroundCommand}" />
+        <KeyBinding Gesture="Shift+F5" Command="{Binding Inpaint.FillSelectionCommand}" />
         <!-- Edit -->
         <KeyBinding Gesture="Ctrl+Z" Command="{Binding Edit.UndoCommand}" />
         <KeyBinding Gesture="Ctrl+Y" Command="{Binding Edit.RedoCommand}" />
@@ -62,17 +64,26 @@
         <!-- ===== Menu ===== -->
         <Menu DockPanel.Dock="Top" Background="{StaticResource PanelBrush}">
             <MenuItem Header="_File">
+                <MenuItem Header="_Project Manager..." Command="{Binding File.ProjectManagerCommand}" ToolTip="All your projects, and create a new one" />
+                <Separator />
                 <MenuItem Header="_New..." InputGestureText="Ctrl+N" Command="{Binding File.NewCommand}" />
                 <MenuItem Header="_Open (picture or project)..." InputGestureText="Ctrl+O" Command="{Binding File.OpenCommand}" />
                 <MenuItem Header="_Place Image as Layer..." Command="{Binding File.PlaceCommand}" />
                 <Separator />
+                <MenuItem Header="Add Pa_ge" InputGestureText="Ctrl+Alt+N" Command="{Binding File.AddPageCommand}"
+                          ToolTip="A new empty page after this one. All pages are saved together in one .flash file." />
+                <MenuItem Header="D_uplicate Page" Command="{Binding File.DuplicatePageCommand}" />
+                <Separator />
                 <MenuItem Header="_Save Project" InputGestureText="Ctrl+S" Command="{Binding File.SaveCommand}"
                           ToolTip="Saves a .flash file that keeps every layer, shape and text editable" />
                 <MenuItem Header="Save Project _As..." InputGestureText="Ctrl+Shift+S" Command="{Binding File.SaveAsCommand}" />
+                <MenuItem Header="Export _All Pages (PNG, JPG...)..." Command="{Binding File.ExportAllPagesCommand}"
+                          ToolTip="Makes one picture file for every page" />
                 <MenuItem Header="_Export as Picture (PNG, JPG...)..." InputGestureText="Ctrl+Alt+S" Command="{Binding File.ExportCommand}"
                           ToolTip="Makes a normal picture file; choose format, quality and size" />
                 <Separator />
-                <MenuItem Header="_Close" InputGestureText="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
+                <MenuItem Header="_Close Project" InputGestureText="Ctrl+W" Command="{Binding CloseProjectCommand}" />
+                <MenuItem Header="Close Pa_ge" Command="{Binding CloseDocumentCommand}" />
                 <MenuItem Header="Next Picture" InputGestureText="Ctrl+Tab" Command="{Binding NextDocumentCommand}" />
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExit" />
@@ -116,6 +127,8 @@
                 <Separator />
                 <MenuItem Header="_Remove Background (AI)..." InputGestureText="Ctrl+Alt+B" Command="{Binding Effects.RemoveBackgroundCommand}" />
                 <MenuItem Header="Remove Background by Co_lor..." Command="{Binding Effects.RemoveBackgroundByColorCommand}" />
+                <MenuItem Header="Remove / _Fill Selection (AI)..." InputGestureText="Shift+F5" Command="{Binding Inpaint.FillSelectionCommand}"
+                          ToolTip="Select an object, then the AI paints in what would be behind it (on a new layer)" />
             </MenuItem>
             <MenuItem Header="_Layer">
                 <MenuItem Header="_New Layer" InputGestureText="Ctrl+Shift+N" Command="{Binding Layers.NewLayerCommand}" />
@@ -139,6 +152,21 @@
                 <MenuItem Header="Send to Bac_k" InputGestureText="Ctrl+Shift+[" Command="{Binding Layers.SendToBackCommand}" />
                 <Separator />
                 <MenuItem Header="_Merge Down" InputGestureText="Ctrl+E" Command="{Binding Layers.MergeDownCommand}" ToolTip="With several layers selected, Ctrl+E merges all of them" />
+                <MenuItem Header="_Align">
+                    <MenuItem Header="Align _Left" Command="{Binding Align.AlignCommand}" CommandParameter="Left" />
+                    <MenuItem Header="Align _Center (horizontally)" Command="{Binding Align.AlignCommand}" CommandParameter="CenterHorizontally" />
+                    <MenuItem Header="Align _Right" Command="{Binding Align.AlignCommand}" CommandParameter="Right" />
+                    <Separator />
+                    <MenuItem Header="Align _Top" Command="{Binding Align.AlignCommand}" CommandParameter="Top" />
+                    <MenuItem Header="Align _Middle (vertically)" Command="{Binding Align.AlignCommand}" CommandParameter="CenterVertically" />
+                    <MenuItem Header="Align _Bottom" Command="{Binding Align.AlignCommand}" CommandParameter="Bottom" />
+                    <Separator />
+                    <MenuItem Header="Distribute _Horizontally (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Horizontally" />
+                    <MenuItem Header="Distribute _Vertically (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Vertically" />
+                </MenuItem>
+                <MenuItem Header="Add _Adjustment Layer" Command="{Binding Layers.AddAdjustmentLayerCommand}"
+                          ToolTip="Brightness, contrast, saturation and hue for everything below it, without changing any picture" />
+                <MenuItem Header="Add _Gradient Background" Command="{Binding Layers.AddGradientBackgroundCommand}" ToolTip="A gradient behind everything" />
                 <MenuItem Header="Merge Selected _Layers" InputGestureText="Ctrl+E" Command="{Binding Layers.MergeSelectedCommand}" />
                 <MenuItem Header="_Flatten Image" Command="{Binding Layers.FlattenCommand}" />
                 <MenuItem Header="Convert to _Pixels" Command="{Binding Layers.ConvertToPixelsCommand}" />
@@ -241,19 +269,22 @@
             </Grid>
         </Border>
 
-        <!-- ===== Open pictures (tabs) + canvas ===== -->
+        <!-- ===== Projects (tabs along the top), the pages of the selected project (strip at the bottom) and the canvas ===== -->
         <DockPanel>
+            <!-- Projects -->
             <Border DockPanel.Dock="Top" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1">
                 <DockPanel>
                     <panels:ViewAidsBar DockPanel.Dock="Right" />
-                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.OpenCommand}" ToolTip="Open another image (Ctrl+O)" Margin="0,0,4,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.OpenCommand}" ToolTip="Open a picture or project (Ctrl+O)" Margin="0,0,4,0">
                         <Path Style="{StaticResource IconPath}" Data="M3,6 L8,6 L10,8 L17,8 L17,16 L3,16 Z" />
                     </Button>
-                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.NewCommand}" ToolTip="New image (Ctrl+N)">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.NewCommand}" ToolTip="New project (Ctrl+N)">
                         <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Add}" />
                     </Button>
+                    <Button DockPanel.Dock="Left" Command="{Binding File.ProjectManagerCommand}" Margin="6,4,6,4" Padding="12,3" MinWidth="0" MinHeight="0"
+                            ToolTip="Project Manager: all your projects, and new project (File menu too)" Content="&#x2302; Projects" />
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding Documents}">
+                        <ItemsControl ItemsSource="{Binding Projects}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" />
@@ -261,7 +292,74 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Padding="12,6,6,6" Cursor="Hand" ToolTip="{Binding TabToolTip}" BorderThickness="0,0,1,0"
+                                    <Border Padding="12,8,6,8" Cursor="Hand" ToolTip="{Binding ToolTip}" BorderThickness="0,0,1,0"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            BorderBrush="{StaticResource DividerBrush}">
+                                        <Border.InputBindings>
+                                            <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.SelectProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                            <MouseBinding Gesture="LeftDoubleClick" Command="{Binding DataContext.RenameProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                            <MouseBinding Gesture="MiddleClick" Command="{Binding DataContext.CloseProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                        </Border.InputBindings>
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                                                    </Trigger>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource EqualsConverter}">
+                                                                <Binding />
+                                                                <Binding Path="DataContext.Document.Project" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Background" Value="{StaticResource CanvasAreaBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Rename project" Command="{Binding PlacementTarget.Tag.RenameProjectCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Close project" Command="{Binding PlacementTarget.Tag.CloseProjectCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" MaxWidth="240" TextTrimming="CharacterEllipsis"
+                                                       Visibility="{Binding IsRenaming, Converter={StaticResource InverseBoolToVisibility}}" />
+                                            <TextBox Text="{Binding EditableName, UpdateSourceTrigger=Explicit}" Width="170" Padding="4,1" VerticalAlignment="Center"
+                                                     Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisibility}}"
+                                                     IsVisibleChanged="OnTabRenameVisible" KeyDown="OnTabRenameKeyDown" LostKeyboardFocus="OnTabRenameLostFocus" />
+                                            <Button Content="&#x2715;" FontSize="10" Width="20" Height="20" Padding="0" Margin="8,0,0,0" MinWidth="0" MinHeight="0"
+                                                    Background="Transparent" BorderThickness="0" ToolTip="Close this project (Ctrl+W)"
+                                                    Command="{Binding DataContext.CloseProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Pages of the selected project -->
+            <Border DockPanel.Dock="Bottom" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0">
+                <DockPanel>
+                    <Button DockPanel.Dock="Left" Command="{Binding File.AddPageCommand}" Margin="8,5,6,5" Padding="10,2" MinWidth="0" MinHeight="0"
+                            ToolTip="Add a page to this project (Ctrl+Alt+N)" Content="+ Page" />
+                    <TextBlock DockPanel.Dock="Left" Text="Pages" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SubtleTextBrush}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Document.Project.Pages}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="12,6,6,6" Cursor="Hand" ToolTip="{Binding TabToolTip}" BorderThickness="1,0,0,0"
                                             Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
                                             BorderBrush="{StaticResource DividerBrush}">
                                         <Border.InputBindings>
@@ -290,18 +388,20 @@
                                         </Border.Style>
                                         <Border.ContextMenu>
                                             <ContextMenu>
-                                                <MenuItem Header="Rename" Command="{Binding PlacementTarget.Tag.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                <MenuItem Header="Close" Command="{Binding PlacementTarget.Tag.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Rename page" Command="{Binding PlacementTarget.Tag.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Add page after this" Command="{Binding PlacementTarget.Tag.File.AddPageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <MenuItem Header="Duplicate page" Command="{Binding PlacementTarget.Tag.File.DuplicatePageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <MenuItem Header="Close page" Command="{Binding PlacementTarget.Tag.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                             </ContextMenu>
                                         </Border.ContextMenu>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center" MaxWidth="220" TextTrimming="CharacterEllipsis"
+                                            <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center" MaxWidth="200" TextTrimming="CharacterEllipsis"
                                                        Visibility="{Binding IsRenaming, Converter={StaticResource InverseBoolToVisibility}}" />
-                                            <TextBox Text="{Binding EditableName, UpdateSourceTrigger=Explicit}" Width="170" Padding="4,1" VerticalAlignment="Center"
+                                            <TextBox Text="{Binding EditableName, UpdateSourceTrigger=Explicit}" Width="140" Padding="4,1" VerticalAlignment="Center"
                                                      Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisibility}}"
                                                      IsVisibleChanged="OnTabRenameVisible" KeyDown="OnTabRenameKeyDown" LostKeyboardFocus="OnTabRenameLostFocus" />
-                                            <Button Content="✕" FontSize="10" Width="20" Height="20" Padding="0" Margin="8,0,0,0" MinWidth="0" MinHeight="0"
-                                                    Background="Transparent" BorderThickness="0" ToolTip="Close (Ctrl+W)"
+                                            <Button Content="&#x2715;" FontSize="10" Width="18" Height="18" Padding="0" Margin="8,0,0,0" MinWidth="0" MinHeight="0"
+                                                    Background="Transparent" BorderThickness="0" ToolTip="Close this page"
                                                     Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}" />
                                         </StackPanel>
@@ -312,6 +412,7 @@
                     </ScrollViewer>
                 </DockPanel>
             </Border>
+
             <editor:CanvasView x:Name="CanvasArea" />
         </DockPanel>
     </DockPanel>

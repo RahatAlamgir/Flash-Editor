@@ -27,7 +27,22 @@ public partial class App : Application
         var viewModel = new MainViewModel(dialogs, new ClipboardService());
         var window = new MainWindow(viewModel);
         MainWindow = window;
+
+        // The Project Manager comes first (unless the program was started with a file to open).
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        if (e.Args.Length == 0 && !viewModel.File.ShowProjectManager(atStartup: true))
+        {
+            Shutdown();
+            return;
+        }
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
         window.Show();
+
+        // Backs up unsaved work every minute; brings it back if the last session did not end normally.
+        var autoSave = new AutoSaveService(viewModel);
+        autoSave.OfferRestore(dialogs);
+        autoSave.Start();
+        window.Closed += (_, _) => autoSave.Stop();
 
         // "Open with Flash Editor" / drag a file onto the .exe
         // (several files = one tab each)
@@ -37,8 +52,10 @@ public partial class App : Application
 
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show(MainWindow, $"Something went wrong:\n\n{e.Exception.Message}", "Flash Editor",
-            MessageBoxButton.OK, MessageBoxImage.Error);
+        string text = $"Something went wrong:\n\n{e.Exception.Message}";
+        // Before the editor window is shown (the Project Manager at start-up) there is no window to belong to.
+        if (MainWindow is { IsVisible: true }) MessageBox.Show(MainWindow, text, "Flash Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+        else MessageBox.Show(text, "Flash Editor", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true; // keep the app (and the user's work) alive
     }
 }

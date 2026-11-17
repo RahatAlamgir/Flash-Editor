@@ -13,7 +13,7 @@ namespace FlashEditor.App.ViewModels;
 /// Screen-side state of the open image: layer view models (for the canvas and Layers panel),
 /// history rows, file name and "unsaved changes" flag.
 /// </summary>
-public sealed class DocumentViewModel : ObservableObject, IDisposable
+public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposable
 {
     private readonly Dictionary<Layer, LayerViewModel> _layerViewModels = new();
     private readonly string _initialStateName;
@@ -29,6 +29,8 @@ public sealed class DocumentViewModel : ObservableObject, IDisposable
         _filePath = filePath;
         _initialStateName = initialStateName;
         FileFormat = filePath == null ? null : ImageFileFormats.FromPath(filePath);
+        Project = new ProjectGroup();   // every picture is a page of a project (a single picture is a project of one page)
+        Project.Pages.Add(this);
 
         model.Layers.CollectionChanged += OnLayersChanged;
         model.PropertyChanged += OnModelPropertyChanged;
@@ -57,10 +59,9 @@ public sealed class DocumentViewModel : ObservableObject, IDisposable
         {
             if (SetField(ref _filePath, value))
             {
-                CustomName = null; // after saving under a file name, the tab shows that name
                 OnPropertyChanged(nameof(DisplayName));
-                OnPropertyChanged(nameof(TabTitle));
                 OnPropertyChanged(nameof(TabToolTip));
+                Project?.Refresh();
             }
         }
     }
@@ -69,9 +70,13 @@ public sealed class DocumentViewModel : ObservableObject, IDisposable
     public ImageFileFormat? FileFormat { get; set; }
     public int SaveQuality { get; set; } = 90;
 
-    public string DisplayName => CustomName ?? (FilePath == null ? "Untitled" : Path.GetFileName(FilePath));
+    /// <summary>The name of the project (used in the window title and in questions like "Save changes to ...").</summary>
+    public string DisplayName => Project.Name;
 
-    /// <summary>A name the user gave the tab (null = use the file name).</summary>
+    /// <summary>The name of this page: the one the user typed, else "Page 1", "Page 2"... by position in the project.</summary>
+    public string PageTitle => CustomName ?? $"Page {Math.Max(0, Project.Pages.IndexOf(this)) + 1}";
+
+    /// <summary>A name the user gave the page (null = "Page 1", "Page 2"...).</summary>
     public string? CustomName
     {
         get => _customName;
@@ -79,17 +84,15 @@ public sealed class DocumentViewModel : ObservableObject, IDisposable
         {
             value = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
             if (!SetField(ref _customName, value)) return;
-            OnPropertyChanged(nameof(DisplayName));
-            OnPropertyChanged(nameof(TabTitle));
-            OnPropertyChanged(nameof(EditableName));
+            RefreshTitle();
         }
     }
 
     /// <summary>The name shown in the rename box.</summary>
     public string EditableName
     {
-        get => DisplayName;
-        set { if (value?.Trim() != DisplayName) CustomName = value; }
+        get => PageTitle;
+        set { if (value?.Trim() != PageTitle) CustomName = value; }
     }
 
     /// <summary>True while the tab's name is being edited (double-click the tab).</summary>
@@ -98,16 +101,44 @@ public sealed class DocumentViewModel : ObservableObject, IDisposable
         get => _isRenaming;
         set => SetField(ref _isRenaming, value);
     }
-    public bool IsDirty => Model.History.IsDirty;
+    public bool IsDirty => Model.History.IsDirty || Project?.StructureDirty == true || IsRecovered;
+
+    /// <summary>True for a picture brought back after a crash: it counts as unsaved until the user saves it.</summary>
+    public bool IsRecovered { get; set; }
+
+    /// <summary>The pages this picture belongs to, or null when it is a single picture.</summary>
+    /// <summary>The project this page belongs to (a single picture is a project of one page).</summary>
+    public ProjectGroup Project { get; set; } = null!;
+
+    /// <summary>Tells the tab that its unsaved-changes mark may have changed.</summary>
+    public void RefreshDirty()
+    {
+        OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(TabTitle));
+        Project?.Refresh();
+    }
 
     /// <summary>Text on the document's tab: file name, with * when there are unsaved changes.</summary>
-    public string TabTitle => DisplayName + (IsDirty ? " *" : "");
+    /// <summary>True when this page has changes that were not saved yet.</summary>
+    public bool IsPageDirty => Model.History.IsDirty || IsRecovered;
+
+    /// <summary>Text on the page's tab: its name, with * when it has unsaved changes.</summary>
+    public string TabTitle => PageTitle + (IsPageDirty ? " *" : "");
+
+    /// <summary>The page name may have changed (renamed, or another page was added / removed before it).</summary>
+    public void RefreshTitle()
+    {
+        OnPropertyChanged(nameof(PageTitle));
+        OnPropertyChanged(nameof(EditableName));
+        OnPropertyChanged(nameof(TabTitle));
+        OnPropertyChanged(nameof(DisplayName));
+    }
 
     /// <summary>Full path (or "not saved yet") for the tab's tooltip.</summary>
-    public string TabToolTip => (FilePath ?? "Not saved yet") + "\nDouble-click to rename";
+    public string TabToolTip => PageTitle + "\nDouble-click to rename";
 
     /// <summary>A blank picture nobody has touched yet (opening a file replaces it instead of adding a tab).</summary>
-    public bool IsPristine => FilePath == null && !Model.History.CanUndo && !Model.History.CanRedo;
+    public bool IsPristine => FilePath == null && !IsRecovered && Project.Pages.Count == 1 && !Model.History.CanUndo && !Model.History.CanRedo;
 
     /// <summary>Zoom and pan of this document, remembered while another tab is shown (null = fit to window).</summary>
     public double? ViewZoom { get; set; }
@@ -187,6 +218,7 @@ public sealed class DocumentViewModel : ObservableObject, IDisposable
         RebuildHistory();
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(TabTitle));
+        Project?.Refresh();
         RelayCommand.Refresh();
     }
 

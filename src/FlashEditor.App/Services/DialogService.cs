@@ -12,18 +12,37 @@ namespace FlashEditor.App.Services;
 /// <summary>WPF implementation of <see cref="IDialogService"/>.</summary>
 public sealed class DialogService : IDialogService
 {
-    private static Window? Owner => Application.Current?.MainWindow;
+    /// <summary>
+    /// The window a dialog belongs to: the window the user is working in (so a dialog opened from the Project Manager belongs to the manager),
+    /// else the editor if it is shown. Null when no window is shown yet (the program is just starting).
+    /// </summary>
+    private static Window? Owner
+    {
+        get
+        {
+            var app = Application.Current;
+            if (app == null) return null;
+            // The window in front: the active one, else the newest window that is shown (a dialog opened from the Project Manager belongs to it).
+            var shown = app.Windows.OfType<Window>().Where(w => w.IsVisible).ToList();
+            return shown.FirstOrDefault(w => w.IsActive) ?? shown.LastOrDefault();
+        }
+    }
+
+    private static bool? ShowFile(Microsoft.Win32.CommonDialog dialog) => Owner is { } owner ? dialog.ShowDialog(owner) : dialog.ShowDialog();
+
+    private static MessageBoxResult Message(string text, string caption, MessageBoxButton buttons, MessageBoxImage icon)
+        => Owner is { } owner ? MessageBox.Show(owner, text, caption, buttons, icon) : MessageBox.Show(text, caption, buttons, icon);
 
     public string? ShowOpenImage(string title)
     {
         var dialog = new OpenFileDialog { Title = title, Filter = ImageFileFormats.OpenFilter };
-        return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+        return ShowFile(dialog) == true ? dialog.FileName : null;
     }
 
     public string? ShowOpenFile(string title)
     {
         var dialog = new OpenFileDialog { Title = title, Filter = ImageFileFormats.OpenAnyFilter };
-        return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+        return ShowFile(dialog) == true ? dialog.FileName : null;
     }
 
     public string? ShowSaveProject(string suggestedName, string? folder)
@@ -38,7 +57,7 @@ public sealed class DialogService : IDialogService
             OverwritePrompt = true,
         };
         if (folder != null && Directory.Exists(folder)) dialog.InitialDirectory = folder;
-        return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+        return ShowFile(dialog) == true ? dialog.FileName : null;
     }
 
     public SaveTarget? ShowSaveImage(string suggestedName, ImageFileFormat? format)
@@ -52,7 +71,7 @@ public sealed class DialogService : IDialogService
             AddExtension = true,
             OverwritePrompt = true,
         };
-        if (dialog.ShowDialog(Owner) != true) return null;
+        if (ShowFile(dialog) != true) return null;
 
         // The typed extension wins; otherwise use the chosen filter.
         var chosen = ImageFileFormats.FromPath(dialog.FileName) ?? ImageFileFormats.FromFilterIndex(dialog.FilterIndex);
@@ -64,7 +83,7 @@ public sealed class DialogService : IDialogService
 
     public SaveChangesAnswer AskSaveChanges(string documentName)
     {
-        var result = MessageBox.Show(Owner!, $"Save changes to \"{documentName}\" before closing it?",
+        var result = Message($"Save changes to \"{documentName}\" before closing it?",
             "Flash Editor", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
         return result switch
         {
@@ -75,18 +94,30 @@ public sealed class DialogService : IDialogService
     }
 
     public void ShowError(string message)
-        => MessageBox.Show(Owner!, message, "Flash Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+        => Message(message, "Flash Editor", MessageBoxButton.OK, MessageBoxImage.Error);
 
     public void ShowInfo(string title, string message)
-        => MessageBox.Show(Owner!, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+        => Message(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
 
     public bool Confirm(string title, string message)
-        => MessageBox.Show(Owner!, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+        => Message(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
     public NewImageSettings? ShowNewImage(ColorRgba backgroundColor)
     {
         var dialog = new NewImageDialog(backgroundColor) { Owner = Owner };
         return dialog.ShowDialog() == true ? dialog.Result : null;
+    }
+
+    public NewImageSettings? ShowNewProject(ColorRgba backgroundColor)
+    {
+        var dialog = new NewImageDialog(backgroundColor, askName: true) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Result : null;
+    }
+
+    public ProjectManagerResult? ShowProjectManager(bool atStartup)
+    {
+        var window = new ProjectManagerWindow(ProjectLibrary.Default, this, atStartup) { Owner = atStartup ? null : Owner };
+        return window.ShowDialog() == true ? window.Result : null;
     }
 
     public ImageSizeSettings? ShowImageSize(int width, int height)

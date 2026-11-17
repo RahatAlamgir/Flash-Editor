@@ -35,6 +35,8 @@ public sealed class LayerCommands
         ConvertToPixelsCommand = new RelayCommand(() => { if (Doc.ActiveLayer is { } l) _main.ConvertToPixels(l, announce: true); },
             () => Doc.ActiveLayer?.Object != null);
         MergeSelectedCommand = new RelayCommand(MergeSelected, () => MergeCandidates().Count >= 2);
+        AddGradientBackgroundCommand = new RelayCommand(AddGradientBackground);
+        AddAdjustmentLayerCommand = new RelayCommand(AddAdjustmentLayer);
         // Ctrl+E: with several layers selected it merges them all, otherwise the active layer goes into the one below it.
         MergeDownCommand = new RelayCommand(
             () => { if (_main.SelectedLayers.Count >= 2) MergeSelected(); else MergeDown(); },
@@ -60,6 +62,8 @@ public sealed class LayerCommands
 
     /// <summary>Merges every selected (visible, unlocked) layer into one new layer.</summary>
     public RelayCommand MergeSelectedCommand { get; }
+    public RelayCommand AddGradientBackgroundCommand { get; }
+    public RelayCommand AddAdjustmentLayerCommand { get; }
     public RelayCommand ToggleLockCommand { get; }
 
     /// <summary>Selects every layer (the Select all button of the Layers panel).</summary>
@@ -83,6 +87,28 @@ public sealed class LayerCommands
     public RelayCommand RenameCommand { get; }
 
     private Document Doc => _main.Document.Model;
+
+    /// <summary>
+    /// A layer without a picture that changes the colors of everything below it (brightness, contrast, saturation, hue). Nothing in the
+    /// pictures changes, so it can be tuned or deleted at any time.
+    /// </summary>
+    private void AddAdjustmentLayer()
+    {
+        var layer = new Layer("Adjustment", Doc.Width, Doc.Height) { Adjustment = new AdjustmentStyle(Brightness: 0, Contrast: 15, Saturation: 15) };
+        InsertAboveActive("Add Adjustment Layer", layer);
+        _main.SetStatus("Added an adjustment layer. Use the sliders in the Layers panel; it changes every layer below it.");
+    }
+
+    /// <summary>A rectangle covering the whole picture with a gradient, placed behind everything (change its colors in the Properties panel).</summary>
+    private void AddGradientBackground()
+    {
+        var look = GradientPreset.Ocean;
+        var rectangle = new ShapeObject(new ObjectBox(0, 0, Doc.Width, Doc.Height), ShapeKind.Rectangle, look.Colors[0], null, 0) { Gradient = look.CreateStyle() };
+        var layer = _main.AddObjectLayer(rectangle, "Add Gradient Background");
+        layer.Name = "Gradient background";
+        if (Doc.ActiveLayerIndex > 0) SendToBackCommand.Execute(null);
+        _main.SetStatus("Added a gradient background. Change its colors in the Properties panel.");
+    }
 
     private void NewLayer()
     {

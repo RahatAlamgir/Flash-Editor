@@ -18,7 +18,10 @@ public sealed record TextObject(
     bool Italic = false,
     TextAlign Align = TextAlign.Left,
     bool FlipX = false,
-    bool FlipY = false) : LayerObject(Box, FlipX, FlipY)
+    bool FlipY = false,
+    double OutlineWidth = 0,
+    ColorRgba? OutlineColor = null,
+    double LineSpacing = 1.0) : LayerObject(Box, FlipX, FlipY)
 {
     public override string KindName => "Text";
 

@@ -74,7 +74,8 @@ public sealed record ShapeObject(
     bool FlipY = false,
     double Inner = 0.5,
     double Sweep = 270,
-    IReadOnlyList<PointD>? Vertices = null) : LayerObject(Box, FlipX, FlipY)
+    IReadOnlyList<PointD>? Vertices = null,
+    bool GradientBorder = false) : LayerObject(Box, FlipX, FlipY)
 {
     public override string KindName => "Shape";
 

@@ -77,7 +77,7 @@ Name: "{app}\settings"; Permissions: users-modify
 ; The program, its libraries and the .NET runtime (self-contained), all in {app}.
 Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 #if WithAI == "1"
-; AI models, ready to use (background removal 170 MB, upscaling 67 MB).
+; AI models, ready to use (background removal 170 MB, object removal / fill 198 MB, upscaling 67 MB).
 Source: "{#ModelsDir}\*"; DestDir: "{app}\models"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 

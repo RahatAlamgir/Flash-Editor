@@ -16,15 +16,18 @@ public sealed class GradientStopItem : ObservableObject
     private double _percent;
     private bool _canRemove;
 
-    public GradientStopItem(int index, Action<int> pick, Action<int, double> move, Action<int> remove)
+    public GradientStopItem(int index, Action<int> pick, Action<int, double> move, Action<int> remove, Action<int, double> fade)
     {
         Index = index;
         PickCommand = new RelayCommand(() => pick(Index));
         RemoveCommand = new RelayCommand(() => remove(Index), () => CanRemove);
         _move = move;
+        _fade = fade;
     }
 
     private readonly Action<int, double> _move;
+    private readonly Action<int, double> _fade;
+    private double _opacity = 100;
 
     /// <summary>Position of the stop in the gradient's list.</summary>
     public int Index { get; }
@@ -54,6 +57,20 @@ public sealed class GradientStopItem : ObservableObject
         }
     }
 
+    /// <summary>How solid the color is, 0..100 % (0 = see-through).</summary>
+    public double OpacityPercent
+    {
+        get => _opacity;
+        set
+        {
+            value = Math.Round(Math.Clamp(value, 0, 100));
+            if (Math.Abs(value - _opacity) < 1e-9) return;
+            _opacity = value;
+            OnPropertyChanged();
+            _fade(Index, value / 100.0);
+        }
+    }
+
     /// <summary>Shows the current values of the stop (does not change the object).</summary>
     public void Show(ColorStop stop, bool canRemove)
     {
@@ -61,6 +78,8 @@ public sealed class GradientStopItem : ObservableObject
         brush.Freeze();
         Brush = brush;
         CanRemove = canRemove;
+        double opacity = Math.Round(stop.Color.A / 255.0 * 100);
+        if (Math.Abs(opacity - _opacity) > 1e-9) { _opacity = opacity; OnPropertyChanged(nameof(OpacityPercent)); }
         double percent = Math.Round(stop.Position * 100);
         if (Math.Abs(percent - _percent) > 1e-9) { _percent = percent; OnPropertyChanged(nameof(Percent)); }
     }

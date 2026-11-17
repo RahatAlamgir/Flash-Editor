@@ -116,6 +116,7 @@ public partial class CanvasView : UserControl, ICanvasView
         }
         _document = document;
         DataContext = document;
+        BlendLayer.Attach(document, active => LayersHost.Visibility = active ? Visibility.Collapsed : Visibility.Visible);
         FollowGuidesOf(document);
         document.Model.PropertyChanged += OnDocumentPropertyChanged;
         UpdatePageSize();
@@ -262,6 +263,7 @@ public partial class CanvasView : UserControl, ICanvasView
 
         RenderOptions.SetBitmapScalingMode(LayersHost,
             _zoom >= 2 ? BitmapScalingMode.NearestNeighbor : BitmapScalingMode.Linear);
+        RenderOptions.SetBitmapScalingMode(BlendLayer, RenderOptions.GetBitmapScalingMode(LayersHost));
 
         if (_main != null) _main.Zoom = _zoom;
         DrawTransformFrame(); // handles keep their screen size

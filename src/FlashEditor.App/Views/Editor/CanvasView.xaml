@@ -50,6 +50,9 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
+            <!-- Takes over from the per-layer images while a layer uses a blend mode other than Normal -->
+            <ed:BlendPreview x:Name="BlendLayer" />
+
             <!-- Grid, guide lines and smart guides -->
             <ed:AidsOverlay x:Name="AidsLayer" />
 

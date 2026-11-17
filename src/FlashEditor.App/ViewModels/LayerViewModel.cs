@@ -163,6 +163,47 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
         }
     }
 
+    /// <summary>Names for the blend mode list.</summary>
+    public IReadOnlyList<string> BlendModeNames => BlendModes.Names;
+
+    /// <summary>How the layer mixes with the layers below (the name shown in the list).</summary>
+    public string BlendModeName
+    {
+        get => BlendModes.NameOf(Model.BlendMode);
+        set
+        {
+            int index = BlendModes.Names.ToList().IndexOf(value ?? "");
+            if (index < 0) return;
+            var mode = BlendModes.All[index];
+            if (mode == Model.BlendMode) return;
+            var old = Model.BlendMode;
+            Model.BlendMode = mode;
+            _history.Push(new LayerPropertyAction(Model, LayerProperty.BlendMode, old, mode));
+        }
+    }
+
+    /// <summary>Tooltip that explains the chosen blend mode.</summary>
+    public string BlendModeHelp => BlendModes.Describe(Model.BlendMode);
+
+    // ------------------------------------------------------------------ adjustment layers
+
+    /// <summary>True for a layer that changes the colors of the layers below it instead of having a picture.</summary>
+    public bool IsAdjustment => Model.Adjustment != null;
+
+    public double AdjustBrightness { get => Model.Adjustment?.Brightness ?? 0; set => Adjust(a => a with { Brightness = Math.Round(Math.Clamp(value, -100, 100)) }); }
+    public double AdjustContrast { get => Model.Adjustment?.Contrast ?? 0; set => Adjust(a => a with { Contrast = Math.Round(Math.Clamp(value, -100, 100)) }); }
+    public double AdjustSaturation { get => Model.Adjustment?.Saturation ?? 0; set => Adjust(a => a with { Saturation = Math.Round(Math.Clamp(value, -100, 100)) }); }
+    public double AdjustHue { get => Model.Adjustment?.Hue ?? 0; set => Adjust(a => a with { Hue = Math.Round(Math.Clamp(value, -180, 180)) }); }
+
+    private void Adjust(Func<AdjustmentStyle, AdjustmentStyle> change)
+    {
+        if (Model.Adjustment is not { } old) return;
+        var updated = change(old);
+        if (updated == old) return;
+        Model.Adjustment = updated;
+        _history.Push(new LayerPropertyAction(Model, LayerProperty.Adjustment, old, updated));
+    }
+
     /// <summary>Opacity 0..1 for the canvas Image element.</summary>
     public double Opacity => Model.Opacity;
 
@@ -204,6 +245,14 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
             case nameof(Layer.Opacity):
                 OnPropertyChanged(nameof(Opacity));
                 OnPropertyChanged(nameof(OpacityPercent));
+                break;
+            case nameof(Layer.BlendMode): OnPropertyChanged(nameof(BlendModeName)); OnPropertyChanged(nameof(BlendModeHelp)); break;
+            case nameof(Layer.Adjustment):
+                OnPropertyChanged(nameof(IsAdjustment));
+                OnPropertyChanged(nameof(AdjustBrightness));
+                OnPropertyChanged(nameof(AdjustContrast));
+                OnPropertyChanged(nameof(AdjustSaturation));
+                OnPropertyChanged(nameof(AdjustHue));
                 break;
             case nameof(Layer.IsVisible): OnPropertyChanged(nameof(IsVisible)); break;
             case nameof(Layer.IsLocked): OnPropertyChanged(nameof(IsLocked)); break;

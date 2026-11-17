@@ -1,7 +1,7 @@
 namespace FlashEditor.Core.Imaging;
 
 /// <summary>Per-pixel blending helpers that work on straight-alpha BGRA byte arrays.</summary>
-public static class BlendMath
+public static partial class BlendMath
 {
     /// <summary>
     /// Paints a color "over" the destination pixel. <paramref name="alpha"/> is the effective source

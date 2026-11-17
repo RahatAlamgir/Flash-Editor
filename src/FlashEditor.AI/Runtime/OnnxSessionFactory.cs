@@ -13,9 +13,10 @@ public static class OnnxSessionFactory
     public static bool PreferGpu { get; set; } = true;
 
     /// <summary>Opens the model. <paramref name="device"/> says what is used, e.g. "GPU (DirectML)" or "CPU".</summary>
-    public static InferenceSession Create(string modelPath, out string device)
+    /// <param name="allowGpu">False for models that do not run correctly on the graphics card (the processor is used).</param>
+    public static InferenceSession Create(string modelPath, out string device, bool allowGpu = true)
     {
-        if (PreferGpu)
+        if (PreferGpu && allowGpu)
         {
             try
             {

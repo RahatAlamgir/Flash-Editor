@@ -162,6 +162,15 @@
                             <ToggleButton Content="I" FontStyle="Italic" Width="36" Padding="0" Margin="4,0,0,0" IsChecked="{Binding Italic}" ToolTip="Italic" />
                             <ComboBox ItemsSource="{Binding Alignments}" SelectedItem="{Binding Align}" Width="90" Margin="10,0,0,0" ToolTip="Alignment of the lines" />
                         </StackPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <TextBlock Text="Lines" Style="{StaticResource Label}" Width="58" ToolTip="Space between the lines of text" />
+                            <ctl:NumberSlider Minimum="50" Maximum="300" Value="{Binding LineSpacingPercent}" SliderWidth="110" BoxWidth="58" Unit="%" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <CheckBox Content="Outline" IsChecked="{Binding OutlineEnabled}" Width="70" MinWidth="0" VerticalAlignment="Center" ToolTip="A line around the letters" />
+                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding OutlineBrush}" Command="{Binding PickOutlineColorCommand}" ToolTip="Outline color" />
+                            <ctl:NumberSlider Minimum="0" Maximum="60" Value="{Binding OutlineWidth}" SliderWidth="44" BoxWidth="58" Unit="px" Margin="6,0,0,0" />
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- Image -->
@@ -184,7 +193,7 @@
 
                     <!-- Gradient (filled shapes and text) -->
                     <StackPanel Visibility="{Binding CanGradient, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="Gradient" Style="{StaticResource Section}" />
+                        <TextBlock Text="{Binding GradientTitle}" Style="{StaticResource Section}" />
                         <StackPanel Style="{StaticResource Row}">
                             <CheckBox Content="Gradient" IsChecked="{Binding GradientEnabled}" Width="84" MinWidth="0" VerticalAlignment="Center"
                                       ToolTip="Fade through two or more colors instead of one flat color" />
@@ -193,11 +202,18 @@
                             <ItemsControl ItemsSource="{Binding GradientStops}" Margin="0,2,0,2">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
+                                        <StackPanel Margin="0,2,0,4">
+                                        <StackPanel Orientation="Horizontal">
                                             <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding Brush}" Command="{Binding PickCommand}" ToolTip="Change this color" />
                                             <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding Percent}" SliderWidth="86" BoxWidth="52" Unit="%" Margin="6,0,0,0"
                                                               ToolTip="Where this color sits along the gradient" />
                                             <Button Content="&#x2715;" Command="{Binding RemoveCommand}" Width="26" MinWidth="0" Padding="0" Margin="6,0,0,0" ToolTip="Remove this color" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="30,2,0,0">
+                                            <TextBlock Text="Opacity" Style="{StaticResource Label}" Width="52" />
+                                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding OpacityPercent}" SliderWidth="60" BoxWidth="52" Unit="%"
+                                                              ToolTip="How solid this color is (0 = see-through)" />
+                                        </StackPanel>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -207,21 +223,27 @@
                                 <Button Content="&#x21C4; Reverse" Command="{Binding SwapGradientCommand}" Padding="10,3" MinWidth="0" Margin="6,0,0,0" ToolTip="Run the gradient the other way" />
                             </StackPanel>
                         </StackPanel>
-                        <ItemsControl ItemsSource="{Binding GradientPresets}" Margin="0,2,0,4">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Background="{Binding Preview}" ToolTip="{Binding Name}" Width="34" Height="22" MinWidth="0" Padding="0" Margin="0,0,5,5"
-                                            Command="{Binding DataContext.ApplyGradientPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                            CommandParameter="{Binding}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <!-- Minimized while no gradient is applied; opens by itself when one is -->
+                        <Expander Header="Presets" IsExpanded="{Binding GradientEnabled, Mode=OneWay}" Margin="0,2,0,2">
+                            <ItemsControl ItemsSource="{Binding GradientPresets}" Margin="0,2,0,4">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Background="{Binding Preview}" ToolTip="{Binding Name}" Width="34" Height="22" MinWidth="0" Padding="0" Margin="0,0,5,5"
+                                                Command="{Binding DataContext.ApplyGradientPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
                         <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Style="{StaticResource Row}" Visibility="{Binding CanGradientBorder, Converter={StaticResource BoolToVisibility}}">
+                                <CheckBox Content="Also on the border" IsChecked="{Binding GradientBorder}" MinWidth="0" VerticalAlignment="Center" />
+                            </StackPanel>
                             <StackPanel Style="{StaticResource Row}">
                                 <CheckBox Content="Radial (from the middle)" IsChecked="{Binding GradientRadial}" MinWidth="0" VerticalAlignment="Center" />
                             </StackPanel>
@@ -233,6 +255,34 @@
                         </StackPanel>
                     </StackPanel>
 
+                    <!-- Saved looks -->
+                    <TextBlock Text="Styles" Style="{StaticResource Section}" />
+                    <Button Content="Save this look..." Command="{Binding SaveStyleCommand}" HorizontalAlignment="Left" Padding="10,3" MinWidth="0"
+                            ToolTip="Saves the shadow, 3D, gradient and colors of this object under a name, to use on other objects" />
+                    <ItemsControl ItemsSource="{Binding SavedStyles}" Margin="0,6,0,4">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Name}" Padding="8,3" MinWidth="0" Margin="0,0,5,5" ToolTip="Put this look on the selected object (right-click: delete it)"
+                                        Command="{Binding DataContext.ApplyStyleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                    <Button.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Delete this saved look"
+                                                      Command="{Binding PlacementTarget.Tag.DeleteStyleCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                    <Button.Tag>
+                                        <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                    </Button.Tag>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
                     <!-- Shadow (shapes, text, images and groups) -->
                     <TextBlock Text="Shadow" Style="{StaticResource Section}" />
                     <StackPanel Style="{StaticResource Row}">
@@ -241,29 +291,30 @@
                                 ToolTip="Shadow color" Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}" />
                     </StackPanel>
                     <!-- Quick looks: one click adds the shadow and sets everything -->
-                    <TextBlock Text="Presets" Style="{StaticResource Label}" Margin="0,4,0,2" />
-                    <ItemsControl ItemsSource="{Binding ShadowPresetItems}" Margin="0,0,0,4">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <!-- A picture of the shadow on a sample object, with its name underneath -->
-                                <Button Width="60" MinWidth="0" Margin="0,0,5,5" Padding="2" ToolTip="{Binding Description}"
-                                        Command="{Binding DataContext.ApplyShadowPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        CommandParameter="{Binding Preset}">
-                                    <StackPanel>
-                                        <Border CornerRadius="3" ClipToBounds="True" HorizontalAlignment="Center">
-                                            <Image Source="{Binding Preview}" Width="52" Height="52" Stretch="Uniform" />
-                                        </Border>
-                                        <TextBlock Text="{Binding Name}" FontSize="10.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
-                                    </StackPanel>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <Expander Header="Presets" IsExpanded="{Binding ShadowEnabled, Mode=OneWay}" Margin="0,4,0,2">
+                            <ItemsControl ItemsSource="{Binding ShadowPresetItems}" Margin="0,0,0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- A picture of the shadow on a sample object, with its name underneath -->
+                                    <Button Width="60" MinWidth="0" Margin="0,0,5,5" Padding="2" ToolTip="{Binding Description}"
+                                            Command="{Binding DataContext.ApplyShadowPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding Preset}">
+                                        <StackPanel>
+                                            <Border CornerRadius="3" ClipToBounds="True" HorizontalAlignment="Center">
+                                                <Image Source="{Binding Preview}" Width="52" Height="52" Stretch="Uniform" />
+                                            </Border>
+                                            <TextBlock Text="{Binding Name}" FontSize="10.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Expander>
                     <StackPanel Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel Style="{StaticResource Row}">
                             <TextBlock Text="Opacity" Style="{StaticResource Label}" Width="58" />

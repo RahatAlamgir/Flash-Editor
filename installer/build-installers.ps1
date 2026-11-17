@@ -39,7 +39,7 @@ Get-ChildItem "$build\app" -Filter *.lib | Remove-Item       # linker files, not
 # --- 2. Collect the AI models for the AI edition --------------------------------
 $models = "$build\models"
 New-Item -ItemType Directory -Force $models | Out-Null
-$needed = @("isnet-general-use.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.data")
+$needed = @("isnet-general-use.onnx", "lama_fp32.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.data")
 foreach ($file in $needed) {
     $src = Join-Path $ModelsFrom $file
     if (-not (Test-Path $src)) { throw "AI model missing: $src  (run the app once and use the AI tools, or pass -ModelsFrom)" }

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Media;
 using FlashEditor.App.Rendering;
+using FlashEditor.App.Services;
 using FlashEditor.App.ViewModels.Infrastructure;
 using FlashEditor.Core.Common;
 using FlashEditor.Core.Documents;
@@ -60,6 +61,14 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         {
             if (p is GradientPresetItem item) Change($"Gradient: {item.Name}", o => WithGradient(o, item.Preset.CreateStyle()));
         }, _ => CanGradient);
+        PickOutlineColorCommand = new RelayCommand(() => PickColor("Outline color", Text?.OutlineColor ?? ColorRgba.Black,
+            c => ChangeText("Outline Color", t => t with { OutlineColor = c, OutlineWidth = t.OutlineWidth > 0 ? t.OutlineWidth : Math.Max(2, Math.Round(t.FontSize / 14)) })), () => IsText);
+        SaveStyleCommand = new RelayCommand(SaveStyle, () => HasObject);
+        ApplyStyleCommand = new RelayCommand(p =>
+        {
+            if (p is SavedStyle saved) Change($"Style: {saved.Name}", o => saved.Style.ApplyTo(o));
+        }, _ => HasObject && CanEdit);
+        DeleteStyleCommand = new RelayCommand(p => { if (p is SavedStyle saved) StyleLibrary.Default.Remove(saved); });
         MakeEditableCommand = new RelayCommand(MakeEditable, () => IsPixelLayer);
         ToggleReshapeCommand = new RelayCommand(() => _main.ToggleReshape(), () => CanReshape && CanEdit);
         ResetShapeCommand = new RelayCommand(() => Change("Reset Shape", o => o.WithoutReshape()), () => HasCustomOutline && CanEdit);
@@ -250,6 +259,32 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     public Brush TextBrush => ToBrush(Text?.Color);
 
+    /// <summary>A line around the letters.</summary>
+    public bool OutlineEnabled
+    {
+        get => Text is { OutlineWidth: > 0, OutlineColor: not null };
+        set => ChangeText("Text Outline", t => value
+            ? t with { OutlineWidth = t.OutlineWidth > 0 ? t.OutlineWidth : Math.Max(2, Math.Round(t.FontSize / 14)), OutlineColor = t.OutlineColor ?? new ColorRgba(0, 0, 0) }
+            : t with { OutlineWidth = 0 });
+    }
+
+    public double OutlineWidth
+    {
+        get => Math.Round(Text?.OutlineWidth ?? 0, 1);
+        set => ChangeText("Outline Width", t => t with { OutlineWidth = Math.Clamp(value, 0, 200), OutlineColor = t.OutlineColor ?? new ColorRgba(0, 0, 0) });
+    }
+
+    public Brush OutlineBrush => ToBrush(Text?.OutlineColor ?? new ColorRgba(0, 0, 0));
+
+    /// <summary>Space between the lines, 50..300 % (100 = normal).</summary>
+    public double LineSpacingPercent
+    {
+        get => Math.Round((Text?.LineSpacing ?? 1) * 100);
+        set => ChangeText("Line Spacing", t => t with { LineSpacing = Math.Clamp(value, 50, 300) / 100.0 });
+    }
+
+    public RelayCommand PickOutlineColorCommand { get; }
+
     // ------------------------------------------------------------------ shadow (every kind of object)
 
     public bool HasShadow => Object?.Shadow != null;
@@ -350,18 +385,48 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public RelayCommand ApplyThreeDPresetCommand { get; }
     public RelayCommand PickThreeDColorCommand { get; }
 
+    // ------------------------------------------------------------------ saved styles
+
+    /// <summary>The looks the user saved (shadow, 3D, gradient and colors).</summary>
+    public ObservableCollection<SavedStyle> SavedStyles => StyleLibrary.Default.Items;
+
+    public RelayCommand SaveStyleCommand { get; }
+    public RelayCommand ApplyStyleCommand { get; }
+    public RelayCommand DeleteStyleCommand { get; }
+
+    private void SaveStyle()
+    {
+        if (Object is not { } obj) return;
+        var name = _main.Dialogs.ShowTextInput("Save Style", "Name for this look:", Object.KindName + " style " + (SavedStyles.Count + 1));
+        if (string.IsNullOrWhiteSpace(name)) return;
+        StyleLibrary.Default.Add(name, ObjectStyle.From(obj));
+        _main.SetStatus($"Saved the look \"{name.Trim()}\". Click it in Properties > Styles to use it on another object.");
+    }
+
     // ------------------------------------------------------------------ gradient (shapes with a fill, and text)
 
     /// <summary>Shapes that can be filled and text can have a fading color instead of a flat one.</summary>
-    public bool CanGradient => Shape?.CanFill == true || IsText;
+    public bool CanGradient => Shape?.CanFill == true || IsText || IsImage;
 
     public bool HasGradient => CanGradient && Object?.Gradient != null;
+
+    /// <summary>For a picture the gradient is a see-through overlay (set each color's opacity).</summary>
+    public string GradientTitle => IsImage ? "Gradient overlay" : "Gradient";
+
+    /// <summary>A shape with a border can show the gradient on its border too.</summary>
+    public bool CanGradientBorder => HasGradient && Shape is { Stroke: not null };
+
+    public bool GradientBorder
+    {
+        get => Shape?.GradientBorder == true;
+        set => Change("Gradient Border", o => ((ShapeObject)o) with { GradientBorder = value });
+    }
 
     public bool GradientEnabled
     {
         get => HasGradient;
         set => Change("Gradient", o => value
-            ? WithGradient(o, o.Gradient ?? GradientStyle.Starting(o is TextObject t ? t.Color : o is ShapeObject { Fill: { } f } ? f : new ColorRgba(59, 130, 246)))
+            ? WithGradient(o, o.Gradient ?? (o is ImageObject ? GradientPreset.DarkBottom.CreateStyle() : GradientStyle.Starting(o is TextObject t ? t.Color : o is ShapeObject { Fill: { } f } ? f : new ColorRgba(59, 130, 246))))
             : o with { Gradient = null });
     }
 
@@ -375,7 +440,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
             {
                 _stopItems.Clear();
                 for (int i = 0; i < stops.Count; i++)
-                    _stopItems.Add(new GradientStopItem(i, PickGradientStop, MoveGradientStop, RemoveGradientStop));
+                    _stopItems.Add(new GradientStopItem(i, PickGradientStop, MoveGradientStop, RemoveGradientStop, FadeGradientStop));
             }
             for (int i = 0; i < stops.Count; i++) _stopItems[i].Show(stops[i], stops.Count > GradientStyle.MinStops);
             return _stopItems;
@@ -388,11 +453,14 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     {
         var current = Object?.Gradient?.Stops;
         if (current == null || index >= current.Count) return;
-        PickColor("Gradient color", current[index].Color, c => ChangeGradient("Gradient Color", g => g.WithStop(index, st => st with { Color = c })));
+        PickColor("Gradient color", current[index].Color, c => ChangeGradient("Gradient Color", g => g.WithStop(index, st => st with { Color = c with { A = st.Color.A } })));
     }
 
     private void MoveGradientStop(int index, double position)
         => ChangeGradient("Gradient Position", g => g.WithStop(index, st => st with { Position = position }));
+
+    private void FadeGradientStop(int index, double opacity)
+        => ChangeGradient("Gradient Opacity", g => g.WithStop(index, st => st with { Color = st.Color with { A = (byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255) } }));
 
     private void RemoveGradientStop(int index) => ChangeGradient("Remove Gradient Color", g => g.WithStopRemoved(index));
 
@@ -412,7 +480,11 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     public bool GradientIsLinear => !GradientRadial;
 
-    public IReadOnlyList<GradientPresetItem> GradientPresets { get; } = GradientPreset.All.Select(p => new GradientPresetItem(p)).ToList();
+    private static readonly IReadOnlyList<GradientPresetItem> ColorPresetItems = GradientPreset.All.Select(p => new GradientPresetItem(p)).ToList();
+    private static readonly IReadOnlyList<GradientPresetItem> OverlayPresetItems = GradientPreset.Overlays.Select(p => new GradientPresetItem(p)).ToList();
+
+    /// <summary>The ready-made looks: colors for shapes and text, see-through overlays for pictures.</summary>
+    public IReadOnlyList<GradientPresetItem> GradientPresets => IsImage ? OverlayPresetItems : ColorPresetItems;
 
     public RelayCommand AddGradientStopCommand { get; }
     public RelayCommand SwapGradientCommand { get; }

@@ -46,6 +46,7 @@ public static class ObjectRendering
 
     public static bool IsAvailable => _renderer != null;
 
+
     /// <summary>Gives a text object a box that fits its text (keeping the box center and rotation).</summary>
     public static TextObject FitTextBox(TextObject text)
     {

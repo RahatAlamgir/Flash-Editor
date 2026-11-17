@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
+using FlashEditor.Core.IO;
 using FlashEditor.Core.IO.Project;
 using FlashEditor.Core.Objects;
 using Xunit;
@@ -214,5 +215,111 @@ public class ProjectFileTests : IDisposable
     {
         Assert.True(ProjectFile.IsProject(@"C:\x\poster.FLASH"));
         Assert.False(ProjectFile.IsProject(@"C:\x\poster.png"));
+    }
+
+    [Fact]
+    public void A_project_can_have_several_pages_with_their_own_sizes_and_guides()
+    {
+        var one = new Document(40, 30);
+        var layerOne = new Layer("A", Solid(40, 30, new ColorRgba(255, 0, 0)));
+        one.SetLayers(new List<Layer> { layerOne }, layerOne);
+        var two = new Document(80, 60);
+        var back1 = new Layer("B1", Solid(80, 60, new ColorRgba(0, 255, 0)));
+        var back2 = new Layer("B2", Solid(80, 60, new ColorRgba(0, 0, 255)));
+        two.SetLayers(new List<Layer> { back1, back2 }, back1);
+
+        var path = PathFor("pages.flash");
+        ProjectWriter.Save(new[]
+        {
+            new ProjectPage("Cover", one, new[] { 10.0 }, new[] { 5.5, 20.0 }),
+            new ProjectPage("Inside", two),
+        }, 1, path);
+
+        var content = ProjectReader.OpenProject(path);
+        Assert.Equal(2, content.Pages.Count);
+        Assert.Equal(1, content.ActivePage);
+        Assert.Equal("Cover", content.Pages[0].Name);
+        Assert.Equal("Inside", content.Pages[1].Name);
+        Assert.Equal((40, 30), (content.Pages[0].Document.Width, content.Pages[0].Document.Height));
+        Assert.Equal((80, 60), (content.Pages[1].Document.Width, content.Pages[1].Document.Height));
+        Assert.Equal(new[] { 10.0 }, content.Pages[0].VerticalGuides);
+        Assert.Equal(new[] { 5.5, 20.0 }, content.Pages[0].HorizontalGuides);
+        Assert.Equal(2, content.Pages[1].Document.Layers.Count);
+        Assert.Equal(new ColorRgba(0, 0, 255), content.Pages[1].Document.Layers[1].Pixels.GetPixel(5, 5));
+        Assert.Equal(0, content.Pages[1].Document.ActiveLayerIndex);
+    }
+
+    [Fact]
+    public void A_version_1_project_opens_as_one_page()
+    {
+        var path = PathFor("old.flash");
+        var png = ImageEncoder.EncodePng(Solid(6, 4, new ColorRgba(9, 8, 7)));
+        using (var stream = File.Create(path))
+        using (var zip = new ZipArchive(stream, ZipArchiveMode.Create))
+        {
+            using (var text = new StreamWriter(zip.CreateEntry("project.json").Open()))
+                text.Write("{\"format\":\"flash-project\",\"version\":1,\"width\":6,\"height\":4,\"activeLayer\":0,\"layers\":[{\"name\":\"Old\",\"opacity\":1,\"visible\":true,\"locked\":false,\"pixels\":\"images/0.png\"}]}");
+            using var image = zip.CreateEntry("images/0.png").Open();
+            image.Write(png);
+        }
+        var content = ProjectReader.OpenProject(path);
+        Assert.Single(content.Pages);
+        Assert.Equal("Old", content.Pages[0].Document.Layers[0].Name);
+        Assert.Equal(new ColorRgba(9, 8, 7), content.Pages[0].Document.Layers[0].Pixels.GetPixel(2, 2));
+    }
+
+    [Fact]
+    public void Project_info_is_read_quickly_with_a_preview_and_page_names()
+    {
+        var one = new Document(1000, 500);
+        var a = new Layer("A", Solid(1000, 500, new ColorRgba(255, 0, 0)));
+        one.SetLayers(new List<Layer> { a }, a);
+        var two = new Document(80, 60);
+        var b = new Layer("B", Solid(80, 60, new ColorRgba(0, 255, 0)));
+        two.SetLayers(new List<Layer> { b }, b);
+        var path = PathFor("info.flash");
+        ProjectWriter.Save(new[] { new ProjectPage("Cover", one), new ProjectPage("Back", two) }, 0, path);
+
+        var info = ProjectReader.ReadInfo(path);
+        Assert.Equal(2, info.PageCount);
+        Assert.Equal((1000, 500), (info.Width, info.Height));
+        Assert.Equal(new[] { "Cover", "Back" }, info.PageNames);
+        Assert.NotNull(info.Preview);
+        Assert.Equal(ProjectFile.PreviewSize, info.Preview!.Width);                     // shrunk to the preview size
+        Assert.Equal(ProjectFile.PreviewSize / 2, info.Preview.Height);                 // same shape as the page
+        Assert.Equal(new ColorRgba(255, 0, 0), info.Preview.GetPixel(100, 100));
+    }
+
+    [Fact]
+    public void Small_pages_keep_their_size_in_the_preview_and_the_active_page_is_shown()
+    {
+        var one = new Document(40, 30);
+        var a = new Layer("A", Solid(40, 30, new ColorRgba(255, 0, 0)));
+        one.SetLayers(new List<Layer> { a }, a);
+        var two = new Document(60, 20);
+        var b = new Layer("B", Solid(60, 20, new ColorRgba(0, 0, 255)));
+        two.SetLayers(new List<Layer> { b }, b);
+        var path = PathFor("info2.flash");
+        ProjectWriter.Save(new[] { new ProjectPage("One", one), new ProjectPage("Two", two) }, 1, path);
+        var info = ProjectReader.ReadInfo(path);
+        Assert.Equal((60, 20), (info.Preview!.Width, info.Preview.Height));
+        Assert.Equal(new ColorRgba(0, 0, 255), info.Preview.GetPixel(5, 5));
+    }
+
+    [Fact]
+    public void Project_info_works_for_old_files_and_reports_damaged_ones()
+    {
+        var old = PathFor("oldinfo.flash");
+        using (var stream = File.Create(old))
+        using (var zip = new ZipArchive(stream, ZipArchiveMode.Create))
+        using (var text = new StreamWriter(zip.CreateEntry("project.json").Open()))
+            text.Write("{\"format\":\"flash-project\",\"version\":1,\"width\":6,\"height\":4,\"layers\":[]}");
+        var info = ProjectReader.ReadInfo(old);
+        Assert.Equal((1, 6, 4), (info.PageCount, info.Width, info.Height));
+        Assert.Null(info.Preview);
+
+        var junk = PathFor("junkinfo.flash");
+        File.WriteAllText(junk, "not a zip");
+        Assert.Throws<InvalidDataException>(() => ProjectReader.ReadInfo(junk));
     }
 }

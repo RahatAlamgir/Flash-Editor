@@ -20,6 +20,8 @@ public sealed class Layer : ObservableObject
     private double _opacity = 1.0;
     private bool _isVisible = true;
     private bool _isLocked;
+    private BlendMode _blendMode;
+    private AdjustmentStyle? _adjustment;
 
     // Larger copy of the layer including parts outside the canvas (null when nothing is hidden).
     private PixelBuffer? _extended;
@@ -76,6 +78,24 @@ public sealed class Layer : ObservableObject
     {
         get => _opacity;
         set => SetField(ref _opacity, Math.Clamp(value, 0.0, 1.0));
+    }
+
+    /// <summary>
+    /// Set for an adjustment layer: it has no picture of its own, it changes the colors of all layers below it (brightness, contrast...).
+    /// </summary>
+    public AdjustmentStyle? Adjustment
+    {
+        get => _adjustment;
+        set { if (SetField(ref _adjustment, value)) OnPropertyChanged(nameof(IsAdjustment)); }
+    }
+
+    public bool IsAdjustment => _adjustment != null;
+
+    /// <summary>How this layer mixes with the layers below it.</summary>
+    public BlendMode BlendMode
+    {
+        get => _blendMode;
+        set => SetField(ref _blendMode, value);
     }
 
     public bool IsVisible
@@ -267,7 +287,7 @@ public sealed class Layer : ObservableObject
 
     public Layer Duplicate(string name)
     {
-        var copy = new Layer(name, Pixels.Clone()) { Opacity = Opacity, IsVisible = IsVisible, RestoreSource = RestoreSource };
+        var copy = new Layer(name, Pixels.Clone()) { Opacity = Opacity, IsVisible = IsVisible, BlendMode = BlendMode, Adjustment = Adjustment, RestoreSource = RestoreSource };
         if (_extended != null || Object != null) copy.RestoreState(SaveState().DeepCopy());
         return copy;
     }

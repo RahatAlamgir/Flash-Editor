@@ -12,6 +12,7 @@ Written in **C# / .NET 10 / WPF**. AI runs on your PC (no internet, no account),
 | | |
 |---|---|
 | **AI Remove Background** | One click keeps the person / product and removes the rest, even busy backgrounds. A **Refine brush** paints back or takes away anything the AI got wrong. |
+| **AI Remove / Fill** | Select an object (a person, a logo, a blemish) and the AI paints in what would be behind it, on a new layer. Works offline. |
 | **Recolor** | Change the color of a dress or T-shirt with a color graph. Folds, shadows and highlights are kept, so fabric still looks real. |
 | **Editable objects** | Shapes, text and placed pictures stay editable (like Canva): click to select, drag the handles to resize or rotate, change colors and fonts any time. |
 | **AI Upscale / Clean Up** | Makes small or blurry pictures sharper, or 2x to 4x larger with real-looking detail (Real-ESRGAN). |
@@ -38,14 +39,19 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 
 ### Files and pictures
 * Open **PNG, JPG, WEBP, ICO, BMP, GIF, TIFF, JPEG XR, DDS** and, when Windows has the free codec from the Microsoft Store, **HEIC, AVIF, JPEG XL and camera RAW** (DNG, CR2, NEF, ARW...). Drag files onto the window; hold **Ctrl** while dropping to add them as layers.
-* **Save** (Ctrl+S) keeps your work as a **project** (a `.flash` file): every layer, shape, text, picture, group, shadow and 3D look stays editable, so you can close the program and carry on later. Open it again with **Open** (Ctrl+O) or by dragging it onto the window.
+* **Save** (Ctrl+S) keeps your work as a **project** (a `.flash` file): every page and layer, shape, text, picture, group, shadow, 3D look, gradient and guide line stays editable, so you can close the program and carry on later. Open it again with **Open** (Ctrl+O) or by dragging it onto the window.
 * **Export** (Ctrl+Alt+S) makes a normal picture: **PNG, JPG, WEBP, ICO** (16 to 256 px), **BMP**, **TIFF** or **GIF** (256 colors, with smart color reduction), with format, quality, output size and crop.
 * **Several pictures at once**, one tab each, with their own layers, undo history and zoom. Double-click a tab to rename it.
+* **Project Manager**: Flash Editor starts with the Project Manager, which shows all your projects as cards with a picture, the number of pages and the date. Double-click a card to open it, use the search box to find one, or press **New project** to create one with a name, a size (Instagram, YouTube, A4...) and a ready-made layout. New projects are saved at once in `Documents\Flash Editor Projects` (you can pick another folder); projects you open or save from other folders are listed too. Right-click a card to rename it, show it in Explorer, remove it from the list, or delete it (to the Recycle Bin). Open it again any time with **File > Project Manager** or the **Projects** button left of the project tabs.
+* **Projects and pages**: the tabs along the top are your **projects**; the strip at the bottom of the canvas lists the **pages** of the selected project only (with a **+ Page** button). **Add Page** (Ctrl+Alt+N) adds an empty page after the current one; **Duplicate Page** (right-click a page) copies it with everything editable. All pages of a project are saved together in one `.flash` file. Double-click a project or page to rename it; the cross on a project tab closes the whole project (Ctrl+W), the cross on a page closes just that page. **Export All Pages** writes one picture per page (`name-1.png`, `name-2.png`...).
+* **Crash protection**: unsaved work is backed up in the background every minute. If the program ever closes unexpectedly, it offers to bring your work back the next time you start it.
+* **New picture templates**: File > New has sizes for Instagram, YouTube, Facebook, X, LinkedIn, Pinterest, A4/A5/Letter, business cards and posters, and a **Start from** list of ready-made layouts (Title slide, Quote card, Sale poster, Photo with caption, Announcement) whose text and shapes you can change.
 
 ### AI tools (offline, GPU accelerated)
 * **Remove Background** (button in the Layers panel, Ctrl+Alt+B). Sliders for edge sharpness, shrink / grow and feather, with live preview. The result is an **editable picture object**: move, resize, rotate it, give it a **shadow**, and click through its removed (transparent) parts to what lies behind. It remembers the original picture, so it can always be refined.
 * **Refine brush (R)**: *Restore* paints back what was removed by mistake, *Remove* takes away leftovers. Alt = the other mode. It paints on the picture itself, so it keeps working after the cut-out was moved, resized, rotated or mirrored, and the shadow follows the new edge. Works on any placed picture too.
 * **Select Subject**: selects the main person or object in one click.
+* **Remove / Fill Selection (AI)** (Image menu, Shift+F5, or right-click): select what you want gone with the Lasso (L), Rectangle (M), Magic Wand (W) or Select Subject, include a bit of its shadow, and run it. The AI fills the area with what would plausibly be there and puts the result on a new layer called **AI Fill**, so the original is never changed (hide the layer to compare, Ctrl+Z to undo). It takes a few seconds (the first time a little longer while the model loads) and works best on backgrounds such as sky, grass, walls and floors; very large areas come out a little soft, so fill them in parts. It does not draw new things from a text prompt.
 * **AI Upscale / Clean Up**: same size but sharper, or 2x / 3x / 4x larger. Shows progress and time left, with Cancel.
 * Runs on any DirectX 12 graphics card (NVIDIA, AMD, Intel) through DirectML, otherwise on the processor. Example: cleaning up a 1536 x 1024 picture takes about 25 s on an Intel Arc A750 instead of about 6 min on the processor.
 
@@ -72,6 +78,12 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 * **Groups show their parts** (like Canva): a grouped layer has an arrow to open or close the list of its parts, each with a small picture and its name (double-click to rename).
 * **Edit inside a group** (like Canva): double-click a group, or click one of its parts in the Layers panel, to select just that part. Move, resize, rotate, recolor, change text, add a shadow or delete it (Delete) while it stays in the group. **Esc** goes back to the whole group. All undoable.
 * **Gradient colors**: tick **Gradient** (Properties) to fill a shape or color a text with a fade through **two to eight colors**. Click a color to change it, drag its slider to move it along the gradient, **+ Add color** for another one, the cross removes one, **Reverse** flips the direction. Or pick one of eleven ready-made looks (Sunset, Ocean, Forest, Candy, Fire, Night, Gold, Glow, Rainbow, Aurora, Sunrise). Set the **Angle**, or tick **Radial** to fade from the middle outward. The gradient turns and mirrors with the object and works together with shadows and 3D.
+* **More gradient places**: **Also on the border** puts the gradient on a shape's border; on a picture the gradient is a see-through **overlay** (Dark at the bottom, Vignette, Warm tint...) with an **Opacity** slider for every color. **Layer > Add Gradient Background** puts a gradient behind everything.
+* **Styles**: **Save this look...** (Properties > Styles) stores the shadow, 3D look, gradient and colors of an object under a name. Click it later to put the same look on another object (right-click it to delete). Saved looks are there in every project.
+* **Align and distribute**: Layer > Align (also in the right-click menu) lines up the selected layers left, center, right, top, middle or bottom (one layer aligns to the canvas, several align to each other) and **Distribute** spreads three or more with equal gaps. One undo step.
+* **Blend modes**: the **Blend** list in the Layers panel (Multiply, Screen, Overlay, Soft light, Hard light, Darken, Lighten, Difference) changes how a layer mixes with the ones below. You see it live while you work.
+* **Adjustment layers**: **Layer > Add Adjustment Layer** changes brightness, contrast, saturation and hue of everything below it without touching any picture. Tune it any time, hide it, or delete it. Merge Down bakes it into the layer below.
+* **Text**: **Outline** (color and width) and **Lines** spacing in the Properties panel.
 * **Drop shadow** on any shape, text, picture or group (Properties > Shadow): color, opacity, blur, distance and angle. The shadow follows the real outline of the object. Ten one-click presets, each shown as a small picture of the shadow: Soft, Hard, Lifted, Subtle, Contact, Sticker, Long, Glow, Neon and Left.
 * **Drag layers up and down** in the Layers panel to change their order (drag one of several selected layers to move them all). A line shows where the layer will land; one undo step.
 * Layer icons are redrawn when you finish a change (a moment after you let go of the mouse), not while you drag, which keeps moving objects smooth.
@@ -141,6 +153,7 @@ The models are **not** in the repository (they are large). The app downloads eac
 | Model | Used for | Download | License |
 |---|---|---|---|
 | IS-Net general use (from the rembg project) | Remove Background, Select Subject | 170 MB | Apache 2.0 |
+| LaMa big-lama (ONNX by Carve) | Remove / Fill Selection | 198 MB | Apache 2.0 |
 | Real-ESRGAN x4plus (ONNX build from Qualcomm AI Hub) | AI Upscale / Clean Up | 62 MB | BSD-3 |
 
 Files are checked (size and SHA-256) before use and saved only in the `models` folder next to `FlashEditor.exe`. After that everything works offline. When copying the app to another PC, copy the whole folder.
@@ -166,6 +179,7 @@ Files are checked (size and SHA-256) before use and saved only in the `models` f
 | Ctrl+Shift+R | Recolor |
 | Ctrl+S / Ctrl+Shift+S | Save project (.flash) / save project as |
 | Ctrl+Alt+S | Export as a picture (PNG, JPG...) |
+| Ctrl+Alt+N | Add a page |
 | Ctrl+Tab, Ctrl+W | Next picture, close picture |
 | Space + drag, mouse wheel | Pan, zoom |
 

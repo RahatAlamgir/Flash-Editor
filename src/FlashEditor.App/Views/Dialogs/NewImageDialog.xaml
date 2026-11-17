@@ -5,8 +5,17 @@
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource PanelBrush}">
     <StackPanel Margin="20,16,20,18">
+        <StackPanel x:Name="NameRow" Visibility="Collapsed" Margin="0,0,0,14">
+            <TextBlock Text="Project name" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+            <TextBox x:Name="NameBox" Text="Untitled project" MaxLength="80" />
+        </StackPanel>
         <TextBlock Text="Preset" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-        <ComboBox x:Name="PresetBox" SelectionChanged="OnPresetChanged" />
+        <ComboBox x:Name="PresetBox" SelectionChanged="OnPresetChanged" MaxDropDownHeight="320" />
+
+        <TextBlock Text="Start from" Margin="0,14,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+        <ComboBox x:Name="TemplateBox" />
+        <TextBlock Text="A ready-made layout with editable text and shapes. Blank = an empty picture." TextWrapping="Wrap"
+                   Margin="0,4,0,0" Foreground="{StaticResource SubtleTextBrush}" FontSize="11" />
 
         <Grid Margin="0,14,0,0">
             <Grid.ColumnDefinitions>

@@ -5,7 +5,14 @@ using FlashEditor.Core.Transforms;
 
 namespace FlashEditor.App.Services;
 
-public sealed record NewImageSettings(int Width, int Height, ColorRgba Background);
+public sealed record NewImageSettings(int Width, int Height, ColorRgba Background, string? Template = null, string? Name = null);
+
+/// <summary>What the Project Manager asks the editor to do.</summary>
+public enum ProjectManagerAction { Open, New }
+
+/// <param name="Path">The project to open (for <see cref="ProjectManagerAction.Open"/>).</param>
+/// <param name="New">The size, template and name of the project to create (for <see cref="ProjectManagerAction.New"/>).</param>
+public sealed record ProjectManagerResult(ProjectManagerAction Action, string? Path = null, NewImageSettings? New = null);
 public sealed record ImageSizeSettings(int Width, int Height, ResampleMode Mode);
 /// <param name="AnchorX">0 = left, 0.5 = center, 1 = right (where the old picture stays).</param>
 /// <param name="AnchorY">0 = top, 0.5 = middle, 1 = bottom.</param>
@@ -38,6 +45,15 @@ public interface IDialogService
     bool Confirm(string title, string message);
 
     NewImageSettings? ShowNewImage(ColorRgba backgroundColor);
+
+    /// <summary>The new project dialog: like New Image, plus a name for the project.</summary>
+    NewImageSettings? ShowNewProject(ColorRgba backgroundColor);
+
+    /// <summary>
+    /// The Project Manager: all projects, to open or create one. Returns what the user chose, or null when they closed it
+    /// (at start-up that means "quit").
+    /// </summary>
+    ProjectManagerResult? ShowProjectManager(bool atStartup);
     ImageSizeSettings? ShowImageSize(int width, int height);
 
     /// <summary>Export options (format, quality, output size) for <paramref name="flattenedImage"/>.</summary>

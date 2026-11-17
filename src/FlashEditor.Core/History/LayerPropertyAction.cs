@@ -1,8 +1,9 @@
 using FlashEditor.Core.Documents;
+using FlashEditor.Core.Imaging;
 
 namespace FlashEditor.Core.History;
 
-public enum LayerProperty { Name, Opacity, Visibility, Lock }
+public enum LayerProperty { Name, Opacity, Visibility, Lock, BlendMode, Adjustment }
 
 /// <summary>Undo step for renaming a layer, changing its opacity or toggling visibility.</summary>
 public sealed class LayerPropertyAction : IHistoryAction
@@ -24,6 +25,8 @@ public sealed class LayerPropertyAction : IHistoryAction
     {
         LayerProperty.Name => "Rename Layer",
         LayerProperty.Opacity => "Layer Opacity",
+        LayerProperty.BlendMode => "Blend Mode",
+        LayerProperty.Adjustment => "Adjustment",
         LayerProperty.Lock => (bool)_newValue ? "Lock Layer" : "Unlock Layer",
         _ => (bool)_newValue ? "Show Layer" : "Hide Layer",
     };
@@ -35,7 +38,7 @@ public sealed class LayerPropertyAction : IHistoryAction
     public bool TryMerge(IHistoryAction next)
     {
         if (next is LayerPropertyAction other && other._layer == _layer
-            && other._property == LayerProperty.Opacity && _property == LayerProperty.Opacity)
+            && other._property == _property && _property is LayerProperty.Opacity or LayerProperty.Adjustment)
         {
             _newValue = other._newValue;
             return true;
@@ -49,6 +52,8 @@ public sealed class LayerPropertyAction : IHistoryAction
         {
             case LayerProperty.Name: _layer.Name = (string)value; break;
             case LayerProperty.Opacity: _layer.Opacity = (double)value; break;
+            case LayerProperty.BlendMode: _layer.BlendMode = (BlendMode)value; break;
+            case LayerProperty.Adjustment: _layer.Adjustment = (AdjustmentStyle)value; break;
             case LayerProperty.Visibility: _layer.IsVisible = (bool)value; break;
             case LayerProperty.Lock: _layer.IsLocked = (bool)value; break;
         }

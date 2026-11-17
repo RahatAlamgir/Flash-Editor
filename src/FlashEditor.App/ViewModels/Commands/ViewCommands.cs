@@ -51,7 +51,8 @@ public sealed class ViewCommands
         "FILE\n" +
         "Ctrl+N New   Ctrl+O Open (picture or project)\n" +
         "Ctrl+S Save project (.flash, everything stays editable)   Ctrl+Shift+S Save project as\n" +
-        "Ctrl+Alt+S Export as a picture (PNG, JPG... choose quality and size)\n\n" +
+        "Ctrl+Alt+S Export as a picture (PNG, JPG... choose quality and size)\n" +
+        "Ctrl+Alt+N Add a page (pages are listed at the bottom, projects along the top)   Ctrl+W Close project   Ctrl+Tab next page\n\n" +
         "SELECT / MOVE (V)\n" +
         "Click to select   Drag to move   Handles resize / rotate (Shift = free / 15°)\n" +
         "Double-click text to edit   Right-click for quick actions   Delete removes a selected object\n" +
@@ -65,6 +66,7 @@ public sealed class ViewCommands
         "VIEW\n" +
         "Mouse wheel Zoom   Space+drag or middle mouse Pan\n" +
         "Ctrl+Plus Zoom in   Ctrl+Minus Zoom out   Ctrl+0 Fit   Ctrl+1 100%\n" +
+        "Shift+F5 Remove / fill the selection with AI (select the area first)\n" +
         "Ctrl+R Rulers   Ctrl+' Grid   Ctrl+; Guides   Ctrl+Shift+; Snapping (buttons above the canvas)\n\n" +
         "CROP TOOL\n" +
         "Enter Apply   Esc Cancel";

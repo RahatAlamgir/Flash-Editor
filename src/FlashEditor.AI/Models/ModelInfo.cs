@@ -55,5 +55,19 @@ public sealed record ModelInfo(
         },
         Folder: "real_esrgan_x4plus");
 
+    /// <summary>
+    /// LaMa "big-lama" (Apache 2.0 license), as converted to ONNX by Carve (huggingface.co/Carve/LaMa-ONNX). Fills a hidden area of a picture
+    /// with what would plausibly be there (removes objects). Works on 512 x 512 pictures; the answer has values 0..255.
+    /// </summary>
+    public static readonly ModelInfo LamaInpainting = new(
+        DisplayName: "LaMa object removal model",
+        FileName: "lama_fp32.onnx",
+        DownloadUrl: "https://huggingface.co/Carve/LaMa-ONNX/resolve/main/lama_fp32.onnx",
+        SizeBytes: 208_044_816,
+        Sha256: "1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6",
+        InputSize: 512,
+        Mean: new[] { 0f, 0f, 0f },
+        Std: new[] { 1f, 1f, 1f });
+
     public string SizeText => $"{SizeBytes / (1024.0 * 1024.0):0} MB";
 }

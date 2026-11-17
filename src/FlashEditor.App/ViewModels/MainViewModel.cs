@@ -35,9 +35,18 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         _document = CreateDocumentViewModel(
             Core.Documents.Document.CreateBlank(1280, 720, ColorRgba.White), null, "New Image");
         Documents.Add(_document);
+        Projects.Add(_document.Project);
         Tools = new ToolsViewModel(this);
         SelectDocumentCommand = new Infrastructure.RelayCommand(p => { if (p is DocumentViewModel d) Document = d; });
+        SelectProjectCommand = new Infrastructure.RelayCommand(p => { if (p is ProjectGroup g) ShowProject(g); });
         CloseDocumentCommand = new Infrastructure.RelayCommand(p => CloseDocument(p as DocumentViewModel ?? Document));
+        CloseProjectCommand = new Infrastructure.RelayCommand(p => CloseProject(p as ProjectGroup ?? Document.Project));
+        RenameProjectCommand = new Infrastructure.RelayCommand(p =>
+        {
+            var group = p as ProjectGroup ?? Document.Project;
+            ShowProject(group);
+            group.IsRenaming = true;
+        });
         NextDocumentCommand = new Infrastructure.RelayCommand(() => Cycle(+1), () => Documents.Count > 1);
         PreviousDocumentCommand = new Infrastructure.RelayCommand(() => Cycle(-1), () => Documents.Count > 1);
         RenameDocumentCommand = new Infrastructure.RelayCommand(p =>
@@ -51,7 +60,9 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         Edit = new EditCommands(this);
         Image = new ImageCommands(this);
         Layers = new LayerCommands(this);
+        Align = new AlignCommands(this);
         Effects = new EffectCommands(this);
+        Inpaint = new InpaintCommands(this);
         Upscale = new UpscaleCommands(this);
         View = new ViewCommands(this);
         Properties = new ObjectPropertiesViewModel(this);
@@ -288,17 +299,25 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     public EditCommands Edit { get; }
     public ImageCommands Image { get; }
     public LayerCommands Layers { get; }
+    public AlignCommands Align { get; }
     public EffectCommands Effects { get; }
+    public InpaintCommands Inpaint { get; }
     public UpscaleCommands Upscale { get; }
     public ViewCommands View { get; }
 
     /// <summary>Set by the main window once the canvas control exists.</summary>
     public ICanvasView? Canvas { get; set; }
 
-    /// <summary>All open pictures (one tab each).</summary>
+    /// <summary>All open pictures: every page of every project, project by project.</summary>
     public ObservableCollection<DocumentViewModel> Documents { get; } = new();
 
+    /// <summary>The open projects (the tabs along the top). The pages of the selected one are the strip at the bottom.</summary>
+    public ObservableCollection<ProjectGroup> Projects { get; } = new();
+
     /// <summary>The picture shown in the editor (the active tab).</summary>
+    /// <summary>Shows another open picture (tab).</summary>
+    public void ShowDocument(DocumentViewModel document) => Document = document;
+
     public DocumentViewModel Document
     {
         get => _document;
@@ -307,6 +326,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
             if (value == null || value == _document) return;
             Tools.ResetActiveTool(); // finish half-done tool work on the old picture
             _document = value;
+            value.Project.ActivePage = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(Title));
             Infrastructure.RelayCommand.Refresh();
@@ -315,6 +335,9 @@ public sealed class MainViewModel : ObservableObject, IToolHost
 
     public Infrastructure.RelayCommand SelectDocumentCommand { get; }
     public Infrastructure.RelayCommand CloseDocumentCommand { get; }
+    public Infrastructure.RelayCommand SelectProjectCommand { get; }
+    public Infrastructure.RelayCommand CloseProjectCommand { get; }
+    public Infrastructure.RelayCommand RenameProjectCommand { get; }
     public Infrastructure.RelayCommand NextDocumentCommand { get; }
     public Infrastructure.RelayCommand PreviousDocumentCommand { get; }
     public Infrastructure.RelayCommand RenameDocumentCommand { get; }
@@ -336,37 +359,75 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         return true;
     }
 
-    /// <summary>Closes a tab, asking to save unsaved changes. Returns false when the user cancelled.</summary>
+    /// <summary>Shows a project: the page that was open in it last.</summary>
+    public void ShowProject(ProjectGroup group)
+    {
+        var page = group.ActivePage is { } last && group.Pages.Contains(last) ? last : group.Pages.FirstOrDefault();
+        if (page != null) Document = page;
+    }
+
+    /// <summary>
+    /// Closes one page of its project (the page is gone from the project once it is saved again). Closing the only page closes the project.
+    /// Returns false when the user cancelled.
+    /// </summary>
     public bool CloseDocument(DocumentViewModel document)
     {
-        Document = document; // show it while asking
-        if (!File.ConfirmDiscardChanges()) return false;
+        var group = document.Project;
+        if (group.Pages.Count <= 1) return CloseProject(group);
 
-        int index = Documents.IndexOf(document);
-        if (Documents.Count == 1)
-        {
-            var blank = CreateDocumentViewModel(Core.Documents.Document.CreateBlank(1280, 720, ColorRgba.White), null, "New Image");
-            Documents.Add(blank);
-        }
-        Document = Documents[index + 1 < Documents.Count ? index + 1 : index - 1];
-        Documents.Remove(document);
-        document.PropertyChanged -= OnDocumentPropertyChanged;
-        document.Dispose();
+        Document = document; // show it while asking
+        if (document.IsPageDirty && !Dialogs.Confirm("Close page",
+                $"Close \"{document.PageTitle}\"? Its changes since the last save will be lost."))
+            return false;
+
+        int index = group.Pages.IndexOf(document);
+        Document = group.Pages[index + 1 < group.Pages.Count ? index + 1 : index - 1];
+        Remove(document);
+        group.StructureDirty = true;       // the file still has this page until the project is saved again
         return true;
     }
 
-    /// <summary>Asks about every picture with unsaved changes (when the window closes). False = cancelled.</summary>
+    /// <summary>Closes a project with all its pages, asking to save unsaved changes first. Returns false when the user cancelled.</summary>
+    public bool CloseProject(ProjectGroup group)
+    {
+        ShowProject(group); // show it while asking
+        if (group.IsDirty && !File.ConfirmDiscardChanges()) return false;
+
+        if (Projects.Count == 1)
+        {
+            // Never leave the editor without a picture.
+            var blank = CreateDocumentViewModel(Core.Documents.Document.CreateBlank(1280, 720, ColorRgba.White), null, "New Image");
+            Documents.Add(blank);
+            Projects.Add(blank.Project);
+        }
+        int index = Projects.IndexOf(group);
+        Document = Projects[index + 1 < Projects.Count ? index + 1 : index - 1].ActivePage ?? Projects[index + 1 < Projects.Count ? index + 1 : index - 1].Pages[0];
+        foreach (var page in group.Pages.ToList()) Remove(page);
+        Projects.Remove(group);
+        return true;
+    }
+
+    /// <summary>Takes a page out of the open pictures (no questions asked).</summary>
+    private void Remove(DocumentViewModel page)
+    {
+        Documents.Remove(page);
+        page.Project.Pages.Remove(page);
+        page.PropertyChanged -= OnDocumentPropertyChanged;
+        page.Dispose();
+    }
+
+    /// <summary>Asks about every project with unsaved changes (when the window closes). False = cancelled.</summary>
     public bool ConfirmCloseAll()
     {
-        foreach (var document in Documents.Where(d => d.IsDirty).ToList())
+        foreach (var group in Projects.Where(p => p.IsDirty).ToList())
         {
-            Document = document;
+            ShowProject(group);
             if (!File.ConfirmDiscardChanges()) return false;
         }
         return true;
     }
 
-    public string Title => $"{Document.DisplayName}{(Document.IsDirty ? " *" : "")} - Flash Editor";
+    public string Title => $"{Document.DisplayName}{(Document.Project.IsDirty ? " *" : "")} - Flash Editor";
 
     public string StatusText
     {
@@ -398,21 +459,50 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     public void SelectTool<T>() where T : ToolBase => Tools.ActiveTool = Tools.Get<T>();
 
     /// <summary>
-    /// Shows a newly created or opened picture in a new tab. An untouched blank picture is replaced
-    /// instead of keeping a useless extra tab.
+    /// Shows a newly created or opened picture as a new project (a new tab along the top). An untouched blank picture is replaced
+    /// instead of keeping a useless extra tab. With <paramref name="into"/> the picture becomes the next page of that project instead.
     /// </summary>
-    public void LoadDocument(Document model, string? filePath, string initialStateName)
+    public DocumentViewModel LoadDocument(Document model, string? filePath, string initialStateName, ProjectGroup? into = null)
     {
-        var replace = Documents.Count == 1 && Document.IsPristine ? Document : null;
+        var replace = into == null && Documents.Count == 1 && Document.IsPristine ? Document : null;
         var document = CreateDocumentViewModel(model, filePath, initialStateName);
-        Documents.Add(document);
+        if (into != null)
+        {
+            document.Project.Pages.Remove(document);
+            document.Project = into;
+            into.Pages.Add(document);
+            int last = Documents.IndexOf(into.Pages[into.Pages.Count - 2]);   // the page that was last before this one
+            Documents.Insert(last + 1, document);
+        }
+        else
+        {
+            Documents.Add(document);
+            Projects.Add(document.Project);
+        }
         Document = document;
         if (replace != null)
         {
-            Documents.Remove(replace);
-            replace.PropertyChanged -= OnDocumentPropertyChanged;
-            replace.Dispose();
+            var group = replace.Project;
+            Remove(replace);
+            Projects.Remove(group);
         }
+        return document;
+    }
+
+    /// <summary>A new page after the current one, in the same project.</summary>
+    public DocumentViewModel AddPage(Document model, string name)
+    {
+        var group = Document.Project;
+        var page = CreateDocumentViewModel(model, null, "New Page");
+        page.Project.Pages.Remove(page);
+        page.Project = group;
+        page.FilePath = Document.FilePath;
+        page.CustomName = name;
+        group.Pages.Insert(group.Pages.IndexOf(Document) + 1, page);
+        Documents.Insert(Documents.IndexOf(Document) + 1, page);
+        group.StructureDirty = true;
+        Document = page;
+        return page;
     }
 
     public void Push(IHistoryAction? action)
@@ -428,6 +518,11 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     {
         if (!TryGetVisibleLayer(out layer)) return false;
         if (IsLockedWithMessage(layer)) return false;
+        if (layer.IsAdjustment)
+        {
+            SetStatus("This is an adjustment layer: it changes the colors of the layers below. Change its sliders in the Layers panel, or paint on another layer.");
+            return false;
+        }
         ConvertToPixels(layer);
         return true;
     }

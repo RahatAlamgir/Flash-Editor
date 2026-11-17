@@ -43,6 +43,27 @@ public partial class CanvasView
         Add(locked ? "Unlock" : "Lock", _main.Layers.ToggleLockCommand, "Ctrl+L");
         if (count > 1) Add($"Group {count} Layers", _main.Layers.GroupCommand, "Ctrl+G");
         if (count > 1) Add($"Merge {count} Layers", _main.Layers.MergeSelectedCommand, "Ctrl+E");
+        // Align: one layer lines up with the canvas, several line up with each other.
+        {
+            var align = new MenuItem { Header = count > 1 ? "Align" : "Align to Canvas" };
+            void AddAlign(string header, ICommand command, string parameter)
+                => align.Items.Add(new MenuItem { Header = header, Command = command, CommandParameter = parameter, IsEnabled = command.CanExecute(parameter) });
+            AddAlign("Left", _main.Align.AlignCommand, "Left");
+            AddAlign("Center", _main.Align.AlignCommand, "CenterHorizontally");
+            AddAlign("Right", _main.Align.AlignCommand, "Right");
+            align.Items.Add(new Separator());
+            AddAlign("Top", _main.Align.AlignCommand, "Top");
+            AddAlign("Middle", _main.Align.AlignCommand, "CenterVertically");
+            AddAlign("Bottom", _main.Align.AlignCommand, "Bottom");
+            if (count > 2)
+            {
+                align.Items.Add(new Separator());
+                AddAlign("Distribute Horizontally", _main.Align.DistributeCommand, "Horizontally");
+                AddAlign("Distribute Vertically", _main.Align.DistributeCommand, "Vertically");
+            }
+            align.IsEnabled = _main.Align.AlignCommand.CanExecute(null) || layer != null && !layer.IsLocked;
+            menu.Items.Add(align);
+        }
         if (obj is GroupObject) Add("Ungroup", _main.Layers.UngroupCommand, "Ctrl+Shift+G");
         Separator();
         if (obj is TextObject && !locked) Add("Edit Text...", _main.Properties.EditTextCommand);
@@ -68,6 +89,7 @@ public partial class CanvasView
         Add(hasSelection ? "Recolor Selection..." : "Recolor...", _main.Effects.RecolorCommand, "Ctrl+Shift+R");
         Add("Remove Background (AI)", _main.Effects.RemoveBackgroundCommand, "Ctrl+Alt+B");
         Add("Select Subject (AI)", _main.Effects.SelectSubjectCommand);
+        Add(hasSelection ? "Remove / Fill Selection (AI)" : "Remove / Fill (AI): select an area first", _main.Inpaint.FillSelectionCommand, "Shift+F5");
         Add("Split Asset Sheet into Pieces...", _main.Image.SplitSheetCommand);
         Add("Select Layer Content", _main.Edit.SelectLayerContentCommand);
         if (hasSelection) Add("Deselect", _main.Edit.DeselectCommand, "Ctrl+Shift+D");

@@ -57,7 +57,7 @@ public sealed class ObjectRenderer : IObjectRenderer
             dc.PushTransform(new MatrixTransform(matrix));
             Draw(dc, obj, matrix, shadowScale: 1); // the object's own shadow is added below, from its pixels
             dc.Pop();
-        }, highQualityImages: obj is ImageObject or GroupObject || obj.Warp != null);
+        }, highQualityImages: (obj is ImageObject or GroupObject || obj.Warp != null));
 
         // The 3D look comes first (the shadow is then cast by the object together with its side).
         if (pixels != null && obj.ThreeD is { } threeD)
@@ -91,6 +91,7 @@ public sealed class ObjectRenderer : IObjectRenderer
     private static double MarginFor(LayerObject obj) => obj switch
     {
         ShapeObject { Stroke: not null } s => s.StrokeWidth / 2 + 2,
+        TextObject { OutlineWidth: > 0, OutlineColor: not null } t => t.OutlineWidth + 2,
         GroupObject g => 2 + g.Members.Max(m => MarginFor(m.Object) + EffectReach(m.Object)) * Math.Max(g.Scale.Sx, g.Scale.Sy),
         _ => 2,
     };
@@ -123,14 +124,17 @@ public sealed class ObjectRenderer : IObjectRenderer
             case ShapeObject shape:
             {
                 var geometry = ShapeGeometryFactory.Build(shape, b.Width, b.Height);
-                Brush? fill = !shape.CanFill ? null
+                Brush? fill = !shape.CanFill || shape.Fill is not { } f ? null
                     : shape.Gradient is { } gradient ? GradientBrushFor(gradient, b.Width, b.Height)
-                    : shape.Fill is { } f ? Frozen(new SolidColorBrush(BitmapConverter.ToWpf(f))) : null;
+                    : Frozen(new SolidColorBrush(BitmapConverter.ToWpf(f)));
                 Pen? pen = null;
                 var strokeColor = shape.Stroke ?? (shape.IsLineLike ? shape.Fill : null);
                 if (strokeColor is { } sc && shape.StrokeWidth > 0)
                 {
-                    pen = new Pen(Frozen(new SolidColorBrush(BitmapConverter.ToWpf(sc))), shape.StrokeWidth)
+                    Brush strokeBrush = shape.GradientBorder && shape.Gradient is { } borderGradient
+                        ? GradientBrushFor(borderGradient, b.Width, b.Height)
+                        : Frozen(new SolidColorBrush(BitmapConverter.ToWpf(sc)));
+                    pen = new Pen(strokeBrush, shape.StrokeWidth)
                     {
                         LineJoin = PenLineJoin.Round,
                         StartLineCap = shape.IsLineLike ? PenLineCap.Round : PenLineCap.Flat,
@@ -154,12 +158,26 @@ public sealed class ObjectRenderer : IObjectRenderer
                     TextAlign.Right => naturalW - 1,
                     _ => 1,
                 };
+                if (text.OutlineWidth > 0 && text.OutlineColor is { } outlineColor)
+                {
+                    // The outline is drawn first, twice as wide, so that only its outer half shows once the letters are drawn on top.
+                    var pen = new Pen(Frozen(new SolidColorBrush(BitmapConverter.ToWpf(outlineColor))), text.OutlineWidth * 2) { LineJoin = PenLineJoin.Round };
+                    pen.Freeze();
+                    dc.DrawGeometry(null, pen, formatted.BuildGeometry(new Point(originX, 1)));
+                }
                 dc.DrawText(formatted, new Point(originX, 1));
                 dc.Pop();
                 break;
             }
             case ImageObject image:
                 dc.DrawImage(ToBitmap(image.Source), new Rect(0, 0, b.Width, b.Height));
+                if (image.Gradient is { } overlay)
+                {
+                    // A see-through gradient laid over the picture; only where the picture itself is visible (a cut-out stays cut out).
+                    dc.PushOpacityMask(new ImageBrush(ToBitmap(image.Source)) { Stretch = Stretch.Fill });
+                    dc.DrawRectangle(GradientBrushFor(overlay, b.Width, b.Height), null, new Rect(0, 0, b.Width, b.Height));
+                    dc.Pop();
+                }
                 break;
             case GroupObject group:
             {
@@ -347,6 +365,9 @@ public sealed class ObjectRenderer : IObjectRenderer
                 _ => TextAlignment.Left,
             },
         };
+        // Space between the lines: 1 = the font's own spacing.
+        if (Math.Abs(text.LineSpacing - 1) > 0.001)
+            formatted.LineHeight = Math.Max(1, new FontFamily(text.FontFamily).LineSpacing * Math.Max(1, text.FontSize) * text.LineSpacing);
         return formatted;
     }
 

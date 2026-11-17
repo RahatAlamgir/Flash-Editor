@@ -153,7 +153,7 @@ public partial class MainWindow : Window
 
     private void OnTabRenameKeyDown(object sender, KeyEventArgs e)
     {
-        if (sender is not TextBox { DataContext: DocumentViewModel document } box) return;
+        if (sender is not TextBox { DataContext: IRenamable document } box) return;
         if (e.Key == Key.Enter)
         {
             box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
@@ -171,7 +171,7 @@ public partial class MainWindow : Window
 
     private void OnTabRenameLostFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
-        if (sender is not TextBox { DataContext: DocumentViewModel { IsRenaming: true } document } box) return;
+        if (sender is not TextBox { DataContext: IRenamable { IsRenaming: true } document } box) return;
         box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
         document.IsRenaming = false;
     }

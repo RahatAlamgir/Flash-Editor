@@ -118,4 +118,14 @@ public sealed record GradientPreset(string Name, IReadOnlyList<ColorRgba> Colors
     public static IReadOnlyList<GradientPreset> All { get; } = new[] { Sunset, Ocean, Forest, Candy, Fire, Night, Gold, Glow, Rainbow, Aurora, Sunrise };
 
     public GradientStyle CreateStyle() => GradientStyle.Evenly(Colors, Angle, Radial);
+
+    // For pictures the gradient is a see-through overlay on top of the picture.
+    public static GradientPreset DarkBottom { get; } = Make("Dark at the bottom", 90, false, new ColorRgba(0, 0, 0, 0), new ColorRgba(0, 0, 0, 190));
+    public static GradientPreset DarkTop { get; } = Make("Dark at the top", -90, false, new ColorRgba(0, 0, 0, 0), new ColorRgba(0, 0, 0, 190));
+    public static GradientPreset LightBottom { get; } = Make("Light at the bottom", 90, false, new ColorRgba(255, 255, 255, 0), new ColorRgba(255, 255, 255, 210));
+    public static GradientPreset Vignette { get; } = Make("Vignette", 0, true, new ColorRgba(0, 0, 0, 0), new ColorRgba(0, 0, 0, 170));
+    public static GradientPreset WarmTint { get; } = Make("Warm tint", 45, false, new ColorRgba(255, 120, 60, 110), new ColorRgba(255, 60, 140, 110));
+    public static GradientPreset CoolTint { get; } = Make("Cool tint", 45, false, new ColorRgba(0, 170, 255, 110), new ColorRgba(120, 60, 255, 110));
+
+    public static IReadOnlyList<GradientPreset> Overlays { get; } = new[] { DarkBottom, DarkTop, LightBottom, Vignette, WarmTint, CoolTint };
 }
