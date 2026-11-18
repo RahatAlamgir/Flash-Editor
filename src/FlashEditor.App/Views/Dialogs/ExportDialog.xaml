@@ -6,88 +6,93 @@
         Title="Export - Quality and Size" Width="880" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource PanelBrush}">
-    <Grid Margin="20,16,20,18">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="380" />
-            <ColumnDefinition Width="20" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
-        <!-- Left: the picture with a crop box, or the saved result -->
-        <StackPanel>
-            <TextBlock x:Name="PreviewTitle" Text="Drag on the picture to crop (optional)" Margin="0,0,0,6" Foreground="{StaticResource SubtleTextBrush}" />
-            <Border x:Name="PreviewFrame" Width="380" Height="380" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
-                <Grid>
-                    <!-- Crop stage: sized in code to the picture's shape -->
-                    <Grid x:Name="CropStage" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Image x:Name="SourceImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
-                        <Canvas x:Name="CropCanvas" Background="Transparent" Cursor="Cross"
-                                MouseLeftButtonDown="OnCropMouseDown" MouseMove="OnCropMouseMove" MouseLeftButtonUp="OnCropMouseUp">
-                            <Path x:Name="CropShade" Fill="#A0000000" IsHitTestVisible="False" />
-                            <Rectangle x:Name="CropBox" Stroke="White" StrokeThickness="1.5" StrokeDashArray="4 2" IsHitTestVisible="False" />
-                            <Path x:Name="CropThumbs" Fill="White" Stroke="#FF3B82F6" StrokeThickness="1" IsHitTestVisible="False" />
-                        </Canvas>
-                    </Grid>
-                    <!-- The encoded result (shows JPG/WebP compression) -->
-                    <Image x:Name="PreviewImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
-                    <TextBlock x:Name="PreviewBusy" Text="Working..." HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="6"
-                               Foreground="{StaticResource SubtleTextBrush}" />
-                </Grid>
-            </Border>
-            <DockPanel Margin="0,8,0,0">
-                <TextBlock Text="Crop" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,8,0" />
-                <Button DockPanel.Dock="Right" Content="No crop" Click="OnResetCrop" Margin="8,0,0,0" />
-                <ComboBox x:Name="AspectBox" ItemsSource="{Binding Source={x:Static tr:CropTool.Aspects}}" SelectionChanged="OnAspectChanged" />
-            </DockPanel>
-            <CheckBox x:Name="ShowResultBox" Content="Show the saved result (with compression)" Margin="0,10,0,0"
-                      Checked="OnZoomPreviewChanged" Unchecked="OnZoomPreviewChanged" />
-            <CheckBox x:Name="ZoomPreviewBox" Content="...at 100% (center), to judge quality" Margin="20,4,0,0"
-                      IsEnabled="{Binding IsChecked, ElementName=ShowResultBox}"
-                      Checked="OnZoomPreviewChanged" Unchecked="OnZoomPreviewChanged" />
-        </StackPanel>
-
-        <StackPanel Grid.Column="2">
-            <TextBlock Text="Format" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-            <ComboBox x:Name="FormatBox" SelectionChanged="OnFormatChanged">
-                <ComboBoxItem Content="PNG - lossless, keeps transparency" />
-                <ComboBoxItem Content="JPG - small photos, no transparency" />
-                <ComboBoxItem Content="WebP - smallest, keeps transparency" />
-                <ComboBoxItem Content="ICO - Windows icon (16-256 px)" />
-                <ComboBoxItem Content="BMP - uncompressed, keeps transparency" />
-                <ComboBoxItem Content="TIFF - lossless, for printing and archives" />
-                <ComboBoxItem Content="GIF - 256 colors, simple graphics" />
-            </ComboBox>
-
-            <StackPanel x:Name="QualityPanel" Margin="0,14,0,0">
-                <DockPanel>
-                    <TextBlock Text="Quality" Foreground="{StaticResource SubtleTextBrush}" />
-                    <TextBlock x:Name="QualityText" DockPanel.Dock="Right" HorizontalAlignment="Right" />
-                </DockPanel>
-                <Slider x:Name="QualitySlider" Minimum="1" Maximum="100" SmallChange="1" LargeChange="5"
-                        IsSnapToTickEnabled="True" TickFrequency="1" IsMoveToPointEnabled="True" Margin="0,4,0,0"
-                        ValueChanged="OnQualityChanged" />
-                <TextBlock Text="Lower = smaller file but more blocky/blurry. 75-90 is a good balance."
-                           TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" />
-            </StackPanel>
-            <TextBlock x:Name="NoQualityText" Margin="0,14,0,0" TextWrapping="Wrap" FontSize="12"
-                       Foreground="{StaticResource SubtleTextBrush}" />
-
-            <TextBlock Text="Size in the file" Margin="0,16,0,6" FontWeight="SemiBold" />
-            <controls:SizeEditor x:Name="SizeBox" />
-
-            <Border Margin="0,16,0,0" Padding="10,8" Background="{StaticResource PanelHeaderBrush}" CornerRadius="4">
-                <StackPanel>
-                    <TextBlock x:Name="ResultSizeText" FontWeight="SemiBold" />
-                    <TextBlock x:Name="ResultInfoText" Margin="0,2,0,0" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap" />
-
-            <DockPanel Margin="0,18,0,0" LastChildFill="False">
+    <DockPanel>
+        <!-- Buttons in a bar along the bottom -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
                 <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
-                <Button DockPanel.Dock="Right" Content="Export..." IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
+                <Button DockPanel.Dock="Right" Content="Export..." IsDefault="True" Click="OnOk" Style="{StaticResource DialogPrimaryButton}" />
             </DockPanel>
-        </StackPanel>
-    </Grid>
+        </Border>
+        <Grid Margin="24,20,24,22">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: the picture with a crop box, or the saved result -->
+            <StackPanel>
+                <TextBlock x:Name="PreviewTitle" Text="Drag on the picture to crop (optional)" Margin="0,0,0,6" Foreground="{StaticResource SubtleTextBrush}" />
+                <Border x:Name="PreviewFrame" Width="380" Height="380" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
+                    <Grid>
+                        <!-- Crop stage: sized in code to the picture's shape -->
+                        <Grid x:Name="CropStage" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image x:Name="SourceImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <Canvas x:Name="CropCanvas" Background="Transparent" Cursor="Cross"
+                                    MouseLeftButtonDown="OnCropMouseDown" MouseMove="OnCropMouseMove" MouseLeftButtonUp="OnCropMouseUp">
+                                <Path x:Name="CropShade" Fill="#A0000000" IsHitTestVisible="False" />
+                                <Rectangle x:Name="CropBox" Stroke="White" StrokeThickness="1.5" StrokeDashArray="4 2" IsHitTestVisible="False" />
+                                <Path x:Name="CropThumbs" Fill="White" Stroke="#FF3B82F6" StrokeThickness="1" IsHitTestVisible="False" />
+                            </Canvas>
+                        </Grid>
+                        <!-- The encoded result (shows JPG/WebP compression) -->
+                        <Image x:Name="PreviewImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
+                        <TextBlock x:Name="PreviewBusy" Text="Working..." HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="6"
+                                   Foreground="{StaticResource SubtleTextBrush}" />
+                    </Grid>
+                </Border>
+                <DockPanel Margin="0,8,0,0">
+                    <TextBlock Text="Crop" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,8,0" />
+                    <Button DockPanel.Dock="Right" Content="No crop" Click="OnResetCrop" Margin="8,0,0,0" />
+                    <ComboBox x:Name="AspectBox" ItemsSource="{Binding Source={x:Static tr:CropTool.Aspects}}" SelectionChanged="OnAspectChanged" />
+                </DockPanel>
+                <CheckBox x:Name="ShowResultBox" Content="Show the saved result (with compression)" Margin="0,10,0,0"
+                          Checked="OnZoomPreviewChanged" Unchecked="OnZoomPreviewChanged" />
+                <CheckBox x:Name="ZoomPreviewBox" Content="...at 100% (center), to judge quality" Margin="20,4,0,0"
+                          IsEnabled="{Binding IsChecked, ElementName=ShowResultBox}"
+                          Checked="OnZoomPreviewChanged" Unchecked="OnZoomPreviewChanged" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Format" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <ComboBox x:Name="FormatBox" SelectionChanged="OnFormatChanged">
+                    <ComboBoxItem Content="PNG - lossless, keeps transparency" />
+                    <ComboBoxItem Content="JPG - small photos, no transparency" />
+                    <ComboBoxItem Content="WebP - smallest, keeps transparency" />
+                    <ComboBoxItem Content="ICO - Windows icon (16-256 px)" />
+                    <ComboBoxItem Content="BMP - uncompressed, keeps transparency" />
+                    <ComboBoxItem Content="TIFF - lossless, for printing and archives" />
+                    <ComboBoxItem Content="GIF - 256 colors, simple graphics" />
+                </ComboBox>
+
+                <StackPanel x:Name="QualityPanel" Margin="0,14,0,0">
+                    <DockPanel>
+                        <TextBlock Text="Quality" Foreground="{StaticResource SubtleTextBrush}" />
+                        <TextBlock x:Name="QualityText" DockPanel.Dock="Right" HorizontalAlignment="Right" />
+                    </DockPanel>
+                    <Slider x:Name="QualitySlider" Minimum="1" Maximum="100" SmallChange="1" LargeChange="5"
+                            IsSnapToTickEnabled="True" TickFrequency="1" IsMoveToPointEnabled="True" Margin="0,4,0,0"
+                            ValueChanged="OnQualityChanged" />
+                    <TextBlock Text="Lower = smaller file but more blocky/blurry. 75-90 is a good balance."
+                               TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" />
+                </StackPanel>
+                <TextBlock x:Name="NoQualityText" Margin="0,14,0,0" TextWrapping="Wrap" FontSize="12"
+                           Foreground="{StaticResource SubtleTextBrush}" />
+
+                <TextBlock Text="Size in the file" Margin="0,16,0,6" FontWeight="SemiBold" />
+                <controls:SizeEditor x:Name="SizeBox" />
+
+                <Border Margin="0,16,0,0" Padding="10,8" Background="{StaticResource PanelHeaderBrush}" CornerRadius="4">
+                    <StackPanel>
+                        <TextBlock x:Name="ResultSizeText" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ResultInfoText" Margin="0,2,0,0" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap" />
+
+            </StackPanel>
+        </Grid>
+    </DockPanel>
 </Window>

@@ -1,6 +1,8 @@
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using FlashEditor.App.ViewModels;
 
 namespace FlashEditor.App.Views.Panels;
@@ -11,9 +13,12 @@ public partial class LayersPanel : UserControl
     private MainViewModel? _main;
     private bool _syncing;
 
+    private double? _scrollToRestore;   // where the list was scrolled to when it started being rebuilt
+
     public LayersPanel()
     {
         InitializeComponent();
+        ((INotifyCollectionChanged)LayerList.Items).CollectionChanged += OnLayerItemsChanged;
         DataContextChanged += (_, _) =>
         {
             if (_main != null)
@@ -30,6 +35,30 @@ public partial class LayersPanel : UserControl
         };
     }
 
+    /// <summary>
+    /// The list is rebuilt whenever the layer stack changes (the whole list is cleared and filled again), which would send it back to the top
+    /// and hide the layer you are working on. Remember where it was and put it back, then make sure the active layer is in view.
+    /// </summary>
+    private void OnLayerItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_scrollToRestore != null || FindDescendant<ScrollViewer>(LayerList) is not { } scroller) return;
+        _scrollToRestore = scroller.VerticalOffset;
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+        {
+            double offset = _scrollToRestore ?? 0;
+            _scrollToRestore = null;
+            if (FindDescendant<ScrollViewer>(LayerList) is { } list) list.ScrollToVerticalOffset(offset);
+            EnsureActiveLayerVisible();
+        });
+    }
+
+    /// <summary>Scrolls the Layers list so that the active layer's row can be seen (a layer picked on the canvas may be far down the list).</summary>
+    private void EnsureActiveLayerVisible()
+    {
+        if (_main == null || _main.Document.Model.ActiveLayer is not { } layer || _main.Document.FindViewModel(layer) is not { } row) return;
+        if (LayerList.Items.Contains(row)) LayerList.ScrollIntoView(row);
+    }
+
     /// <summary>Ctrl / Shift + click in the list selects several layers (same as Shift+click on the canvas).</summary>
     private void OnLayerSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -42,7 +71,7 @@ public partial class LayersPanel : UserControl
             return;
         }
         var layers = LayerList.SelectedItems.OfType<LayerViewModel>().Select(l => l.Model).ToList();
-        var active = e.AddedItems.OfType<LayerViewModel>().LastOrDefault()?.Model ?? _main.Document.Model.ActiveLayer;
+        var active =e.AddedItems.OfType<LayerViewModel>().LastOrDefault()?.Model ?? _main.Document.Model.ActiveLayer;
         _syncing = true;
         try { _main.SetSelection(layers, active); }
         finally { _syncing = false; }
@@ -53,7 +82,10 @@ public partial class LayersPanel : UserControl
     /// <summary>Shows the canvas selection (Shift+click there) as selected rows here.</summary>
     private void OnMainSelectionChanged(object? sender, EventArgs e)
     {
-        if (_syncing || _main == null) return;
+        if (_main == null) return;
+        // A layer picked on the canvas (or by undo) may be out of sight in the list: bring its row into view.
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, EnsureActiveLayerVisible);
+        if (_syncing) return;
         var wanted = _main.SelectedLayers;
         _syncing = true;
         try
@@ -66,7 +98,15 @@ public partial class LayersPanel : UserControl
         finally { _syncing = false; }
     }
 
-    private void OnActivePartChanged(object? sender, EventArgs e) => UpdatePartHighlight();
+    private void OnActivePartChanged(object? sender, EventArgs e)
+    {
+        // A part picked on the canvas lives inside a group: open the group so the part's row is there to be seen.
+        if (_main is { ActivePartIndex: not null } && _main.Document.Model.ActiveLayer is { } layer
+            && _main.Document.FindViewModel(layer) is { IsGroup: true, IsExpanded: false } group)
+            group.IsExpanded = true;
+        UpdatePartHighlight();
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, EnsureActiveLayerVisible);
+    }
 
     /// <summary>Click a part under a group to edit it inside the group; double-click its name to rename it.</summary>
     private void OnPartMouseDown(object sender, MouseButtonEventArgs e)

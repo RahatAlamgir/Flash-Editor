@@ -16,9 +16,6 @@ namespace FlashEditor.App.ViewModels;
 public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposable
 {
     private readonly Dictionary<Layer, LayerViewModel> _layerViewModels = new();
-    private readonly string _initialStateName;
-    private HistoryItemViewModel? _selectedHistoryItem;
-    private bool _syncingHistory;
     private string? _filePath;
     private string? _customName;
     private bool _isRenaming;
@@ -27,16 +24,14 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
     {
         Model = model;
         _filePath = filePath;
-        _initialStateName = initialStateName;
         FileFormat = filePath == null ? null : ImageFileFormats.FromPath(filePath);
-        Project = new ProjectGroup();   // every picture is a page of a project (a single picture is a project of one page)
+        Project = new ProjectGroup { InitialStateName = initialStateName };   // every picture is a page of a project (a single picture is a project of one page)
         Project.Pages.Add(this);
 
         model.Layers.CollectionChanged += OnLayersChanged;
         model.PropertyChanged += OnModelPropertyChanged;
         model.History.Changed += OnHistoryChanged;
         RebuildLayers();
-        RebuildHistory();
     }
 
     public Document Model { get; }
@@ -46,8 +41,6 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
 
     /// <summary>Top to bottom: the order shown in the Layers panel.</summary>
     public ObservableCollection<LayerViewModel> LayersTopDown { get; } = new();
-
-    public ObservableCollection<HistoryItemViewModel> HistoryItems { get; } = new();
 
     public int Width => Model.Width;
     public int Height => Model.Height;
@@ -107,8 +100,18 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
     public bool IsRecovered { get; set; }
 
     /// <summary>The pages this picture belongs to, or null when it is a single picture.</summary>
-    /// <summary>The project this page belongs to (a single picture is a project of one page).</summary>
-    public ProjectGroup Project { get; set; } = null!;
+    /// <summary>The project this page belongs to (a single picture is a project of one page). Its steps go into the project's one history.</summary>
+    public ProjectGroup Project
+    {
+        get => _project;
+        set
+        {
+            if (ReferenceEquals(_project, value)) return;
+            _project = value;
+            Model.History.JoinProject(value?.History);
+        }
+    }
+    private ProjectGroup _project = null!;
 
     /// <summary>Tells the tab that its unsaved-changes mark may have changed.</summary>
     public void RefreshDirty()
@@ -143,6 +146,9 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
     /// <summary>Zoom and pan of this document, remembered while another tab is shown (null = fit to window).</summary>
     public double? ViewZoom { get; set; }
 
+    /// <summary>True when the picture was shown "fit to window" (it then follows the window size again when its tab is shown).</summary>
+    public bool ViewFitted { get; set; }
+
     /// <summary>Guide lines pulled out of the rulers: x positions of vertical ones, y positions of horizontal ones (not saved in the file).</summary>
     public List<double> VerticalGuides { get; } = new();
     public List<double> HorizontalGuides { get; } = new();
@@ -158,17 +164,6 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
         {
             if (value != null && Model.Layers.Contains(value.Model))
                 Model.ActiveLayer = value.Model;
-        }
-    }
-
-    /// <summary>Selecting a row in the History panel jumps to that state.</summary>
-    public HistoryItemViewModel? SelectedHistoryItem
-    {
-        get => _selectedHistoryItem;
-        set
-        {
-            if (_syncingHistory || value == null || value == _selectedHistoryItem) return;
-            Model.History.JumpTo(value.Position);
         }
     }
 
@@ -215,31 +210,10 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
 
     private void OnHistoryChanged(object? sender, EventArgs e)
     {
-        RebuildHistory();
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(TabTitle));
         Project?.Refresh();
         RelayCommand.Refresh();
-    }
-
-    private void RebuildHistory()
-    {
-        _syncingHistory = true;
-        try
-        {
-            var history = Model.History;
-            HistoryItems.Clear();
-            HistoryItems.Add(new HistoryItemViewModel(_initialStateName, 0, false));
-            for (int i = 0; i < history.Actions.Count; i++)
-                HistoryItems.Add(new HistoryItemViewModel(history.Actions[i].Name, i + 1, i >= history.Position));
-
-            _selectedHistoryItem = HistoryItems[history.Position];
-            OnPropertyChanged(nameof(SelectedHistoryItem));
-        }
-        finally
-        {
-            _syncingHistory = false;
-        }
     }
 
     public void Dispose()

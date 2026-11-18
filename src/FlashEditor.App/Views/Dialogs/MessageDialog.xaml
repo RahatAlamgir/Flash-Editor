@@ -1,0 +1,25 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.MessageDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        MinWidth="380" MaxWidth="560" SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}"
+        PreviewKeyDown="OnKeyDown">
+    <!-- A question, a warning or an error in the program's own look (instead of the white Windows message box). -->
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <StackPanel x:Name="ButtonRow" Orientation="Horizontal" HorizontalAlignment="Right" />
+        </Border>
+        <Grid Margin="24,22,24,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <!-- The icon: a colored disc with a sign in it -->
+            <Border x:Name="IconDisc" Width="40" Height="40" CornerRadius="20" VerticalAlignment="Top" Margin="0,0,18,0">
+                <TextBlock x:Name="IconSign" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" FontWeight="Bold" Foreground="White" Margin="0,-2,0,0" />
+            </Border>
+            <TextBlock x:Name="MessageText" Grid.Column="1" TextWrapping="Wrap" VerticalAlignment="Center" FontSize="13.5" LineHeight="20" MinHeight="40" />
+        </Grid>
+    </DockPanel>
+</Window>

@@ -36,6 +36,11 @@ public sealed class MainViewModel : ObservableObject, IToolHost
             Core.Documents.Document.CreateBlank(1280, 720, ColorRgba.White), null, "New Image");
         Documents.Add(_document);
         Projects.Add(_document.Project);
+        // Open projects follow the "undo steps" setting at once.
+        AppSettings.Changed += (_, _) =>
+        {
+            foreach (var project in Projects) project.History.MaxSteps = AppSettings.Current.UndoSteps;
+        };
         Tools = new ToolsViewModel(this);
         SelectDocumentCommand = new Infrastructure.RelayCommand(p => { if (p is DocumentViewModel d) Document = d; });
         SelectProjectCommand = new Infrastructure.RelayCommand(p => { if (p is ProjectGroup g) ShowProject(g); });
@@ -348,6 +353,43 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         Document = Documents[(i + direction + Documents.Count) % Documents.Count];
     }
 
+    /// <summary>Moves a project tab to another place along the top (0 = first). Nothing in the project changes, so it is not marked unsaved.</summary>
+    public void MoveProject(ProjectGroup group, int newIndex)
+    {
+        int old = Projects.IndexOf(group);
+        newIndex = Math.Clamp(newIndex, 0, Projects.Count - 1);
+        if (old < 0 || old == newIndex) return;
+        Projects.Move(old, newIndex);
+        SyncDocumentOrder();
+    }
+
+    /// <summary>Moves a page to another place in its project (0 = first). The order of the pages is saved in the file, so the project becomes unsaved.</summary>
+    public void MovePage(DocumentViewModel page, int newIndex)
+    {
+        var group = page.Project;
+        int old = group.Pages.IndexOf(page);
+        newIndex = Math.Clamp(newIndex, 0, group.Pages.Count - 1);
+        if (old < 0 || old == newIndex) return;
+        // A page keeps its name when it moves ("Page 1" dragged to the end is still "Page 1"): names that were only worked out from the
+        // position ("Page 1", "Page 2"...) are fixed first, otherwise two pages could end up with the same name.
+        foreach (var other in group.Pages.Where(p => p.CustomName == null).ToList()) other.CustomName = other.PageTitle;
+        group.Pages.Move(old, newIndex);
+        group.StructureDirty = true;
+        SyncDocumentOrder();
+    }
+
+    /// <summary>Keeps the flat list of open pictures (the order of Ctrl+Tab) in the same order as the project tabs and their pages.</summary>
+    private void SyncDocumentOrder()
+    {
+        var wanted = Projects.SelectMany(p => p.Pages).ToList();
+        for (int i = 0; i < wanted.Count && i < Documents.Count; i++)
+        {
+            if (ReferenceEquals(Documents[i], wanted[i])) continue;
+            int from = Documents.IndexOf(wanted[i]);
+            if (from >= 0) Documents.Move(from, i);
+        }
+    }
+
     /// <summary>Shows an already open file instead of opening it twice. Returns true when found.</summary>
     public bool ActivateIfOpen(string path)
     {
@@ -376,15 +418,48 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         if (group.Pages.Count <= 1) return CloseProject(group);
 
         Document = document; // show it while asking
-        if (document.IsPageDirty && !Dialogs.Confirm("Close page",
-                $"Close \"{document.PageTitle}\"? Its changes since the last save will be lost."))
+        // Deleting a page always asks: once the project is saved the page is gone from the file for good.
+        if (!Dialogs.Confirm("Delete page", $"Delete the page \"{document.PageTitle}\" from this project?"))
             return false;
 
         int index = group.Pages.IndexOf(document);
-        Document = group.Pages[index + 1 < group.Pages.Count ? index + 1 : index - 1];
-        Remove(document);
-        group.StructureDirty = true;       // the file still has this page until the project is saved again
+        string title = document.PageTitle;
+        DeletePageWithoutAsking(group, document);
+        group.StructureHistory.Push(new DeletePageAction(this, group, document, index));    // Edit > Undo puts it back
+        SetStatus($"Deleted \"{title}\". Ctrl+Z brings it back.");
         return true;
+    }
+
+    /// <summary>Undo / Redo changed something in a page: show that page.</summary>
+    private void ShowPageOfUndo(DocumentViewModel page)
+    {
+        if (!ReferenceEquals(Document, page) && page.Project.Pages.Contains(page)) Document = page;
+    }
+
+    /// <summary>Takes a page out of its project, keeping it in memory so that the deletion can be undone. No questions, no undo step.</summary>
+    public void DeletePageWithoutAsking(ProjectGroup group, DocumentViewModel page)
+    {
+        if (group.Pages.Count <= 1) return;
+        int index = group.Pages.IndexOf(page);
+        if (index < 0) return;
+        if (ReferenceEquals(Document, page)) Document = group.Pages[index + 1 < group.Pages.Count ? index + 1 : index - 1];
+        Documents.Remove(page);
+        group.Pages.Remove(page);
+        page.PropertyChanged -= OnDocumentPropertyChanged;
+        group.StructureDirty = true;       // the file still has this page until the project is saved again
+    }
+
+    /// <summary>Puts a deleted page back at its old place and shows it (the undo of a page deletion).</summary>
+    public void RestorePage(ProjectGroup group, DocumentViewModel page, int index)
+    {
+        if (group.Pages.Contains(page)) return;
+        page.PropertyChanged += OnDocumentPropertyChanged;
+        group.Pages.Insert(Math.Clamp(index, 0, group.Pages.Count), page);
+        Documents.Add(page);
+        SyncDocumentOrder();
+        group.StructureDirty = true;
+        Document = page;
+        SetStatus($"Brought back \"{page.PageTitle}\".");
     }
 
     /// <summary>Closes a project with all its pages, asking to save unsaved changes first. Returns false when the user cancelled.</summary>
@@ -703,6 +778,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     {
         var vm = new DocumentViewModel(model, filePath, initialStateName);
         vm.PropertyChanged += OnDocumentPropertyChanged;
+        vm.Project.PageChanged += ShowPageOfUndo;
         return vm;
     }
 

@@ -30,8 +30,9 @@ public sealed class DialogService : IDialogService
 
     private static bool? ShowFile(Microsoft.Win32.CommonDialog dialog) => Owner is { } owner ? dialog.ShowDialog(owner) : dialog.ShowDialog();
 
-    private static MessageBoxResult Message(string text, string caption, MessageBoxButton buttons, MessageBoxImage icon)
-        => Owner is { } owner ? MessageBox.Show(owner, text, caption, buttons, icon) : MessageBox.Show(text, caption, buttons, icon);
+    /// <summary>A message in the program's own dark look (not the white Windows message box).</summary>
+    private static MessageBoxResult Message(string text, string caption, MessageBoxButton buttons, MessageBoxImage icon, string? yesText = null, string? noText = null)
+        => MessageDialog.Show(Owner, text, caption, buttons, icon, yesText, noText);
 
     public string? ShowOpenImage(string title)
     {
@@ -84,7 +85,7 @@ public sealed class DialogService : IDialogService
     public SaveChangesAnswer AskSaveChanges(string documentName)
     {
         var result = Message($"Save changes to \"{documentName}\" before closing it?",
-            "Flash Editor", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            "Flash Editor", MessageBoxButton.YesNoCancel, MessageBoxImage.Question, yesText: "Save", noText: "Don't save");
         return result switch
         {
             MessageBoxResult.Yes => SaveChangesAnswer.Save,
@@ -118,6 +119,16 @@ public sealed class DialogService : IDialogService
     {
         var window = new ProjectManagerWindow(ProjectLibrary.Default, this, atStartup) { Owner = atStartup ? null : Owner };
         return window.ShowDialog() == true ? window.Result : null;
+    }
+
+    public void ShowAiModels(FlashEditor.App.ViewModels.AiModelsViewModel viewModel)
+    {
+        new AiModelsWindow(viewModel) { Owner = Owner }.ShowDialog();
+    }
+
+    public void ShowSettings()
+    {
+        new SettingsDialog { Owner = Owner }.ShowDialog();
     }
 
     public ImageSizeSettings? ShowImageSize(int width, int height)

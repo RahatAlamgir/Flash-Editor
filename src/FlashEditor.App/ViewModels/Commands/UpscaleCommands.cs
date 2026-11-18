@@ -28,6 +28,13 @@ public sealed class UpscaleCommands
 
     public RelayCommand AiUpscaleCommand { get; }
 
+    /// <summary>Lets go of the loaded model (before its file is deleted).</summary>
+    public void Release()
+    {
+        _upscaler?.Dispose();
+        _upscaler = null;
+    }
+
     private Document Doc => _main.Document.Model;
 
     private void Start()

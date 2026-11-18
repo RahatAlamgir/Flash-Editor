@@ -4,45 +4,50 @@
         Title="New Image" Width="380" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource PanelBrush}">
-    <StackPanel Margin="20,16,20,18">
-        <StackPanel x:Name="NameRow" Visibility="Collapsed" Margin="0,0,0,14">
-            <TextBlock Text="Project name" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-            <TextBox x:Name="NameBox" Text="Untitled project" MaxLength="80" />
+    <DockPanel>
+        <!-- Buttons in a bar along the bottom -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
+                <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+                <Button DockPanel.Dock="Right" Content="Create" IsDefault="True" Click="OnOk" Style="{StaticResource DialogPrimaryButton}" />
+            </DockPanel>
+        </Border>
+        <StackPanel Margin="24,20,24,22">
+            <StackPanel x:Name="NameRow" Visibility="Collapsed" Margin="0,0,0,14">
+                <TextBlock Text="Project name" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBox x:Name="NameBox" Text="Untitled project" MaxLength="80" />
+            </StackPanel>
+            <TextBlock Text="Preset" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+            <ComboBox x:Name="PresetBox" SelectionChanged="OnPresetChanged" MaxDropDownHeight="320" />
+
+            <TextBlock Text="Start from" Margin="0,14,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+            <ComboBox x:Name="TemplateBox" />
+            <TextBlock Text="A ready-made layout with editable text and shapes. Blank = an empty picture." TextWrapping="Wrap"
+                       Margin="0,4,0,0" Foreground="{StaticResource SubtleTextBrush}" FontSize="11" />
+
+            <Grid Margin="0,14,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Width (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                    <TextBox x:Name="WidthBox" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Height (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+                    <TextBox x:Name="HeightBox" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="Background" Margin="0,14,0,4" Foreground="{StaticResource SubtleTextBrush}" />
+            <RadioButton x:Name="WhiteOption" Content="White" IsChecked="True" GroupName="Bg" />
+            <RadioButton x:Name="TransparentOption" Content="Transparent" GroupName="Bg" />
+            <RadioButton x:Name="BackgroundColorOption" Content="Background color" GroupName="Bg" />
+
+            <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap" />
+
         </StackPanel>
-        <TextBlock Text="Preset" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-        <ComboBox x:Name="PresetBox" SelectionChanged="OnPresetChanged" MaxDropDownHeight="320" />
-
-        <TextBlock Text="Start from" Margin="0,14,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-        <ComboBox x:Name="TemplateBox" />
-        <TextBlock Text="A ready-made layout with editable text and shapes. Blank = an empty picture." TextWrapping="Wrap"
-                   Margin="0,4,0,0" Foreground="{StaticResource SubtleTextBrush}" FontSize="11" />
-
-        <Grid Margin="0,14,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="16" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel>
-                <TextBlock Text="Width (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-                <TextBox x:Name="WidthBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="2">
-                <TextBlock Text="Height (px)" Margin="0,0,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-                <TextBox x:Name="HeightBox" />
-            </StackPanel>
-        </Grid>
-
-        <TextBlock Text="Background" Margin="0,14,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-        <RadioButton x:Name="WhiteOption" Content="White" IsChecked="True" GroupName="Bg" />
-        <RadioButton x:Name="TransparentOption" Content="Transparent" GroupName="Bg" />
-        <RadioButton x:Name="BackgroundColorOption" Content="Background color" GroupName="Bg" />
-
-        <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" Visibility="Collapsed" TextWrapping="Wrap" />
-
-        <DockPanel Margin="0,18,0,0" LastChildFill="False">
-            <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
-            <Button DockPanel.Dock="Right" Content="Create" IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
-        </DockPanel>
-    </StackPanel>
+    </DockPanel>
 </Window>

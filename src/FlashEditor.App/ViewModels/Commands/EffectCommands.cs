@@ -50,6 +50,7 @@ public sealed class EffectCommands
         EmbossCommand = Create(() => new EmbossEffect());
         FindEdgesCommand = Create(() => new FindEdgesEffect());
         RemoveBackgroundCommand = new RelayCommand(RemoveBackgroundWithAi, () => _main.Document.ActiveLayer != null);
+        ShowAiModelsCommand = new RelayCommand(ShowAiModels);
         RemoveBackgroundByColorCommand = Create(() => new BackgroundRemovalEffect(),
             "Removes the background color found along the image edges. Works best on plain or studio " +
             "backgrounds. Raise Tolerance to remove more, lower it if parts of the subject disappear.");
@@ -182,6 +183,27 @@ public sealed class EffectCommands
 
     /// <summary>The place AI models are found and downloaded to.</summary>
     public ModelStore Models => _models;
+
+    /// <summary>Settings > AI Models: see, download and delete the AI models.</summary>
+    public RelayCommand ShowAiModelsCommand { get; }
+
+    private void ShowAiModels()
+    {
+        var viewModel = new AiModelsViewModel(_models, ReleaseModel, _main.Dialogs.Confirm);
+        _main.Dialogs.ShowAiModels(viewModel);
+    }
+
+    /// <summary>Lets go of a model that is loaded in memory, so that its file can be deleted. It loads again when it is next used.</summary>
+    public void ReleaseModel(ModelInfo model)
+    {
+        if (model == ModelInfo.IsNetGeneralUse)
+        {
+            _segmenter?.Dispose();
+            _segmenter = null;
+        }
+        else if (model == ModelInfo.RealEsrganX4Plus) _main.Upscale.Release();
+        else if (model == ModelInfo.LamaInpainting) _main.Inpaint.Release();
+    }
 
     /// <summary>
     /// Runs <paramref name="ready"/> once <paramref name="model"/> is on this PC, downloading it first

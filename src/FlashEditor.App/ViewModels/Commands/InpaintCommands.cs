@@ -25,6 +25,13 @@ public sealed class InpaintCommands
 
     public RelayCommand FillSelectionCommand { get; }
 
+    /// <summary>Lets go of the loaded model (before its file is deleted).</summary>
+    public void Release()
+    {
+        _inpainter?.Dispose();
+        _inpainter = null;
+    }
+
     private Document Doc => _main.Document.Model;
 
     private void FillSelection()

@@ -4,43 +4,48 @@
         Width="460" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource PanelBrush}">
-    <StackPanel Margin="20,16,20,18">
-        <TextBlock x:Name="DescriptionText" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
-                   Margin="0,0,0,12" Visibility="Collapsed" />
+    <DockPanel>
+        <!-- Buttons in a bar along the bottom -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
+                <Button DockPanel.Dock="Left" Content="Reset" Click="OnReset" MinWidth="84" />
+                <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+                <Button DockPanel.Dock="Right" Content="OK" IsDefault="True" Click="OnOk" Style="{StaticResource DialogPrimaryButton}" />
+            </DockPanel>
+        </Border>
+        <StackPanel Margin="24,20,24,22">
+            <TextBlock x:Name="DescriptionText" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
+                       Margin="0,0,0,12" Visibility="Collapsed" />
 
-        <ItemsControl x:Name="RowsList">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="0,5">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="64" />
-                            <ColumnDefinition Width="24" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center"
-                                   Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
-                        <Slider Grid.Column="1" Minimum="{Binding Min}" Maximum="{Binding Max}"
-                                Value="{Binding Value}" SmallChange="{Binding Step}" LargeChange="{Binding Step}"
-                                VerticalAlignment="Center" IsMoveToPointEnabled="True" Margin="0,0,10,0"
-                                Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
-                        <TextBox Grid.Column="2" Text="{Binding ValueText, UpdateSourceTrigger=LostFocus}"
-                                 VerticalAlignment="Center" HorizontalContentAlignment="Right"
-                                 Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
-                        <TextBlock Grid.Column="3" Text="{Binding Unit}" VerticalAlignment="Center" Margin="6,0,0,0"
-                                   Foreground="{StaticResource SubtleTextBrush}"
-                                   Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
-                        <CheckBox Grid.ColumnSpan="4" Content="{Binding Label}" IsChecked="{Binding BoolValue}"
-                                  Visibility="{Binding IsToggle, Converter={StaticResource BoolToVisibility}}" />
-                    </Grid>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+            <ItemsControl x:Name="RowsList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="64" />
+                                <ColumnDefinition Width="24" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center"
+                                       Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
+                            <Slider Grid.Column="1" Minimum="{Binding Min}" Maximum="{Binding Max}"
+                                    Value="{Binding Value}" SmallChange="{Binding Step}" LargeChange="{Binding Step}"
+                                    VerticalAlignment="Center" IsMoveToPointEnabled="True" Margin="0,0,10,0"
+                                    Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
+                            <TextBox Grid.Column="2" Text="{Binding ValueText, UpdateSourceTrigger=LostFocus}"
+                                     VerticalAlignment="Center" HorizontalContentAlignment="Right"
+                                     Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
+                            <TextBlock Grid.Column="3" Text="{Binding Unit}" VerticalAlignment="Center" Margin="6,0,0,0"
+                                       Foreground="{StaticResource SubtleTextBrush}"
+                                       Visibility="{Binding IsSlider, Converter={StaticResource BoolToVisibility}}" />
+                            <CheckBox Grid.ColumnSpan="4" Content="{Binding Label}" IsChecked="{Binding BoolValue}"
+                                      Visibility="{Binding IsToggle, Converter={StaticResource BoolToVisibility}}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-        <DockPanel Margin="0,18,0,0" LastChildFill="False">
-            <Button DockPanel.Dock="Left" Content="Reset" Click="OnReset" MinWidth="84" />
-            <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
-            <Button DockPanel.Dock="Right" Content="OK" IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
-        </DockPanel>
-    </StackPanel>
+        </StackPanel>
+    </DockPanel>
 </Window>

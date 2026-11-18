@@ -54,6 +54,12 @@ public interface IDialogService
     /// (at start-up that means "quit").
     /// </summary>
     ProjectManagerResult? ShowProjectManager(bool atStartup);
+    /// <summary>The AI Models window: see, download and delete the AI models.</summary>
+    void ShowAiModels(FlashEditor.App.ViewModels.AiModelsViewModel viewModel);
+
+    /// <summary>The Settings window (how many undo steps a project keeps...). It saves the choices itself.</summary>
+    void ShowSettings();
+
     ImageSizeSettings? ShowImageSize(int width, int height);
 
     /// <summary>Export options (format, quality, output size) for <paramref name="flattenedImage"/>.</summary>

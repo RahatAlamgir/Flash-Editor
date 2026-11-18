@@ -33,6 +33,9 @@ public partial class CanvasView : UserControl, ICanvasView
     private double _zoom = 1;
     private Vector _offset;
     private bool _fitPending = true;
+    private double _refZoom = 1;             // the zoom the user chose, and the size of the view at that moment: a resized window scales that zoom
+    private Size _refSize;
+    private bool _fitted;                   // the picture is shown "fit to window": it follows the window size until the user zooms or pans
 
     // Mouse state
     private bool _spaceHeld;
@@ -113,6 +116,7 @@ public partial class CanvasView : UserControl, ICanvasView
             // Remember where this picture was zoomed / scrolled to, for when its tab is shown again.
             _document.ViewZoom = _zoom;
             _document.ViewOffset = _offset;
+            _document.ViewFitted = _fitted;
         }
         _document = document;
         DataContext = document;
@@ -127,7 +131,10 @@ public partial class CanvasView : UserControl, ICanvasView
             _zoom = zoom;
             _offset = document.ViewOffset;
             _fitPending = false;
+            _fitted = document.ViewFitted;
+            SetZoomReference(new Size(Viewport.ActualWidth, Viewport.ActualHeight));
             ApplyTransform();
+            if (_fitted && Viewport.ActualWidth > 0) FitToWindow();       // the window may have been resized while this tab was hidden
             return;
         }
         _fitPending = true;
@@ -210,6 +217,8 @@ public partial class CanvasView : UserControl, ICanvasView
 
     public void PanBy(Vector screenDelta)
     {
+        if (_fitted) SetZoomReference(new Size(Viewport.ActualWidth, Viewport.ActualHeight));
+        _fitted = false;
         _offset += screenDelta;
         ApplyTransform();
     }
@@ -217,11 +226,19 @@ public partial class CanvasView : UserControl, ICanvasView
     public void ZoomAt(Point viewportPoint, double newZoom)
     {
         newZoom = Math.Clamp(newZoom, MinZoom, MaxZoom);
+        _fitted = false;
         // Keep the image point under the mouse in the same place.
         var imagePoint = ((Vector)viewportPoint - _offset) / _zoom;
         _zoom = newZoom;
         _offset = (Vector)viewportPoint - imagePoint * _zoom;
+        SetZoomReference(new Size(Viewport.ActualWidth, Viewport.ActualHeight));
         ApplyTransform();
+    }
+
+    private void SetZoomReference(Size viewSize)
+    {
+        _refZoom = _zoom;
+        _refSize = viewSize;
     }
 
     public void ZoomIn() => ZoomAt(ViewportCenter, ZoomSteps.FirstOrDefault(z => z > _zoom * 1.001, MaxZoom));
@@ -240,6 +257,7 @@ public partial class CanvasView : UserControl, ICanvasView
             return;
         }
         _fitPending = false;
+        _fitted = true;
         double margin = 40;
         double fit = Math.Min((vw - margin) / _document.Width, (vh - margin) / _document.Height);
         _zoom = Math.Clamp(Math.Min(fit, 8), MinZoom, MaxZoom);
@@ -429,7 +447,21 @@ public partial class CanvasView : UserControl, ICanvasView
 
     private void OnViewportSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (_fitPending) FitToWindow();
+        if (_fitPending || _fitted) FitToWindow();                       // fit to window: the picture grows / shrinks with the window
+        else if (_document != null && e.PreviousSize.Width > 0 && e.PreviousSize.Height > 0)
+        {
+            // Zoomed or panned by the user: the picture still scales with the window (by the same factor the window grew or shrank, the way
+            // "fit" does) and the part of the picture in the middle of the view stays in the middle.
+            // The factor is measured from the window size at the moment the user last zoomed, so making the window big again brings the same zoom back.
+            if (_refSize.Width <= 0) SetZoomReference(e.PreviousSize);
+            double scale = Math.Min(e.NewSize.Width / _refSize.Width, e.NewSize.Height / _refSize.Height);
+            var oldCenter = new Vector(e.PreviousSize.Width / 2, e.PreviousSize.Height / 2);
+            var newCenter = new Vector(e.NewSize.Width / 2, e.NewSize.Height / 2);
+            var imageCenter = (oldCenter - _offset) / _zoom;
+            _zoom = Math.Clamp(_refZoom * scale, MinZoom, MaxZoom);
+            _offset = newCenter - imageCenter * _zoom;
+            ApplyTransform();
+        }
         UpdateAids();
     }
 

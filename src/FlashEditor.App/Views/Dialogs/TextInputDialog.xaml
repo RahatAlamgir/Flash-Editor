@@ -4,13 +4,18 @@
         Width="440" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource PanelBrush}">
-    <StackPanel Margin="20,16,20,18">
-        <TextBlock x:Name="PromptText" Margin="0,0,0,8" TextWrapping="Wrap" />
-        <TextBox x:Name="InputBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="260"
-                 VerticalScrollBarVisibility="Auto" FontSize="15" />
-        <DockPanel Margin="0,16,0,0" LastChildFill="False">
-            <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
-            <Button DockPanel.Dock="Right" Content="OK" Click="OnOk" Style="{StaticResource DialogButton}" />
-        </DockPanel>
-    </StackPanel>
+    <DockPanel>
+        <!-- Buttons in a bar along the bottom -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
+                <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+                <Button DockPanel.Dock="Right" Content="OK" Click="OnOk" Style="{StaticResource DialogButton}" />
+            </DockPanel>
+        </Border>
+        <StackPanel Margin="24,20,24,22">
+            <TextBlock x:Name="PromptText" Margin="0,0,0,8" TextWrapping="Wrap" />
+            <TextBox x:Name="InputBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="260"
+                     VerticalScrollBarVisibility="Auto" FontSize="15" />
+        </StackPanel>
+    </DockPanel>
 </Window>

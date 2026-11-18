@@ -54,8 +54,8 @@ public partial class App : Application
     {
         string text = $"Something went wrong:\n\n{e.Exception.Message}";
         // Before the editor window is shown (the Project Manager at start-up) there is no window to belong to.
-        if (MainWindow is { IsVisible: true }) MessageBox.Show(MainWindow, text, "Flash Editor", MessageBoxButton.OK, MessageBoxImage.Error);
-        else MessageBox.Show(text, "Flash Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+        var front = Windows.OfType<Window>().FirstOrDefault(w => w.IsActive && w.IsVisible) ?? MainWindow;   // the window the user is in (a dialog may be open)
+        Views.Dialogs.MessageDialog.Show(front, text, "Flash Editor", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true; // keep the app (and the user's work) alive
     }
 }

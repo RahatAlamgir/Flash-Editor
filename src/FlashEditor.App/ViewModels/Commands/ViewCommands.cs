@@ -19,6 +19,7 @@ public sealed class ViewCommands
         ToggleGuidesCommand = new RelayCommand(() => _main.Aids.ShowGuides = !_main.Aids.ShowGuides);
         ToggleSnapCommand = new RelayCommand(() => _main.Aids.SnapEnabled = !_main.Aids.SnapEnabled);
         ClearGuidesCommand = new RelayCommand(() => _main.Document.ClearGuides());
+        SettingsCommand = new RelayCommand(() => _main.Dialogs.ShowSettings());
         ShortcutsCommand = new RelayCommand(() => _main.Dialogs.ShowInfo("Keyboard Shortcuts", ShortcutsText));
         AboutCommand = new RelayCommand(() => _main.Dialogs.ShowInfo("About Flash Editor",
             "Flash Editor 1.0\nA small layer-based image editor built with C#, WPF and SkiaSharp."));
@@ -33,6 +34,7 @@ public sealed class ViewCommands
     public RelayCommand ToggleGuidesCommand { get; }
     public RelayCommand ToggleSnapCommand { get; }
     public RelayCommand ClearGuidesCommand { get; }
+    public RelayCommand SettingsCommand { get; }
     public RelayCommand ShortcutsCommand { get; }
     public RelayCommand AboutCommand { get; }
 

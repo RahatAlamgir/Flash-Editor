@@ -52,6 +52,8 @@
                                                 </Trigger>
                                                 <DataTrigger Binding="{Binding IsActive}" Value="True">
                                                     <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                    <Setter Property="BorderThickness" Value="2,0,0,0" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

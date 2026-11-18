@@ -20,8 +20,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <Border Background="Transparent" Width="26" Height="26">
-                            <Path x:Name="Lock" Style="{StaticResource IconPath}" Data="{StaticResource Icon.Lock}" Opacity="0.2" />
+                        <Border Background="Transparent" Width="24" Height="24">
+                            <Path x:Name="Lock" Width="18" Height="18" Style="{StaticResource IconPath}" Data="{StaticResource Icon.Lock}" Opacity="0.2" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
@@ -77,8 +77,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <Border Background="Transparent" Width="26" Height="26">
-                            <Path x:Name="Eye" Style="{StaticResource IconPath}" Data="{StaticResource Icon.Eye}" />
+                        <Border Background="Transparent" Width="24" Height="24">
+                            <Path x:Name="Eye" Width="18" Height="18" Style="{StaticResource IconPath}" Data="{StaticResource Icon.Eye}" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="False">
@@ -92,37 +92,28 @@
     </UserControl.Resources>
 
     <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="LAYERS" Style="{StaticResource PanelHeader}" />
+        <!-- Title bar -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource PanelTitleBar}">
+            <TextBlock Text="LAYERS" Style="{StaticResource PanelTitle}" />
+        </Border>
 
-        <!-- Opacity of the selected layer -->
-        <Grid DockPanel.Dock="Top" Margin="10,0,10,6">
+        <!-- Blend mode and opacity of the selected layer, in two compact lines (like Photoshop) -->
+        <Grid DockPanel.Dock="Top" Margin="10,8,10,6">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="44" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="Opacity" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,8,0" />
-            <ctl:NumberSlider Grid.Column="1" Grid.ColumnSpan="2" Minimum="0" Maximum="100" SliderWidth="136" BoxWidth="58" Unit="%"
-                              Value="{Binding Document.ActiveLayer.OpacityPercent}" />
-        </Grid>
-
-        <!-- How the selected layer mixes with the layers below -->
-        <Grid DockPanel.Dock="Top" Margin="10,0,10,6">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="54" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Text="Mix" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,16,0"
-                       ToolTip="Blend mode: how this layer's colors mix with the layers below it" />
-            <ComboBox Grid.Column="1" ItemsSource="{Binding Document.ActiveLayer.BlendModeNames}" SelectedItem="{Binding Document.ActiveLayer.BlendModeName}"
-                      ToolTip="Blend mode: how this layer's colors mix with the layers below it" />
-            <!-- A plain-words explanation of the chosen mode -->
-            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Document.ActiveLayer.BlendModeHelp}" TextWrapping="Wrap" FontSize="11"
-                       Foreground="{StaticResource SubtleTextBrush}" Margin="0,3,0,0" />
+            <TextBlock Text="Mix" Style="{StaticResource InspectorLabel}" Width="54" ToolTip="Blend mode: how this layer's colors mix with the layers below it" />
+            <ComboBox Grid.Column="1" Style="{StaticResource CompactCombo}" ItemsSource="{Binding Document.ActiveLayer.BlendModeNames}"
+                      SelectedItem="{Binding Document.ActiveLayer.BlendModeName}"
+                      ToolTip="{Binding Document.ActiveLayer.BlendModeHelp}" />
+            <TextBlock Grid.Row="1" Text="Opacity" Style="{StaticResource InspectorLabel}" Width="54" Margin="0,6,0,0" />
+            <ctl:NumberSlider Grid.Row="1" Grid.Column="1" Margin="0,6,0,0" HorizontalAlignment="Left" Minimum="0" Maximum="100" SliderWidth="120" BoxWidth="48" Unit="%"
+                              Value="{Binding Document.ActiveLayer.OpacityPercent}" />
         </Grid>
 
         <!-- Settings of an adjustment layer -->
@@ -143,29 +134,31 @@
         </StackPanel>
 
         <!-- Select every layer, and lock / unlock the selected layers -->
-        <Grid DockPanel.Dock="Top" Margin="10,0,10,8">
+        <Grid DockPanel.Dock="Top" Margin="10,0,10,6">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Select all" Padding="1,5" MinWidth="0" Margin="0,0,3,0"
+            <Button Grid.Column="0" Content="Select all" Style="{StaticResource CompactButton}" Padding="1,2" Margin="0,0,3,0"
                     Command="{Binding Layers.SelectAllLayersCommand}"
                     ToolTip="Select every layer (Ctrl+A with the Select / Move tool)" />
-            <Button Grid.Column="1" Content="Lock all" Padding="1,5" MinWidth="0" Margin="0,0,3,0"
+            <Button Grid.Column="1" Content="Lock all" Style="{StaticResource CompactButton}" Padding="1,2" Margin="0,0,3,0"
                     Command="{Binding Layers.LockSelectedCommand}"
                     ToolTip="Lock every selected layer that is not locked. Locked layers cannot be picked on the canvas or changed." />
-            <Button Grid.Column="2" Content="Unlock all" Padding="1,5" MinWidth="0"
+            <Button Grid.Column="2" Content="Unlock all" Style="{StaticResource CompactButton}" Padding="1,2"
                     Command="{Binding Layers.UnlockSelectedCommand}"
                     ToolTip="Unlock every selected layer that is locked" />
-            <Button Grid.Column="3" Content="Merge" Padding="1,5" MinWidth="0" Margin="3,0,0,0"
+            <Button Grid.Column="3" Content="Merge" Style="{StaticResource CompactButton}" Padding="1,2" Margin="3,0,0,0"
                     Command="{Binding Layers.MergeSelectedCommand}"
                     ToolTip="Quick merge: select two or more layers, then click to merge them into one layer (Ctrl+E). Use Group (Ctrl+G) to keep them editable." />
         </Grid>
 
-        <!-- Buttons -->
-        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Padding="6,4">
+        <Rectangle DockPanel.Dock="Top" Height="1" Fill="{StaticResource DividerBrush}" />
+
+        <!-- Buttons along the bottom edge -->
+        <Border DockPanel.Dock="Bottom" Background="#FF2B2B2B" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Padding="6,2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Style="{StaticResource IconButton}" Command="{Binding Layers.NewLayerCommand}" ToolTip="New layer (Ctrl+Shift+N)">
                     <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Add}" />
@@ -199,7 +192,7 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel>
-                        <Grid Height="42">
+                        <Grid Height="36">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
@@ -212,12 +205,12 @@
                             <CheckBox Grid.Column="1" Style="{StaticResource ExpandToggle}" IsChecked="{Binding IsExpanded}"
                                       Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisibility}}" />
                             <CheckBox Grid.Column="4" Style="{StaticResource LockToggle}" IsChecked="{Binding IsLocked}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                            <Border Grid.Column="2" Width="48" Height="34" Margin="2,0,8,0" Background="{StaticResource ThumbChecker}"
+                            <Border Grid.Column="2" Width="42" Height="28" Margin="2,0,8,0" Background="{StaticResource ThumbChecker}"
                                     BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
                                 <Image Source="{Binding Icon}" Stretch="Uniform" />
                             </Border>
-                            <TextBlock Grid.Column="3" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                       MouseLeftButtonDown="OnNameMouseDown" ToolTip="Double-click to rename" />
+                            <TextBlock Grid.Column="3" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12.5"
+                                       Foreground="{StaticResource TextBrush}" MouseLeftButtonDown="OnNameMouseDown" ToolTip="Double-click to rename" />
                             <TextBox Grid.Column="3" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"
                                      Visibility="{Binding IsEditingName, Converter={StaticResource BoolToVisibility}}"
                                      IsVisibleChanged="OnEditorVisibleChanged" KeyDown="OnEditorKeyDown" LostKeyboardFocus="OnEditorLostFocus" />

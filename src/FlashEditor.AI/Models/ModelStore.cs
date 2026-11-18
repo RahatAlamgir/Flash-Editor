@@ -52,6 +52,55 @@ public sealed class ModelStore
         return null;
     }
 
+    /// <summary>How much space the model's files use on this PC (also a half-finished download), 0 when nothing is there.</summary>
+    public long BytesOnDisk(ModelInfo model)
+    {
+        long total = 0;
+        foreach (var path in FilesOf(model))
+            if (new FileInfo(path) is { Exists: true } file) total += file.Length;
+        return total;
+    }
+
+    /// <summary>
+    /// Removes the model from this PC (its files and any half-finished download). Throws <see cref="IOException"/> when a file is
+    /// still open, e.g. because the model is loaded in memory: the caller must release it first.
+    /// </summary>
+    public void Delete(ModelInfo model)
+    {
+        foreach (var path in FilesOf(model))
+            if (File.Exists(path)) File.Delete(path);
+
+        if (model.Folder != null)
+        {
+            string dir = Path.Combine(Folder, model.Folder);
+            if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir);
+        }
+    }
+
+    /// <summary>Removes only a half-finished download of the model (after a cancelled or failed download).</summary>
+    public void DeletePartialDownload(ModelInfo model)
+    {
+        foreach (var path in PartialFilesOf(model))
+            TryDelete(path);
+    }
+
+    private IEnumerable<string> FilesOf(ModelInfo model)
+    {
+        if (model.ArchiveFiles is { } files)
+        {
+            string dir = Path.Combine(Folder, model.Folder ?? "");
+            foreach (var name in files.Keys) yield return Path.Combine(dir, name);
+        }
+        else
+        {
+            yield return Path.Combine(Folder, model.FileName);
+        }
+        foreach (var part in PartialFilesOf(model)) yield return part;
+    }
+
+    private IEnumerable<string> PartialFilesOf(ModelInfo model)
+        => new[] { model.ArchiveFiles != null ? Path.Combine(Folder, model.Folder + ".zip.part") : Path.Combine(Folder, model.FileName) + ".part" };
+
     /// <summary>Downloads the model into <see cref="Folder"/>. <paramref name="progress"/> receives 0..1.</summary>
     public async Task DownloadAsync(ModelInfo model, IProgress<double>? progress = null, CancellationToken cancellation = default)
     {

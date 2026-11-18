@@ -3,63 +3,58 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:opt="clr-namespace:FlashEditor.App.Tools.Options"
              xmlns:ctl="clr-namespace:FlashEditor.App.Views.Controls">
-    <!-- Settings of the selected shape / text / image. Every change is undoable. -->
+    <!-- Settings of the selected shape / text / image, as an inspector: a title bar and sections that open and close. Every change is undoable. -->
     <UserControl.Resources>
-        <Style x:Key="Label" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="0,0,6,0" />
+        <!-- Everything inside the inspector is compact (smaller buttons, boxes and drop-downs) -->
+        <Style TargetType="Button" BasedOn="{StaticResource CompactButton}" />
+        <Style TargetType="ToggleButton" BasedOn="{StaticResource CompactToggle}" />
+        <Style TargetType="ComboBox" BasedOn="{StaticResource CompactCombo}" />
+        <Style TargetType="CheckBox" BasedOn="{StaticResource CompactCheck}" />
+        <Style TargetType="Expander" BasedOn="{StaticResource Foldout}" />
+        <Style x:Key="Label" TargetType="TextBlock" BasedOn="{StaticResource InspectorLabel}" />
+        <Style x:Key="ShortLabel" TargetType="TextBlock" BasedOn="{StaticResource InspectorLabel}">
+            <Setter Property="Width" Value="16" />
         </Style>
-        <Style x:Key="Number" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="Width" Value="62" />
-            <Setter Property="Padding" Value="4,2" />
-            <Setter Property="HorizontalContentAlignment" Value="Right" />
-        </Style>
-        <Style x:Key="Row" TargetType="StackPanel">
-            <Setter Property="Orientation" Value="Horizontal" />
-            <Setter Property="Margin" Value="0,4" />
-        </Style>
-        <Style x:Key="Section" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,10,0,2" />
-        </Style>
+        <Style x:Key="Number" TargetType="TextBox" BasedOn="{StaticResource CompactField}" />
+        <Style x:Key="Row" TargetType="StackPanel" BasedOn="{StaticResource InspectorRow}" />
     </UserControl.Resources>
 
     <DockPanel>
-        <DockPanel DockPanel.Dock="Top">
-            <TextBlock DockPanel.Dock="Right" Text="{Binding Properties.Title}" Foreground="{StaticResource SubtleTextBrush}"
-                       VerticalAlignment="Center" Margin="0,0,10,0" />
-            <TextBlock Text="PROPERTIES" Style="{StaticResource PanelHeader}" />
-        </DockPanel>
+        <!-- Title bar -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource PanelTitleBar}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Properties.Title}" Style="{StaticResource PanelTitleInfo}" />
+                <TextBlock Text="PROPERTIES" Style="{StaticResource PanelTitle}" />
+            </DockPanel>
+        </Border>
 
         <Grid>
             <!-- A layer of plain pixels: no shadow / size / rotation settings until it is made into a picture object -->
-            <StackPanel Margin="10,2,10,10" DataContext="{Binding Properties}"
+            <StackPanel Margin="10,8,10,10" DataContext="{Binding Properties}"
                         Visibility="{Binding IsPixelLayer, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12"
                            Text="This layer is made of plain pixels (painted, or turned into pixels), so it has no shadow, size or rotation settings." />
                 <TextBlock TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12" Margin="0,6,0,0"
                            Text="Make it editable to get them: it becomes a picture you can resize, rotate and give a shadow." />
-                <Button Content="Make editable" Command="{Binding MakeEditableCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,5"
+                <Button Content="Make editable" Command="{Binding MakeEditableCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,3"
                         ToolTip="Turn this layer into a picture object (resize, rotate, shadow). Ctrl+Z undoes it." />
             </StackPanel>
 
             <!-- Nothing editable selected (no layer, or a layer that is not an object) -->
-            <TextBlock Margin="10,2,10,10" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12"
+            <TextBlock Margin="10,8,10,10" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12"
                        Text="Click a shape, text or image with the Select / Move tool (V) to change its color, border, size, rotation or font here."
                        Visibility="{Binding Properties.ShowHint, Converter={StaticResource BoolToVisibility}}" />
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10,0,10,8" MaxHeight="440"
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
                           Visibility="{Binding Properties.HasObject, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel DataContext="{Binding Properties}">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6"
+                    <StackPanel Orientation="Horizontal" Margin="10,8,10,0"
                                 Visibility="{Binding IsLocked, Converter={StaticResource BoolToVisibility}}">
                         <TextBlock Text="This layer is locked." Foreground="#FFFFB020" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0" />
-                        <Button Content="Unlock" Command="{Binding UnlockCommand}" Padding="10,3" ToolTip="Unlock this layer so it can be changed (Ctrl+L)" />
+                        <Button Content="Unlock" Command="{Binding UnlockCommand}" ToolTip="Unlock this layer so it can be changed (Ctrl+L)" />
                     </StackPanel>
                     <!-- Inside a group: which part is being edited, and how to get out -->
-                    <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="4" Padding="8,6" Margin="0,2,0,4"
+                    <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="4" Padding="8,6" Margin="10,8,10,0"
                             Visibility="{Binding IsPart, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel>
                             <TextBlock Text="{Binding PartInfo}" TextWrapping="Wrap" FontSize="12" />
@@ -70,326 +65,366 @@
                             </WrapPanel>
                         </StackPanel>
                     </Border>
+
                     <StackPanel IsEnabled="{Binding CanEdit}">
-                    <!-- Position, size, rotation -->
-                    <StackPanel Style="{StaticResource Row}">
-                        <TextBlock Text="X" Style="{StaticResource Label}" />
-                        <TextBox Style="{StaticResource Number}" Text="{Binding X, UpdateSourceTrigger=LostFocus}" />
-                        <TextBlock Text="Y" Style="{StaticResource Label}" Margin="12,0,6,0" />
-                        <TextBox Style="{StaticResource Number}" Text="{Binding Y, UpdateSourceTrigger=LostFocus}" />
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
-                        <TextBlock Text="W" Style="{StaticResource Label}" />
-                        <TextBox Style="{StaticResource Number}" Text="{Binding Width, UpdateSourceTrigger=LostFocus}" />
-                        <TextBlock Text="H" Style="{StaticResource Label}" Margin="12,0,6,0" />
-                        <TextBox Style="{StaticResource Number}" Text="{Binding Height, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding IsLine, Converter={StaticResource InverseBool}}" />
-                        <CheckBox IsChecked="{Binding KeepRatio}" Content="Lock" MinWidth="0" Margin="10,0,0,0" VerticalAlignment="Center"
-                                  ToolTip="Keep the width/height ratio" />
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
-                        <TextBlock Text="Rotate" Style="{StaticResource Label}" />
-                        <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding Rotation}" SliderWidth="96" BoxWidth="58" Unit="°" />
-                    </StackPanel>
-
-                    <!-- Shape -->
-                    <StackPanel Visibility="{Binding IsShape, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="Shape" Style="{StaticResource Section}" />
-                        <!-- The kind of shape is chosen when it is drawn (Shapes tool); here it is only shown -->
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
-                            <Path Data="{Binding ShapeKind, Converter={StaticResource ShapeIcon}}" Stroke="{StaticResource IconBrush}" Fill="#40FFFFFF" StrokeThickness="1.3"
-                                  Stretch="Uniform" Width="16" Height="16" StrokeLineJoin="Round" Margin="0,0,8,0" />
-                            <TextBlock Text="{Binding ShapeKind, Converter={StaticResource ShapeName}}" VerticalAlignment="Center" />
-                            <TextBlock Text=" (custom outline)" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center"
-                                       Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}" />
-                        </StackPanel>
-
-                        <StackPanel Style="{StaticResource Row}" Visibility="{Binding CanFill, Converter={StaticResource BoolToVisibility}}">
-                            <CheckBox Content="Fill" IsChecked="{Binding FillEnabled}" Width="70" MinWidth="0" VerticalAlignment="Center" />
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding FillBrush}" Command="{Binding PickFillCommand}" ToolTip="Fill color"
-                                    Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <CheckBox Content="{Binding IsLine, Converter={StaticResource LineOrBorder}}" IsChecked="{Binding StrokeEnabled}" Width="70" MinWidth="0" VerticalAlignment="Center"
-                                      IsEnabled="{Binding IsLine, Converter={StaticResource InverseBool}}" />
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding StrokeBrush}" Command="{Binding PickStrokeCommand}" ToolTip="Border / line color" />
-                            <ctl:NumberSlider Minimum="0" Maximum="200" Value="{Binding StrokeWidth}" SliderWidth="44" BoxWidth="58" Unit="px" Margin="6,0,0,0" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasCorners, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Text="Corners" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="0" Maximum="500" Value="{Binding CornerRadius}" SliderWidth="110" BoxWidth="58" Unit="px" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasInner, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Text="{Binding InnerLabel}" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="0" Maximum="95" Value="{Binding InnerPercent}" SliderWidth="110" BoxWidth="58" Unit="%" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasSweep, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Text="Angle" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="10" Maximum="360" Value="{Binding Sweep}" SliderWidth="110" BoxWidth="58" Unit="°" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasPoints, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Text="Points" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="3" Maximum="24" Value="{Binding Points}" SliderWidth="110" BoxWidth="58" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Text -->
-                    <StackPanel Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="Text" Style="{StaticResource Section}" />
-                        <TextBox Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap"
-                                 MinHeight="44" MaxHeight="110" VerticalScrollBarVisibility="Auto" Margin="0,2,0,4"
-                                 ToolTip="Type, then click elsewhere to apply" />
-                        <ComboBox ItemsSource="{Binding Source={x:Static opt:TextToolOptions.InstalledFonts}}" SelectedItem="{Binding FontFamily}"
-                                  Margin="0,2,0,4">
-                            <ComboBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel />
-                                </ItemsPanelTemplate>
-                            </ComboBox.ItemsPanel>
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Source}" FontFamily="{Binding}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Size" Style="{StaticResource Label}" />
-                            <ctl:NumberSlider Minimum="4" Maximum="1000" Value="{Binding FontSize}" SliderWidth="76" BoxWidth="58" Unit="px" />
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding TextBrush}" Command="{Binding PickTextColorCommand}" ToolTip="Text color" Margin="10,0,0,0"
-                                    Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <ToggleButton Content="B" FontWeight="Bold" Width="36" Padding="0" IsChecked="{Binding Bold}" ToolTip="Bold" />
-                            <ToggleButton Content="I" FontStyle="Italic" Width="36" Padding="0" Margin="4,0,0,0" IsChecked="{Binding Italic}" ToolTip="Italic" />
-                            <ComboBox ItemsSource="{Binding Alignments}" SelectedItem="{Binding Align}" Width="90" Margin="10,0,0,0" ToolTip="Alignment of the lines" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Lines" Style="{StaticResource Label}" Width="58" ToolTip="Space between the lines of text" />
-                            <ctl:NumberSlider Minimum="50" Maximum="300" Value="{Binding LineSpacingPercent}" SliderWidth="110" BoxWidth="58" Unit="%" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <CheckBox Content="Outline" IsChecked="{Binding OutlineEnabled}" Width="70" MinWidth="0" VerticalAlignment="Center" ToolTip="A line around the letters" />
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding OutlineBrush}" Command="{Binding PickOutlineColorCommand}" ToolTip="Outline color" />
-                            <ctl:NumberSlider Minimum="0" Maximum="60" Value="{Binding OutlineWidth}" SliderWidth="44" BoxWidth="58" Unit="px" Margin="6,0,0,0" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Image -->
-                    <StackPanel Visibility="{Binding IsImage, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="Image" Style="{StaticResource Section}" />
-                        <Button Content="Original size" Command="{Binding OriginalSizeCommand}" HorizontalAlignment="Left" Margin="0,2,0,0" />
-                    </StackPanel>
-
-                    <!-- Reshape: drag the corner points of any object (a square becomes a trapezium, a picture gets a perspective...) -->
-                    <StackPanel Visibility="{Binding CanReshape, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="Reshape" Style="{StaticResource Section}" />
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
-                            <ToggleButton Content="Reshape corners" IsChecked="{Binding IsReshaping, Mode=OneWay}" Command="{Binding ToggleReshapeCommand}"
-                                          Padding="10,4" ToolTip="Drag the round corner points on the canvas to change the form of the object (also outward). Esc or a second click finishes." />
-                            <Button Content="Reset" Command="{Binding ResetShapeCommand}" Padding="10,4" Margin="6,0,0,0"
-                                    Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}"
-                                    ToolTip="Back to the normal form of this object" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Gradient (filled shapes and text) -->
-                    <StackPanel Visibility="{Binding CanGradient, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="{Binding GradientTitle}" Style="{StaticResource Section}" />
-                        <StackPanel Style="{StaticResource Row}">
-                            <CheckBox Content="Gradient" IsChecked="{Binding GradientEnabled}" Width="84" MinWidth="0" VerticalAlignment="Center"
-                                      ToolTip="Fade through two or more colors instead of one flat color" />
-                        </StackPanel>
-                        <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
-                            <ItemsControl ItemsSource="{Binding GradientStops}" Margin="0,2,0,2">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Margin="0,2,0,4">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding Brush}" Command="{Binding PickCommand}" ToolTip="Change this color" />
-                                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding Percent}" SliderWidth="86" BoxWidth="52" Unit="%" Margin="6,0,0,0"
-                                                              ToolTip="Where this color sits along the gradient" />
-                                            <Button Content="&#x2715;" Command="{Binding RemoveCommand}" Width="26" MinWidth="0" Padding="0" Margin="6,0,0,0" ToolTip="Remove this color" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Margin="30,2,0,0">
-                                            <TextBlock Text="Opacity" Style="{StaticResource Label}" Width="52" />
-                                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding OpacityPercent}" SliderWidth="60" BoxWidth="52" Unit="%"
-                                                              ToolTip="How solid this color is (0 = see-through)" />
-                                        </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
-                                <Button Content="+ Add color" Command="{Binding AddGradientStopCommand}" Padding="10,3" MinWidth="0" ToolTip="Add one more color to the gradient (up to 8)" />
-                                <Button Content="&#x21C4; Reverse" Command="{Binding SwapGradientCommand}" Padding="10,3" MinWidth="0" Margin="6,0,0,0" ToolTip="Run the gradient the other way" />
+                        <!-- Position, size, rotation -->
+                        <Expander Header="Transform" IsExpanded="True">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="14" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="X" Style="{StaticResource ShortLabel}" />
+                                    <TextBox Grid.Column="1" Style="{StaticResource Number}" Text="{Binding X, UpdateSourceTrigger=LostFocus}" />
+                                    <TextBlock Grid.Column="3" Text="Y" Style="{StaticResource ShortLabel}" />
+                                    <TextBox Grid.Column="4" Style="{StaticResource Number}" Text="{Binding Y, UpdateSourceTrigger=LostFocus}" />
+                                    <TextBlock Grid.Row="1" Text="W" Style="{StaticResource ShortLabel}" Margin="0,6,0,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource Number}" Margin="0,6,0,0" Text="{Binding Width, UpdateSourceTrigger=LostFocus}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Text="H" Style="{StaticResource ShortLabel}" Margin="0,6,0,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="4" Style="{StaticResource Number}" Margin="0,6,0,0" Text="{Binding Height, UpdateSourceTrigger=LostFocus}"
+                                             IsEnabled="{Binding IsLine, Converter={StaticResource InverseBool}}" />
+                                </Grid>
+                                <CheckBox IsChecked="{Binding KeepRatio}" Content="Keep proportions" Margin="0,6,0,0" ToolTip="Keep the width/height ratio" />
+                                <StackPanel Style="{StaticResource Row}" Margin="0,4,0,0">
+                                    <TextBlock Text="Rotation" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding Rotation}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                        <!-- Minimized while no gradient is applied; opens by itself when one is -->
-                        <Expander Header="Presets" IsExpanded="{Binding GradientEnabled, Mode=OneWay}" Margin="0,2,0,2">
-                            <ItemsControl ItemsSource="{Binding GradientPresets}" Margin="0,2,0,4">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Background="{Binding Preview}" ToolTip="{Binding Name}" Width="34" Height="22" MinWidth="0" Padding="0" Margin="0,0,5,5"
-                                                Command="{Binding DataContext.ApplyGradientPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
                         </Expander>
-                        <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
-                            <StackPanel Style="{StaticResource Row}" Visibility="{Binding CanGradientBorder, Converter={StaticResource BoolToVisibility}}">
-                                <CheckBox Content="Also on the border" IsChecked="{Binding GradientBorder}" MinWidth="0" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <StackPanel Style="{StaticResource Row}">
-                                <CheckBox Content="Radial (from the middle)" IsChecked="{Binding GradientRadial}" MinWidth="0" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <StackPanel Style="{StaticResource Row}" Visibility="{Binding GradientIsLinear, Converter={StaticResource BoolToVisibility}}">
-                                <TextBlock Text="Angle" Style="{StaticResource Label}" Width="58" />
-                                <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding GradientAngle}" SliderWidth="110" BoxWidth="58" Unit="&#xB0;"
-                                                  ToolTip="0 = left to right, 90 = top to bottom" />
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
 
-                    <!-- Saved looks -->
-                    <TextBlock Text="Styles" Style="{StaticResource Section}" />
-                    <Button Content="Save this look..." Command="{Binding SaveStyleCommand}" HorizontalAlignment="Left" Padding="10,3" MinWidth="0"
-                            ToolTip="Saves the shadow, 3D, gradient and colors of this object under a name, to use on other objects" />
-                    <ItemsControl ItemsSource="{Binding SavedStyles}" Margin="0,6,0,4">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding Name}" Padding="8,3" MinWidth="0" Margin="0,0,5,5" ToolTip="Put this look on the selected object (right-click: delete it)"
-                                        Command="{Binding DataContext.ApplyStyleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
-                                    <Button.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Delete this saved look"
-                                                      Command="{Binding PlacementTarget.Tag.DeleteStyleCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                        </ContextMenu>
-                                    </Button.ContextMenu>
-                                    <Button.Tag>
-                                        <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
-                                    </Button.Tag>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Shadow (shapes, text, images and groups) -->
-                    <TextBlock Text="Shadow" Style="{StaticResource Section}" />
-                    <StackPanel Style="{StaticResource Row}">
-                        <CheckBox Content="Shadow" IsChecked="{Binding ShadowEnabled}" Width="84" MinWidth="0" VerticalAlignment="Center" />
-                        <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding ShadowBrush}" Command="{Binding PickShadowColorCommand}"
-                                ToolTip="Shadow color" Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}" />
-                    </StackPanel>
-                    <!-- Quick looks: one click adds the shadow and sets everything -->
-                    <Expander Header="Presets" IsExpanded="{Binding ShadowEnabled, Mode=OneWay}" Margin="0,4,0,2">
-                            <ItemsControl ItemsSource="{Binding ShadowPresetItems}" Margin="0,0,0,4">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <!-- A picture of the shadow on a sample object, with its name underneath -->
-                                    <Button Width="60" MinWidth="0" Margin="0,0,5,5" Padding="2" ToolTip="{Binding Description}"
-                                            Command="{Binding DataContext.ApplyShadowPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                            CommandParameter="{Binding Preset}">
-                                        <StackPanel>
-                                            <Border CornerRadius="3" ClipToBounds="True" HorizontalAlignment="Center">
-                                                <Image Source="{Binding Preview}" Width="52" Height="52" Stretch="Uniform" />
-                                            </Border>
-                                            <TextBlock Text="{Binding Name}" FontSize="10.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                        <!-- Shape -->
+                        <Expander Header="Shape" IsExpanded="True" Visibility="{Binding IsShape, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <!-- The kind of shape is chosen when it is drawn (Shapes tool); here it is only shown -->
+                                <StackPanel Style="{StaticResource Row}" Margin="0,0,0,6">
+                                    <TextBlock Text="Type" Style="{StaticResource Label}" />
+                                    <Border Background="#FF202020" BorderBrush="#FF353535" BorderThickness="1" CornerRadius="4" Padding="8,3" MinWidth="120">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding ShapeKind, Converter={StaticResource ShapeName}}" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" />
+                                            <TextBlock Text=" (custom outline)" FontSize="12" Foreground="{StaticResource SubtleTextBrush}"
+                                                       Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}" />
                                         </StackPanel>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Expander>
-                    <StackPanel Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}">
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Opacity" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding ShadowOpacity}" SliderWidth="110" BoxWidth="58" Unit="%" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Blur" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding ShadowBlur}" SliderWidth="110" BoxWidth="58" Unit="px" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Distance" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="0" Maximum="200" Value="{Binding ShadowDistance}" SliderWidth="110" BoxWidth="58" Unit="px" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Angle" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ShadowAngle}" SliderWidth="110" BoxWidth="58" Unit="°" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Size" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="10" Maximum="300" Value="{Binding ShadowSize}" SliderWidth="110" BoxWidth="58" Unit="%"
-                                              ToolTip="How big the shadow is: below 100 % it is smaller than the object, above 100 % bigger" />
-                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding CanFill, Converter={StaticResource BoolToVisibility}}">
+                                    <CheckBox Content="Fill" IsChecked="{Binding FillEnabled}" Width="72" VerticalAlignment="Center" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding FillBrush}" Command="{Binding PickFillCommand}" ToolTip="Fill color"
+                                            Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <CheckBox Content="{Binding IsLine, Converter={StaticResource LineOrBorder}}" IsChecked="{Binding StrokeEnabled}" Width="72" VerticalAlignment="Center"
+                                              IsEnabled="{Binding IsLine, Converter={StaticResource InverseBool}}" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding StrokeBrush}" Command="{Binding PickStrokeCommand}" ToolTip="Border / line color" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Width" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="0" Maximum="200" Value="{Binding StrokeWidth}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasCorners, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Corners" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="0" Maximum="500" Value="{Binding CornerRadius}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasInner, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding InnerLabel}" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="0" Maximum="95" Value="{Binding InnerPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasSweep, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Angle" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="10" Maximum="360" Value="{Binding Sweep}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasPoints, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Points" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="3" Maximum="24" Value="{Binding Points}" SliderWidth="96" BoxWidth="52" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Text -->
+                        <Expander Header="Text" IsExpanded="True" Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBox Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap" FontSize="12"
+                                         MinHeight="44" MaxHeight="110" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6"
+                                         HorizontalContentAlignment="Left" ToolTip="Type, then click elsewhere to apply" />
+                                <ComboBox ItemsSource="{Binding Source={x:Static opt:TextToolOptions.InstalledFonts}}" SelectedItem="{Binding FontFamily}"
+                                          Margin="0,0,0,4">
+                                    <ComboBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel />
+                                        </ItemsPanelTemplate>
+                                    </ComboBox.ItemsPanel>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Source}" FontFamily="{Binding}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Size" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="4" Maximum="1000" Value="{Binding FontSize}" SliderWidth="60" BoxWidth="52" Unit="px" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding TextBrush}" Command="{Binding PickTextColorCommand}" ToolTip="Text color" Margin="8,0,0,0"
+                                            Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <ToggleButton Content="B" FontWeight="Bold" Width="30" Padding="0" IsChecked="{Binding Bold}" ToolTip="Bold" />
+                                    <ToggleButton Content="I" FontStyle="Italic" Width="30" Padding="0" Margin="4,0,0,0" IsChecked="{Binding Italic}" ToolTip="Italic" />
+                                    <ComboBox ItemsSource="{Binding Alignments}" SelectedItem="{Binding Align}" Width="96" Margin="8,0,0,0" ToolTip="Alignment of the lines" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Lines" Style="{StaticResource Label}" ToolTip="Space between the lines of text" />
+                                    <ctl:NumberSlider Minimum="50" Maximum="300" Value="{Binding LineSpacingPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <CheckBox Content="Outline" IsChecked="{Binding OutlineEnabled}" Width="72" VerticalAlignment="Center" ToolTip="A line around the letters" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding OutlineBrush}" Command="{Binding PickOutlineColorCommand}" ToolTip="Outline color" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Thickness" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="0" Maximum="60" Value="{Binding OutlineWidth}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Image -->
+                        <Expander Header="Image" IsExpanded="True" Visibility="{Binding IsImage, Converter={StaticResource BoolToVisibility}}">
+                            <Button Content="Original size" Command="{Binding OriginalSizeCommand}" HorizontalAlignment="Left" />
+                        </Expander>
+
+                        <!-- Reshape: drag the corner points of any object (a square becomes a trapezium, a picture gets a perspective...) -->
+                        <Expander Header="Reshape" Visibility="{Binding CanReshape, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton Content="Reshape corners" IsChecked="{Binding IsReshaping, Mode=OneWay}" Command="{Binding ToggleReshapeCommand}"
+                                              ToolTip="Drag the round corner points on the canvas to change the form of the object (also outward). Esc or a second click finishes." />
+                                <Button Content="Reset" Command="{Binding ResetShapeCommand}" Margin="6,0,0,0"
+                                        Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}"
+                                        ToolTip="Back to the normal form of this object" />
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Gradient (filled shapes and text): opens by itself when a gradient is applied -->
+                        <Expander Header="{Binding GradientTitle}" IsExpanded="{Binding GradientEnabled, Mode=OneWay}" Visibility="{Binding CanGradient, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <CheckBox Content="Use a gradient" IsChecked="{Binding GradientEnabled}" Margin="0,0,0,4"
+                                          ToolTip="Fade through two or more colors instead of one flat color" />
+                                <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <ItemsControl ItemsSource="{Binding GradientStops}" Margin="0,2,0,2">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="0,2,0,4">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding Brush}" Command="{Binding PickCommand}" ToolTip="Change this color" />
+                                                        <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding Percent}" SliderWidth="86" BoxWidth="48" Unit="%" Margin="8,0,0,0"
+                                                                          ToolTip="Where this color sits along the gradient" />
+                                                        <Button Content="&#x2715;" Command="{Binding RemoveCommand}" Width="24" Padding="0" Margin="6,0,0,0" ToolTip="Remove this color" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="32,3,0,0">
+                                                        <TextBlock Text="Opacity" Style="{StaticResource InspectorLabel}" Width="48" />
+                                                        <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding OpacityPercent}" SliderWidth="60" BoxWidth="48" Unit="%"
+                                                                          ToolTip="How solid this color is (0 = see-through)" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
+                                        <Button Content="+ Add color" Command="{Binding AddGradientStopCommand}" ToolTip="Add one more color to the gradient (up to 8)" />
+                                        <Button Content="&#x21C4; Reverse" Command="{Binding SwapGradientCommand}" Margin="6,0,0,0" ToolTip="Run the gradient the other way" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <!-- Minimized while no gradient is applied; opens by itself when one is -->
+                                <Expander Style="{StaticResource MiniFoldout}" Header="Presets" IsExpanded="{Binding GradientEnabled, Mode=OneWay}">
+                                    <ItemsControl ItemsSource="{Binding GradientPresets}" Margin="0,2,0,4">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Background="{Binding Preview}" ToolTip="{Binding Name}" Width="34" Height="22" MinHeight="0" Padding="0" Margin="0,0,5,5"
+                                                        Command="{Binding DataContext.ApplyGradientPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Expander>
+                                <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <CheckBox Content="Also on the border" IsChecked="{Binding GradientBorder}" Margin="0,3,0,0"
+                                              Visibility="{Binding CanGradientBorder, Converter={StaticResource BoolToVisibility}}" />
+                                    <CheckBox Content="Radial (from the middle)" IsChecked="{Binding GradientRadial}" Margin="0,3,0,0" />
+                                    <StackPanel Style="{StaticResource Row}" Visibility="{Binding GradientIsLinear, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="Angle" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding GradientAngle}" SliderWidth="96" BoxWidth="52" Unit="&#xB0;"
+                                                          ToolTip="0 = left to right, 90 = top to bottom" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Saved looks -->
+                        <Expander Header="Styles">
+                            <StackPanel>
+                                <Button Content="Save this look..." Command="{Binding SaveStyleCommand}" HorizontalAlignment="Left"
+                                        ToolTip="Saves the shadow, 3D, gradient and colors of this object under a name, to use on other objects" />
+                                <ItemsControl ItemsSource="{Binding SavedStyles}" Margin="0,6,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding Name}" Margin="0,0,5,5" ToolTip="Put this look on the selected object (right-click: delete it)"
+                                                    Command="{Binding DataContext.ApplyStyleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                                <Button.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Delete this saved look"
+                                                                  Command="{Binding PlacementTarget.Tag.DeleteStyleCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                    </ContextMenu>
+                                                </Button.ContextMenu>
+                                                <Button.Tag>
+                                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                                </Button.Tag>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Shadow (shapes, text, images and groups): the checkbox in the bar turns it on -->
+                        <Expander IsExpanded="{Binding ShadowEnabled, Mode=OneWay}">
+                            <Expander.Header>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
+                                               Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="Shadow" />
+                                </DockPanel>
+                            </Expander.Header>
+                            <StackPanel>
+                                <CheckBox Content="Add a shadow" IsChecked="{Binding ShadowEnabled}" Margin="0,0,0,4" />
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Color" Style="{StaticResource Label}" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding ShadowBrush}" Command="{Binding PickShadowColorCommand}" ToolTip="Shadow color" />
+                                </StackPanel>
+                                <!-- Quick looks: one click adds the shadow and sets everything -->
+                                <Expander Style="{StaticResource MiniFoldout}" Header="Presets" IsExpanded="{Binding ShadowEnabled, Mode=OneWay}">
+                                    <ItemsControl ItemsSource="{Binding ShadowPresetItems}" Margin="0,0,0,4">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <!-- A picture of the shadow on a sample object, with its name underneath -->
+                                                <Button Width="60" MinHeight="0" Margin="0,0,5,5" Padding="2" ToolTip="{Binding Description}"
+                                                        Command="{Binding DataContext.ApplyShadowPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding Preset}">
+                                                    <StackPanel>
+                                                        <Border CornerRadius="3" ClipToBounds="True" HorizontalAlignment="Center">
+                                                            <Image Source="{Binding Preview}" Width="52" Height="52" Stretch="Uniform" />
+                                                        </Border>
+                                                        <TextBlock Text="{Binding Name}" FontSize="10.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Expander>
+                                <StackPanel Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Opacity" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding ShadowOpacity}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Blur" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding ShadowBlur}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Distance" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="200" Value="{Binding ShadowDistance}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Angle" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ShadowAngle}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Size" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="10" Maximum="300" Value="{Binding ShadowSize}" SliderWidth="96" BoxWidth="52" Unit="%"
+                                                          ToolTip="How big the shadow is: below 100 % it is smaller than the object, above 100 % bigger" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 3D (shapes, text, images and groups): a solid side behind the object and lit / shaded edges on its face -->
+                        <Expander IsExpanded="{Binding ThreeDEnabled, Mode=OneWay}">
+                            <Expander.Header>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
+                                               Visibility="{Binding ThreeDEnabled, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="3D" />
+                                </DockPanel>
+                            </Expander.Header>
+                            <StackPanel>
+                                <CheckBox Content="Use a 3D look" IsChecked="{Binding ThreeDEnabled}" Margin="0,0,0,4"
+                                          ToolTip="Gives the object a solid side, like a block or a 3D letter" />
+                                <ItemsControl ItemsSource="{Binding ThreeDPresets}" Margin="0,0,0,4">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding Name}" ToolTip="{Binding Description}" Margin="0,0,5,5"
+                                                    Command="{Binding DataContext.ApplyThreeDPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <StackPanel Visibility="{Binding ThreeDEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Depth" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="150" Value="{Binding ThreeDDepth}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Angle" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ThreeDAngle}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Edges" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding ThreeDBevel}" SliderWidth="96" BoxWidth="52" Unit="%"
+                                                          ToolTip="Light on the top-left edge, shade on the bottom-right edge of the face" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <CheckBox Content="Auto color" IsChecked="{Binding ThreeDAutoColor}" Width="90" VerticalAlignment="Center"
+                                                  ToolTip="On: the side is the object's own color, darker. Off: choose the color of the side." />
+                                        <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding ThreeDBrush}" Command="{Binding PickThreeDColorCommand}"
+                                                ToolTip="Color of the side" Visibility="{Binding ThreeDAutoColor, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
 
-
-                    <!-- 3D (shapes, text, images and groups): a solid side behind the object and lit / shaded edges on its face -->
-                    <TextBlock Text="3D" Style="{StaticResource Section}" />
-                    <StackPanel Style="{StaticResource Row}">
-                        <CheckBox Content="3D look" IsChecked="{Binding ThreeDEnabled}" Width="84" MinWidth="0" VerticalAlignment="Center"
-                                  ToolTip="Gives the object a solid side, like a block or a 3D letter" />
-                    </StackPanel>
-                    <ItemsControl ItemsSource="{Binding ThreeDPresets}" Margin="0,2,0,4">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding Name}" ToolTip="{Binding Description}" Padding="8,3" MinWidth="0" Margin="0,0,5,5"
-                                        Command="{Binding DataContext.ApplyThreeDPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        CommandParameter="{Binding}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <StackPanel Visibility="{Binding ThreeDEnabled, Converter={StaticResource BoolToVisibility}}">
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Depth" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="0" Maximum="150" Value="{Binding ThreeDDepth}" SliderWidth="110" BoxWidth="58" Unit="px" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Angle" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ThreeDAngle}" SliderWidth="110" BoxWidth="58" Unit="°" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Edges" Style="{StaticResource Label}" Width="58" />
-                            <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding ThreeDBevel}" SliderWidth="110" BoxWidth="58" Unit="%"
-                                              ToolTip="Light on the top-left edge, shade on the bottom-right edge of the face" />
-                        </StackPanel>
-                        <StackPanel Style="{StaticResource Row}">
-                            <CheckBox Content="Auto color" IsChecked="{Binding ThreeDAutoColor}" Width="100" MinWidth="0" VerticalAlignment="Center"
-                                      ToolTip="On: the side is the object's own color, darker. Off: choose the color of the side." />
-                            <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding ThreeDBrush}" Command="{Binding PickThreeDColorCommand}"
-                                    ToolTip="Color of the side" Visibility="{Binding ThreeDAutoColor, Converter={StaticResource InverseBoolToVisibility}}" />
-                        </StackPanel>
-                    </StackPanel>
-                    </StackPanel>
                     <!-- Group -->
-                    <StackPanel Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="Group" Style="{StaticResource Section}" />
+                    <Expander Header="Group" IsExpanded="True" Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisibility}}">
                         <Button Content="Ungroup (Ctrl+Shift+G)" Command="{Binding DataContext.Layers.UngroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                HorizontalAlignment="Left" Margin="0,2,0,0" />
-                    </StackPanel>
+                                HorizontalAlignment="Left" />
+                    </Expander>
+
                     <!-- Actions -->
-                    <WrapPanel Margin="0,12,0,0">
+                    <WrapPanel Margin="10,10,10,10">
                         <Button Content="Flip H" Command="{Binding FlipHorizontalCommand}" Margin="0,0,4,4" ToolTip="Mirror left-right" />
                         <Button Content="Flip V" Command="{Binding FlipVerticalCommand}" Margin="0,0,4,4" ToolTip="Mirror top-bottom" />
                         <Button Content="To pixels" Command="{Binding ConvertToPixelsCommand}" Margin="0,0,4,4"

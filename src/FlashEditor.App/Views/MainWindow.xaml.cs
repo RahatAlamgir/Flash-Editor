@@ -17,6 +17,10 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
 
+    /// <summary>Drags of the project tabs (top) and the page tabs (bottom).</summary>
+    public Controls.TabDragger ProjectDragger { get; }
+    public Controls.TabDragger PageDragger { get; }
+
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
@@ -24,6 +28,10 @@ public partial class MainWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         CanvasArea.Attach(viewModel);
+
+        // Drag a project tab (top) or a page tab (bottom) left or right to change its place.
+        ProjectDragger = new Controls.TabDragger(ProjectTabs, (item, index) => _viewModel.MoveProject((ProjectGroup)item, index));
+        PageDragger = new Controls.TabDragger(PageTabs, (item, index) => _viewModel.MovePage((DocumentViewModel)item, index));
 
         PreviewKeyDown += OnPreviewKeyDown;
         PreviewKeyUp += OnPreviewKeyUp;

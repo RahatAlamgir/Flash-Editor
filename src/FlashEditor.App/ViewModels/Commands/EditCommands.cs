@@ -17,8 +17,8 @@ public sealed class EditCommands
     public EditCommands(MainViewModel main)
     {
         _main = main;
-        UndoCommand = new RelayCommand(() => { _main.Tools.ResetActiveTool(); History.Undo(); }, () => History.CanUndo);
-        RedoCommand = new RelayCommand(() => { _main.Tools.ResetActiveTool(); History.Redo(); }, () => History.CanRedo);
+        UndoCommand = new RelayCommand(Undo, () => Group.CanUndo);
+        RedoCommand = new RelayCommand(Redo, () => Group.CanRedo);
         CopyCommand = new RelayCommand(() => Copy(cut: false), () => Doc.ActiveLayer != null);
         CutCommand = new RelayCommand(() => Copy(cut: true), () => Doc.ActiveLayer != null);
         PasteCommand = new RelayCommand(Paste, () => _main.Clipboard.HasImage);
@@ -33,6 +33,21 @@ public sealed class EditCommands
         DeselectCommand = new RelayCommand(() => Doc.Selection = null, () => Doc.Selection != null);
         InvertSelectionCommand = new RelayCommand(InvertSelection);
         SelectLayerContentCommand = new RelayCommand(SelectLayerContent, () => Doc.ActiveLayer != null);
+    }
+
+    private ProjectGroup Group => _main.Document.Project;
+
+    /// <summary>Undo takes back the newest step of the whole project, whichever page it was made in (that page is shown); Redo does it again.</summary>
+    private void Undo()
+    {
+        _main.Tools.ResetActiveTool();
+        Group.Undo();
+    }
+
+    private void Redo()
+    {
+        _main.Tools.ResetActiveTool();
+        Group.Redo();
     }
 
     public RelayCommand UndoCommand { get; }

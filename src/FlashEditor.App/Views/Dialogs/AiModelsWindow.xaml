@@ -1,0 +1,91 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.AiModelsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AI models" Width="640" SizeToContent="Height" MinHeight="300" MaxHeight="760" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}" PreviewKeyDown="OnKeyDown">
+    <Grid Margin="24,20,24,18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="AI models" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock Margin="0,4,0,14" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
+                       Text="The AI features run on this PC. Each one needs a model file that is downloaded once and then works without internet. Delete the ones you do not use to free disk space." />
+        </StackPanel>
+
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1" CornerRadius="8"
+                            Padding="14,12" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding UsedFor}" Margin="0,2,0,0" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap" />
+                                <TextBlock Margin="0,6,0,0" FontSize="12" Text="{Binding StatusText}" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                    <Setter Property="Foreground" Value="#FF4ADE80" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <ProgressBar Height="6" Margin="0,8,0,0" Minimum="0" Maximum="1" Value="{Binding Progress, Mode=OneWay}"
+                                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                                <TextBlock Text="{Binding Message}" Margin="0,6,0,0" FontSize="12" Foreground="#FFFFB020" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Message}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="14,0,0,0" MinWidth="110">
+                                <Button Content="Download" Command="{Binding DownloadCommand}" Padding="12,5" MinWidth="0" FontWeight="SemiBold" Margin="0,0,0,6"
+                                        Background="{StaticResource AccentBrush}" Foreground="White"
+                                        Visibility="{Binding CanDownload, Converter={StaticResource BoolToVisibility}}"
+                                        ToolTip="Download this model (one time)" />
+                                <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="12,5" MinWidth="0" Margin="0,0,0,6"
+                                        Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" ToolTip="Stop the download" />
+                                <Button Content="Delete" Command="{Binding DeleteCommand}" Padding="12,5" MinWidth="0"
+                                        Visibility="{Binding CanDelete, Converter={StaticResource BoolToVisibility}}"
+                                        ToolTip="Remove this model from this PC to free disk space" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Totals, the folder and Close -->
+        <DockPanel Grid.Row="2" Margin="0,6,0,0">
+            <StackPanel>
+                <TextBlock Text="{Binding TotalText}" FontSize="12" />
+                <DockPanel Margin="0,4,0,0">
+                    <Button DockPanel.Dock="Right" Content="Show folder" Padding="10,3" MinWidth="0" Margin="10,0,16,0" Click="OnShowFolder"
+                            ToolTip="Open the folder the models are saved in" />
+                    <TextBlock Text="{Binding FolderPath}" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding FolderPath}" VerticalAlignment="Center" />
+                </DockPanel>
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

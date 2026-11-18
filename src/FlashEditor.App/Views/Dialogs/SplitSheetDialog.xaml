@@ -5,66 +5,71 @@
         Title="Split Asset Sheet" SizeToContent="WidthAndHeight" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource PanelBrush}">
-    <Grid Margin="18,14,18,16">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="20" />
-            <ColumnDefinition Width="300" />
-        </Grid.ColumnDefinitions>
-
-        <!-- Sheet with a numbered box around every piece found -->
-        <StackPanel>
-            <TextBlock x:Name="CountText" FontWeight="SemiBold" Margin="0,0,0,6" Text="Looking for pieces..." />
-            <Border Width="560" Height="460" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
-                <Grid x:Name="Stage" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Image x:Name="SheetImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <Canvas x:Name="BoxCanvas" IsHitTestVisible="False" />
-                </Grid>
-            </Border>
-        </StackPanel>
-
-        <StackPanel Grid.Column="2">
-            <TextBlock x:Name="IntroText" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,12" />
-
-            <TextBlock Text="Join parts closer than" Foreground="{StaticResource SubtleTextBrush}"
-                       ToolTip="Keeps an item that has separate parts (e.g. an icon and its label) together. Lower it if two items are merged into one box." />
-            <ctl:NumberSlider x:Name="GapSlider" Minimum="0" Maximum="100" Value="8" SliderWidth="170" Unit="px" Margin="0,2,0,2" />
-            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,8"
-                       Text="An item and its label in two boxes? Raise this. Two items in one box? Lower it." />
-
-            <TextBlock Text="Ignore pieces smaller than" Foreground="{StaticResource SubtleTextBrush}" ToolTip="Skips dust and specks" />
-            <ctl:NumberSlider x:Name="MinSizeSlider" Minimum="1" Maximum="300" Value="8" SliderWidth="170" Unit="px" Margin="0,2,0,8" />
-
-            <TextBlock Text="Background tolerance" Foreground="{StaticResource SubtleTextBrush}"
-                       ToolTip="For sheets with a colored background: how different a color must be from it to count as part of an item" />
-            <ctl:NumberSlider x:Name="ToleranceSlider" Minimum="1" Maximum="150" Value="30" SliderWidth="170" Margin="0,2,0,8" />
-
-            <TextBlock Text="Empty space around each piece" Foreground="{StaticResource SubtleTextBrush}" />
-            <ctl:NumberSlider x:Name="PaddingSlider" Minimum="0" Maximum="100" Value="0" SliderWidth="170" Unit="px" Margin="0,2,0,8" />
-
-            <CheckBox x:Name="RemoveBackgroundBox" Content="Make the sheet's background transparent" IsChecked="True" Margin="0,2,0,12"
-                      Checked="OnSettingChanged" Unchecked="OnSettingChanged" />
-
-            <TextBlock Text="What to do with the pieces" FontWeight="SemiBold" Margin="0,4,0,6" />
-            <CheckBox x:Name="AsLayersBox" Content="Add each piece as its own layer" IsChecked="True" />
-            <CheckBox x:Name="HideOriginalBox" Content="Hide the original sheet" IsChecked="True" Margin="22,2,0,0"
-                      IsEnabled="{Binding IsChecked, ElementName=AsLayersBox}" />
-            <CheckBox x:Name="SaveFilesBox" Content="Save each piece as a PNG file" Margin="0,8,0,0" />
-            <DockPanel Margin="22,4,0,0" IsEnabled="{Binding IsChecked, ElementName=SaveFilesBox}">
-                <Button DockPanel.Dock="Right" Content="Browse..." Click="OnBrowse" Margin="6,0,0,0" />
-                <TextBox x:Name="FolderBox" ToolTip="Folder for the PNG files" />
-            </DockPanel>
-            <DockPanel Margin="22,6,0,0" IsEnabled="{Binding IsChecked, ElementName=SaveFilesBox}">
-                <TextBlock Text="File names" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SubtleTextBrush}" />
-                <TextBox x:Name="NameBox" ToolTip="Files are named like name_01.png, name_02.png..." />
-            </DockPanel>
-
-            <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
-
-            <DockPanel Margin="0,18,0,0" LastChildFill="False">
+    <DockPanel>
+        <!-- Buttons in a bar along the bottom -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
                 <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
-                <Button x:Name="SplitButton" DockPanel.Dock="Right" Content="Split" IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
+                <Button x:Name="SplitButton" DockPanel.Dock="Right" Content="Split" IsDefault="True" Click="OnOk" Style="{StaticResource DialogPrimaryButton}" />
             </DockPanel>
-        </StackPanel>
-    </Grid>
+        </Border>
+        <Grid Margin="24,20,24,22">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sheet with a numbered box around every piece found -->
+            <StackPanel>
+                <TextBlock x:Name="CountText" FontWeight="SemiBold" Margin="0,0,0,6" Text="Looking for pieces..." />
+                <Border Width="560" Height="460" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
+                    <Grid x:Name="Stage" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image x:Name="SheetImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <Canvas x:Name="BoxCanvas" IsHitTestVisible="False" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <TextBlock x:Name="IntroText" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,12" />
+
+                <TextBlock Text="Join parts closer than" Foreground="{StaticResource SubtleTextBrush}"
+                           ToolTip="Keeps an item that has separate parts (e.g. an icon and its label) together. Lower it if two items are merged into one box." />
+                <ctl:NumberSlider x:Name="GapSlider" Minimum="0" Maximum="100" Value="8" SliderWidth="170" Unit="px" Margin="0,2,0,2" />
+                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,8"
+                           Text="An item and its label in two boxes? Raise this. Two items in one box? Lower it." />
+
+                <TextBlock Text="Ignore pieces smaller than" Foreground="{StaticResource SubtleTextBrush}" ToolTip="Skips dust and specks" />
+                <ctl:NumberSlider x:Name="MinSizeSlider" Minimum="1" Maximum="300" Value="8" SliderWidth="170" Unit="px" Margin="0,2,0,8" />
+
+                <TextBlock Text="Background tolerance" Foreground="{StaticResource SubtleTextBrush}"
+                           ToolTip="For sheets with a colored background: how different a color must be from it to count as part of an item" />
+                <ctl:NumberSlider x:Name="ToleranceSlider" Minimum="1" Maximum="150" Value="30" SliderWidth="170" Margin="0,2,0,8" />
+
+                <TextBlock Text="Empty space around each piece" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider x:Name="PaddingSlider" Minimum="0" Maximum="100" Value="0" SliderWidth="170" Unit="px" Margin="0,2,0,8" />
+
+                <CheckBox x:Name="RemoveBackgroundBox" Content="Make the sheet's background transparent" IsChecked="True" Margin="0,2,0,12"
+                          Checked="OnSettingChanged" Unchecked="OnSettingChanged" />
+
+                <TextBlock Text="What to do with the pieces" FontWeight="SemiBold" Margin="0,4,0,6" />
+                <CheckBox x:Name="AsLayersBox" Content="Add each piece as its own layer" IsChecked="True" />
+                <CheckBox x:Name="HideOriginalBox" Content="Hide the original sheet" IsChecked="True" Margin="22,2,0,0"
+                          IsEnabled="{Binding IsChecked, ElementName=AsLayersBox}" />
+                <CheckBox x:Name="SaveFilesBox" Content="Save each piece as a PNG file" Margin="0,8,0,0" />
+                <DockPanel Margin="22,4,0,0" IsEnabled="{Binding IsChecked, ElementName=SaveFilesBox}">
+                    <Button DockPanel.Dock="Right" Content="Browse..." Click="OnBrowse" Margin="6,0,0,0" />
+                    <TextBox x:Name="FolderBox" ToolTip="Folder for the PNG files" />
+                </DockPanel>
+                <DockPanel Margin="22,6,0,0" IsEnabled="{Binding IsChecked, ElementName=SaveFilesBox}">
+                    <TextBlock Text="File names" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SubtleTextBrush}" />
+                    <TextBox x:Name="NameBox" ToolTip="Files are named like name_01.png, name_02.png..." />
+                </DockPanel>
+
+                <TextBlock x:Name="ErrorText" Foreground="#FFFF6B6B" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
+
+            </StackPanel>
+        </Grid>
+    </DockPanel>
 </Window>

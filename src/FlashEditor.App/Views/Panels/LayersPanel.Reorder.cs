@@ -13,6 +13,9 @@ public partial class LayersPanel
 {
     private const string DragFormat = "FlashEditor.Layers";
 
+    /// <summary>How far (in pixels) the pointer must move up or down with the button held before a layer is dragged: about a third of a row.</summary>
+    private static double DragDistance => Math.Max(14, SystemParameters.MinimumVerticalDragDistance * 3);
+
     private Point _dragStart;
     private List<Layer>? _dragLayers; // the layers that will be dragged once the mouse has moved far enough
 
@@ -30,7 +33,7 @@ public partial class LayersPanel
         // Dragging one of several selected layers takes them all along.
         var selected = _main.SelectedLayers;
         _dragLayers = selected.Count > 1 && selected.Contains(row.Model) ? selected.ToList() : new List<Layer> { row.Model };
-        _dragStart = e.GetPosition(LayerList);
+        _dragStart = LayerList.PointToScreen(e.GetPosition(LayerList));      // screen position: the panel may move on screen while it is clicked
     }
 
     private void OnListMouseMove(object sender, MouseEventArgs e)
@@ -41,9 +44,16 @@ public partial class LayersPanel
             _dragLayers = null;
             return;
         }
-        var position = e.GetPosition(LayerList);
-        if (Math.Abs(position.X - _dragStart.X) < SystemParameters.MinimumHorizontalDragDistance
-            && Math.Abs(position.Y - _dragStart.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+        // A click is not a drag: the pointer has to travel a good way up or down first (a slightly shaky click or a touchpad tap must never
+        // move a layer). While we wait, the list does not see the movement either, so it cannot turn the click into a range selection.
+        // Measured on the screen, not inside the list: when a click changes what the Properties panel shows, the panel can change height and
+        // the list moves under the pointer. That made a plain click look like a long drag and moved the layer.
+        var screen = LayerList.PointToScreen(e.GetPosition(LayerList));
+        if (Math.Abs(screen.Y - _dragStart.Y) < DragDistance)
+        {
+            e.Handled = true;
+            return;
+        }
 
         var layers = _dragLayers;
         _dragLayers = null;
@@ -89,15 +99,19 @@ public partial class LayersPanel
     /// </summary>
     private (int Gap, double Y) FindGap(Point position)
     {
-        double lastBottom = 0;
+        // Only the rows that are on screen exist (the list creates rows as they scroll into view), so the gap is worked out from those:
+        // the area below the last row you can see is the gap after that row, never the end of the whole list.
+        var rows = new List<LayerOrder.RowSpan>();
         for (int i = 0; i < LayerList.Items.Count; i++)
         {
             if (LayerList.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement row) continue;
             var bounds = row.TransformToAncestor(LayerList).TransformBounds(new Rect(0, 0, row.ActualWidth, row.ActualHeight));
-            if (position.Y < bounds.Top + bounds.Height / 2) return (i, bounds.Top);
-            lastBottom = bounds.Bottom;
+            rows.Add(new LayerOrder.RowSpan(i, bounds.Top, bounds.Bottom));
         }
-        return (LayerList.Items.Count, lastBottom);
+        int gap = LayerOrder.GapAt(rows, position.Y, LayerList.Items.Count);
+        var at = rows.FirstOrDefault(r => r.Index == gap);
+        double y = at != default ? at.Top : rows.Count > 0 ? rows.Where(r => r.Index < gap).Select(r => r.Bottom).DefaultIfEmpty(0).Max() : 0;
+        return (gap, y);
     }
 
     /// <summary>Scrolls the list while a layer is dragged near its top or bottom edge.</summary>

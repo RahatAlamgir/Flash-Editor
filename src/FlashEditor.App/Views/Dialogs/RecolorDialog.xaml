@@ -5,58 +5,63 @@
         Title="Recolor (keeps shading)" SizeToContent="WidthAndHeight" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource PanelBrush}">
-    <StackPanel Margin="18,14,18,16">
-        <TextBlock MaxWidth="560" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,12"
-                   Text="Pick the new color on the graph. Folds, shadows and highlights are kept, so fabric still looks real. The picture updates as you drag." />
-        <StackPanel Orientation="Horizontal">
-            <ctl:ColorGraph x:Name="Graph" />
+    <DockPanel>
+        <!-- Buttons in a bar along the bottom -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
+                <Button DockPanel.Dock="Left" Content="Reset" Click="OnReset" Style="{StaticResource DialogButton}" Margin="0" />
+                <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+                <Button DockPanel.Dock="Right" Content="Apply" IsDefault="True" Click="OnOk" Style="{StaticResource DialogPrimaryButton}" />
+            </DockPanel>
+        </Border>
+        <StackPanel Margin="24,20,24,22">
+            <TextBlock MaxWidth="560" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,12"
+                       Text="Pick the new color on the graph. Folds, shadows and highlights are kept, so fabric still looks real. The picture updates as you drag." />
+            <StackPanel Orientation="Horizontal">
+                <ctl:ColorGraph x:Name="Graph" />
 
-            <StackPanel Width="270" Margin="18,0,0,0">
-                <TextBlock Text="Before / After" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,4" />
-                <Border BorderBrush="{StaticResource DividerBrush}" BorderThickness="1" Height="44">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition />
-                            <ColumnDefinition />
-                        </Grid.ColumnDefinitions>
-                        <Rectangle x:Name="BeforeSwatch" />
-                        <Rectangle x:Name="AfterSwatch" Grid.Column="1" />
-                    </Grid>
-                </Border>
+                <StackPanel Width="270" Margin="18,0,0,0">
+                    <TextBlock Text="Before / After" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,4" />
+                    <Border BorderBrush="{StaticResource DividerBrush}" BorderThickness="1" Height="44">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Rectangle x:Name="BeforeSwatch" />
+                            <Rectangle x:Name="AfterSwatch" Grid.Column="1" />
+                        </Grid>
+                    </Border>
 
-                <DockPanel Margin="0,10,0,0">
-                    <TextBlock Text="Hex" VerticalAlignment="Center" Width="40" />
-                    <TextBox x:Name="HexBox" KeyDown="OnHexKeyDown" LostKeyboardFocus="OnHexCommitted" />
-                </DockPanel>
+                    <DockPanel Margin="0,10,0,0">
+                        <TextBlock Text="Hex" VerticalAlignment="Center" Width="40" />
+                        <TextBox x:Name="HexBox" KeyDown="OnHexKeyDown" LostKeyboardFocus="OnHexCommitted" />
+                    </DockPanel>
 
-                <TextBlock Text="Quick colors" Foreground="{StaticResource SubtleTextBrush}" Margin="0,12,0,4" />
-                <ItemsControl x:Name="SwatchList">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="24" Height="24" Margin="0,0,5,5" Background="{Binding}" CornerRadius="3"
-                                    BorderBrush="#FF777777" BorderThickness="1" Cursor="Hand" MouseLeftButtonDown="OnSwatchClick" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    <TextBlock Text="Quick colors" Foreground="{StaticResource SubtleTextBrush}" Margin="0,12,0,4" />
+                    <ItemsControl x:Name="SwatchList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="24" Height="24" Margin="0,0,5,5" Background="{Binding}" CornerRadius="3"
+                                        BorderBrush="#FF777777" BorderThickness="1" Cursor="Hand" MouseLeftButtonDown="OnSwatchClick" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                <TextBlock Text="Keep shading" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,2"
-                           ToolTip="100% keeps all folds and highlights; lower makes the color flatter" />
-                <ctl:NumberSlider x:Name="ShadingSlider" Minimum="0" Maximum="100" Value="100" SliderWidth="170" Unit="%" />
-                <TextBlock Text="Strength" Foreground="{StaticResource SubtleTextBrush}" Margin="0,8,0,2"
-                           ToolTip="Lower blends the new color with the original" />
-                <ctl:NumberSlider x:Name="StrengthSlider" Minimum="0" Maximum="100" Value="100" SliderWidth="170" Unit="%" />
+                    <TextBlock Text="Keep shading" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,2"
+                               ToolTip="100% keeps all folds and highlights; lower makes the color flatter" />
+                    <ctl:NumberSlider x:Name="ShadingSlider" Minimum="0" Maximum="100" Value="100" SliderWidth="170" Unit="%" />
+                    <TextBlock Text="Strength" Foreground="{StaticResource SubtleTextBrush}" Margin="0,8,0,2"
+                               ToolTip="Lower blends the new color with the original" />
+                    <ctl:NumberSlider x:Name="StrengthSlider" Minimum="0" Maximum="100" Value="100" SliderWidth="170" Unit="%" />
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
 
-        <DockPanel Margin="0,16,0,0" LastChildFill="False">
-            <Button DockPanel.Dock="Left" Content="Reset" Click="OnReset" Style="{StaticResource DialogButton}" Margin="0" />
-            <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
-            <Button DockPanel.Dock="Right" Content="Apply" IsDefault="True" Click="OnOk" Style="{StaticResource DialogButton}" />
-        </DockPanel>
-    </StackPanel>
+        </StackPanel>
+    </DockPanel>
 </Window>

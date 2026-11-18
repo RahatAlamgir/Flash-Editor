@@ -93,11 +93,12 @@
 
     <!-- Compact rows for the Layers and History lists -->
     <Style x:Key="PanelListItem" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Border x:Name="Bg" Background="Transparent" Padding="6,3" BorderThickness="2,0,0,0" BorderBrush="Transparent">
+                    <Border x:Name="Bg" Background="Transparent" Padding="4,1" BorderThickness="3,0,0,0" BorderBrush="Transparent">
                         <ContentPresenter />
                     </Border>
                     <ControlTemplate.Triggers>

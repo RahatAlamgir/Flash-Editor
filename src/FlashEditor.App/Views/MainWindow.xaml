@@ -62,7 +62,7 @@
 
     <DockPanel>
         <!-- ===== Menu ===== -->
-        <Menu DockPanel.Dock="Top" Background="{StaticResource PanelBrush}">
+        <Menu DockPanel.Dock="Top" Background="{StaticResource WindowBrush}" FontSize="12.5">
             <MenuItem Header="_File">
                 <MenuItem Header="_Project Manager..." Command="{Binding File.ProjectManagerCommand}" ToolTip="All your projects, and create a new one" />
                 <Separator />
@@ -218,6 +218,12 @@
                 <MenuItem Header="_Clear Guides" Command="{Binding View.ClearGuidesCommand}" />
                 <MenuItem Header="_Snapping" InputGestureText="Ctrl+Shift+;" IsCheckable="True" IsChecked="{Binding Aids.SnapEnabled}" />
             </MenuItem>
+            <MenuItem Header="_Settings">
+                <MenuItem Header="_Undo Steps..." Command="{Binding View.SettingsCommand}"
+                          ToolTip="How many steps Undo can go back in a project (default 30, at most 60)" />
+                <MenuItem Header="AI _Models..." Command="{Binding Effects.ShowAiModelsCommand}"
+                          ToolTip="See which AI models are on this PC, how much space they use, and download or delete them" />
+            </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_Keyboard Shortcuts" InputGestureText="F1" Command="{Binding View.ShortcutsCommand}" />
                 <MenuItem Header="_About Flash Editor" Command="{Binding View.AboutCommand}" />
@@ -229,9 +235,9 @@
 
         <!-- ===== Status bar ===== -->
         <Border DockPanel.Dock="Bottom" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}"
-                BorderThickness="0,1,0,0" Height="26">
+                BorderThickness="0,1,0,0" Height="24" TextElement.FontSize="12" TextElement.Foreground="{StaticResource SubtleTextBrush}">
             <DockPanel Margin="10,0">
-                <TextBlock DockPanel.Dock="Right" Text="{Binding ZoomText}" VerticalAlignment="Center" MinWidth="60" TextAlignment="Right" />
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ZoomText}" VerticalAlignment="Center" MinWidth="60" TextAlignment="Right" Foreground="{StaticResource TextBrush}" />
                 <Button DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,16,0" Padding="6,0" MinHeight="0"
                         Background="Transparent" BorderThickness="0" Cursor="Hand" Command="{Binding Image.ImageSizeCommand}"
                         ToolTip="Click to change the image size / resolution">
@@ -241,7 +247,7 @@
                 </Button>
                 <TextBlock DockPanel.Dock="Right" Text="{Binding CursorText}" VerticalAlignment="Center" Margin="0,0,24,0"
                            Foreground="{StaticResource SubtleTextBrush}" MinWidth="110" />
-                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextBrush}" />
             </DockPanel>
         </Border>
 
@@ -253,14 +259,17 @@
                 BorderBrush="{StaticResource DividerBrush}" BorderThickness="1,0,0,0">
             <Grid x:Name="RightPanels">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="3*" MinHeight="160" />
+                    <!-- Properties and Layers each get a fixed share of the height, so the Layers list never moves when the selected layer shows more or fewer settings -->
+                    <RowDefinition Height="3*" MinHeight="150" />
+                    <RowDefinition Height="4" />
+                    <RowDefinition Height="2*" MinHeight="200" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition x:Name="HistoryRow" Height="Auto" />
                 </Grid.RowDefinitions>
                 <panels:PropertiesPanel />
-                <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource DividerBrush}" />
+                <!-- Drag to give Properties or Layers more room -->
+                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
+                              Background="{StaticResource DividerBrush}" Cursor="SizeNS" />
                 <panels:LayersPanel Grid.Row="2" />
                 <GridSplitter x:Name="HistorySplitter" Grid.Row="3" Height="5" HorizontalAlignment="Stretch"
                               Background="{StaticResource DividerBrush}" Visibility="Collapsed" />
@@ -281,10 +290,10 @@
                     <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding File.NewCommand}" ToolTip="New project (Ctrl+N)">
                         <Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Add}" />
                     </Button>
-                    <Button DockPanel.Dock="Left" Command="{Binding File.ProjectManagerCommand}" Margin="6,4,6,4" Padding="12,3" MinWidth="0" MinHeight="0"
+                    <Button DockPanel.Dock="Left" Command="{Binding File.ProjectManagerCommand}" Margin="6,4,6,4" Padding="12,3" MinWidth="0" MinHeight="0" FontSize="12"
                             ToolTip="Project Manager: all your projects, and new project (File menu too)" Content="&#x2302; Projects" />
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding Projects}">
+                        <ItemsControl x:Name="ProjectTabs" ItemsSource="{Binding Projects}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" />
@@ -292,9 +301,8 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Padding="12,8,6,8" Cursor="Hand" ToolTip="{Binding ToolTip}" BorderThickness="0,0,1,0"
-                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            BorderBrush="{StaticResource DividerBrush}">
+                                    <Border Padding="12,0,6,0" Height="34" Cursor="Hand" ToolTip="{Binding ToolTip}"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
                                         <Border.InputBindings>
                                             <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.SelectProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
                                             <MouseBinding Gesture="LeftDoubleClick" Command="{Binding DataContext.RenameProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
@@ -303,9 +311,13 @@
                                         <Border.Style>
                                             <Style TargetType="Border">
                                                 <Setter Property="Background" Value="Transparent" />
+                                                <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+                                                <Setter Property="BorderThickness" Value="0,0,1,0" />
+                                                <Setter Property="TextElement.Foreground" Value="{StaticResource SubtleTextBrush}" />
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                                                        <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
                                                     </Trigger>
                                                     <DataTrigger Value="True">
                                                         <DataTrigger.Binding>
@@ -315,6 +327,9 @@
                                                             </MultiBinding>
                                                         </DataTrigger.Binding>
                                                         <Setter Property="Background" Value="{StaticResource CanvasAreaBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                        <Setter Property="BorderThickness" Value="0,2,0,0" />
+                                                        <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -347,11 +362,11 @@
             <!-- Pages of the selected project -->
             <Border DockPanel.Dock="Bottom" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0">
                 <DockPanel>
-                    <Button DockPanel.Dock="Left" Command="{Binding File.AddPageCommand}" Margin="8,5,6,5" Padding="10,2" MinWidth="0" MinHeight="0"
+                    <Button DockPanel.Dock="Left" Command="{Binding File.AddPageCommand}" Margin="8,4,8,4" Padding="10,2" MinWidth="0" MinHeight="0" FontSize="12"
                             ToolTip="Add a page to this project (Ctrl+Alt+N)" Content="+ Page" />
-                    <TextBlock DockPanel.Dock="Left" Text="Pages" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SubtleTextBrush}" />
+                    <TextBlock DockPanel.Dock="Left" Text="PAGES" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{StaticResource SubtleTextBrush}" />
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding Document.Project.Pages}">
+                        <ItemsControl x:Name="PageTabs" ItemsSource="{Binding Document.Project.Pages}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" />
@@ -359,9 +374,8 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Padding="12,6,6,6" Cursor="Hand" ToolTip="{Binding TabToolTip}" BorderThickness="1,0,0,0"
-                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            BorderBrush="{StaticResource DividerBrush}">
+                                    <Border Padding="12,0,6,0" Height="30" Cursor="Hand" ToolTip="{Binding TabToolTip}"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
                                         <Border.InputBindings>
                                             <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.SelectDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
                                             <MouseBinding Gesture="LeftDoubleClick" Command="{Binding DataContext.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
@@ -370,9 +384,13 @@
                                         <Border.Style>
                                             <Style TargetType="Border">
                                                 <Setter Property="Background" Value="Transparent" />
+                                                <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+                                                <Setter Property="BorderThickness" Value="1,0,0,0" />
+                                                <Setter Property="TextElement.Foreground" Value="{StaticResource SubtleTextBrush}" />
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                                                        <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
                                                     </Trigger>
                                                     <DataTrigger Value="True">
                                                         <DataTrigger.Binding>
@@ -382,6 +400,9 @@
                                                             </MultiBinding>
                                                         </DataTrigger.Binding>
                                                         <Setter Property="Background" Value="{StaticResource CanvasAreaBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                        <Setter Property="BorderThickness" Value="0,0,0,2" />
+                                                        <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -391,7 +412,7 @@
                                                 <MenuItem Header="Rename page" Command="{Binding PlacementTarget.Tag.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                                 <MenuItem Header="Add page after this" Command="{Binding PlacementTarget.Tag.File.AddPageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 <MenuItem Header="Duplicate page" Command="{Binding PlacementTarget.Tag.File.DuplicatePageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="Close page" Command="{Binding PlacementTarget.Tag.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Delete page" Command="{Binding PlacementTarget.Tag.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                             </ContextMenu>
                                         </Border.ContextMenu>
                                         <StackPanel Orientation="Horizontal">
@@ -401,7 +422,7 @@
                                                      Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisibility}}"
                                                      IsVisibleChanged="OnTabRenameVisible" KeyDown="OnTabRenameKeyDown" LostKeyboardFocus="OnTabRenameLostFocus" />
                                             <Button Content="&#x2715;" FontSize="10" Width="18" Height="18" Padding="0" Margin="8,0,0,0" MinWidth="0" MinHeight="0"
-                                                    Background="Transparent" BorderThickness="0" ToolTip="Close this page"
+                                                    Background="Transparent" BorderThickness="0" ToolTip="Delete this page"
                                                     Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}" />
                                         </StackPanel>
