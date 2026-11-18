@@ -61,6 +61,59 @@ public sealed class DialogService : IDialogService
         return ShowFile(dialog) == true ? dialog.FileName : null;
     }
 
+    public string? ShowSaveFile(string title, string filter, string defaultExtension, string suggestedName)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = title,
+            Filter = filter,
+            DefaultExt = defaultExtension,
+            FileName = suggestedName,
+            AddExtension = true,
+            OverwritePrompt = true,
+        };
+        return ShowFile(dialog) == true ? dialog.FileName : null;
+    }
+
+    public FlashEditor.Core.IO.BatchOptions? ShowBatch()
+    {
+        var dialog = new BatchDialog { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Result : null;
+    }
+
+    public void ShowBrandKit(PixelBuffer? picture)
+    {
+        new BrandKitDialog(picture, (initial, title) => PickColor(initial, title)) { Owner = Owner }.ShowDialog();
+    }
+
+    public string? ShowSaveSvg(string suggestedName)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save as SVG",
+            Filter = "SVG vector picture|*.svg",
+            DefaultExt = ".svg",
+            FileName = suggestedName,
+            AddExtension = true,
+            OverwritePrompt = true,
+        };
+        return ShowFile(dialog) == true ? dialog.FileName : null;
+    }
+
+    public string? ShowSavePsd(string suggestedName)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save as Photoshop file",
+            Filter = "Photoshop file|*.psd",
+            DefaultExt = ".psd",
+            FileName = suggestedName,
+            AddExtension = true,
+            OverwritePrompt = true,
+        };
+        return ShowFile(dialog) == true ? dialog.FileName : null;
+    }
+
     public SaveTarget? ShowSaveImage(string suggestedName, ImageFileFormat? format)
     {
         var dialog = new SaveFileDialog
@@ -129,6 +182,12 @@ public sealed class DialogService : IDialogService
     public void ShowSettings()
     {
         new SettingsDialog { Owner = Owner }.ShowDialog();
+    }
+
+    public ExportForResult? ShowExportFor(PixelBuffer flattenedImage, int pageCount, ImageFileFormat format, int quality)
+    {
+        var dialog = new ExportForDialog(flattenedImage, pageCount, format, quality) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Result : null;
     }
 
     public ImageSizeSettings? ShowImageSize(int width, int height)

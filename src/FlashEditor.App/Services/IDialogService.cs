@@ -21,6 +21,9 @@ public sealed record CanvasSizeSettings(int Width, int Height, double AnchorX, d
 public sealed record SplitSheetResult(IReadOnlyList<FlashEditor.Core.Sheets.SheetPiece> Pieces, bool AsLayers, bool HideOriginal,
     string? Folder, string BaseName);
 public sealed record SaveTarget(string Path, ImageFileFormat Format);
+
+/// <summary>What the user chose in the Export For dialog.</summary>
+public sealed record ExportForResult(ExportPreset Preset, ExportFit Fit, ImageFileFormat Format, int Quality, bool Transparent, bool AllPages);
 public enum SaveChangesAnswer { Save, Discard, Cancel }
 
 /// <summary>
@@ -37,6 +40,21 @@ public interface IDialogService
     /// <summary>File > Save As: where to save the project (always a .flash file). Null when cancelled.</summary>
     string? ShowSaveProject(string suggestedName, string? folder);
     SaveTarget? ShowSaveImage(string suggestedName, ImageFileFormat? format);
+
+    /// <summary>File > Export as Photoshop file: where to save the .psd. Null when cancelled.</summary>
+    string? ShowSavePsd(string suggestedName);
+
+    /// <summary>File > Export as SVG: where to save the .svg. Null when cancelled.</summary>
+    string? ShowSaveSvg(string suggestedName);
+
+    /// <summary>Settings > Brand Kit. <paramref name="picture"/> is the picture being edited (colors can be taken from it), or null.</summary>
+    void ShowBrandKit(PixelBuffer? picture);
+
+    /// <summary>File > Batch Convert: which folder, format and size. Null when cancelled.</summary>
+    FlashEditor.Core.IO.BatchOptions? ShowBatch();
+
+    /// <summary>A plain "save as" box for one kind of file (title, filter like "PDF document|*.pdf", extension with dot). Null when cancelled.</summary>
+    string? ShowSaveFile(string title, string filter, string defaultExtension, string suggestedName);
     SaveChangesAnswer AskSaveChanges(string documentName);
     void ShowError(string message);
     void ShowInfo(string title, string message);
@@ -61,6 +79,9 @@ public interface IDialogService
     void ShowSettings();
 
     ImageSizeSettings? ShowImageSize(int width, int height);
+
+    /// <summary>The Export For dialog: pick a ready-made size (a social post, a thumbnail, a print...) and how the picture fits it.</summary>
+    ExportForResult? ShowExportFor(PixelBuffer flattenedImage, int pageCount, ImageFileFormat format, int quality);
 
     /// <summary>Export options (format, quality, output size) for <paramref name="flattenedImage"/>.</summary>
     ExportSettings? ShowExport(PixelBuffer flattenedImage, ImageFileFormat format, int quality, ColorRgba matte);

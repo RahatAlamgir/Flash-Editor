@@ -27,8 +27,10 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         _main = main;
         main.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.Document)) Track(); };
         main.ActivePartChanged += (_, _) => OnPropertyChanged(string.Empty); // another part of a group was selected
+        main.SelectedLayersChanged += (_, _) => OnPropertyChanged(string.Empty); // the number or kinds of selected layers changed
         main.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.IsReshaping)) OnPropertyChanged(nameof(IsReshaping)); };
         Track();
+        SavedStyles.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasSavedStyles));
 
         PickFillCommand = new RelayCommand(() => PickColor("Fill color", Shape?.Fill ?? ColorRgba.Black,
             c => Change("Fill Color", o => ((ShapeObject)o) with { Fill = c })), () => IsShape);
@@ -36,24 +38,34 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
             c => Change("Border Color", o => ((ShapeObject)o) with { Stroke = c })), () => IsShape);
         PickTextColorCommand = new RelayCommand(() => PickColor("Text color", Text?.Color ?? ColorRgba.Black,
             c => ChangeText("Text Color", t => t with { Color = c })), () => IsText);
-        FlipHorizontalCommand = new RelayCommand(() => Change("Flip Horizontal", o => o with { FlipX = !o.FlipX }), () => HasObject);
-        FlipVerticalCommand = new RelayCommand(() => Change("Flip Vertical", o => o with { FlipY = !o.FlipY }), () => HasObject);
-        ResetRotationCommand = new RelayCommand(() => Rotation = 0, () => HasObject);
+        FlipHorizontalCommand = new RelayCommand(() => Change("Flip Horizontal", o => o with { FlipX = !o.FlipX }), () => CanInspect);
+        FlipVerticalCommand = new RelayCommand(() => Change("Flip Vertical", o => o with { FlipY = !o.FlipY }), () => CanInspect);
+        ResetRotationCommand = new RelayCommand(() => Rotation = 0, () => CanInspect);
         ConvertToPixelsCommand = new RelayCommand(() => { if (_layer != null) _main.ConvertToPixels(_layer, announce: false); }, () => HasObject && !IsPart);
         EditTextCommand = new RelayCommand(EditText, () => IsText);
         OriginalSizeCommand = new RelayCommand(OriginalSize, () => IsImage);
         PickShadowColorCommand = new RelayCommand(() => PickColor("Shadow color", (Object?.Shadow?.Color ?? ColorRgba.Black) with { A = 255 },
             c => ChangeShadow("Shadow Color", s => s with { Color = c with { A = s.Color.A } })), () => HasShadow);
+        PickGlowColorCommand = new RelayCommand(() => PickColor("Glow color", (Object?.Glow?.Color ?? GlowStyle.Default.Color) with { A = 255 },
+            c => ChangeGlow("Glow Color", g => g with { Color = c with { A = g.Color.A } })), () => HasGlow);
+        PickInnerShadowColorCommand = new RelayCommand(() => PickColor("Inner shadow color", (Object?.InnerShadow?.Color ?? ColorRgba.Black) with { A = 255 },
+            c => ChangeInnerShadow("Inner Shadow Color", s => s with { Color = c with { A = s.Color.A } })), () => HasInnerShadow);
+        PickObjectOutlineColorCommand = new RelayCommand(() => PickColor("Outline color", Object?.Outline?.Color ?? OutlineStyle.Default.Color,
+            c => ChangeObjectOutline("Outline Color", o => o with { Color = c })), () => HasObjectOutline);
+        ApplyTextPresetCommand = new RelayCommand(p =>
+        {
+            if (p is TextPreset preset) Change($"Text design: {preset.Name}", o => o is TextObject t ? preset.ApplyTo(t) : o);
+        }, _ => IsText);
         ApplyShadowPresetCommand = new RelayCommand(p =>
         {
             if (p is ShadowPreset preset) Change($"Shadow: {preset.Name}", o => o with { Shadow = preset.CreateStyle(o.Shadow) });
-        }, _ => HasObject);
+        }, _ => CanInspect);
         PickThreeDColorCommand = new RelayCommand(() => PickColor("3D color", Object?.ThreeD?.Color ?? new ColorRgba(90, 90, 90),
             c => ChangeThreeD("3D Color", t => t with { Color = c with { A = 255 } })), () => HasThreeD);
         ApplyThreeDPresetCommand = new RelayCommand(p =>
         {
             if (p is ThreeDPreset preset) Change($"3D: {preset.Name}", o => o with { ThreeD = preset.CreateStyle(o.ThreeD) });
-        }, _ => HasObject);
+        }, _ => CanInspect);
         AddGradientStopCommand = new RelayCommand(() => ChangeGradient("Add Gradient Color", g => g.WithStopAdded()),
             () => HasGradient && Object!.Gradient!.Stops.Count < GradientStyle.MaxStops);
         SwapGradientCommand = new RelayCommand(() => ChangeGradient("Reverse Gradient", g => g.Reversed()), () => HasGradient);
@@ -89,28 +101,71 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     public bool HasObject => Object != null;
 
+    /// <summary>The settings are shown for an object and also for a layer of plain pixels (it becomes a picture on the first change).</summary>
+    public bool CanInspect => HasObject || IsPixelLayer;
+
+    /// <summary>The box of the object, or for a layer of plain pixels the box around what is painted on it.</summary>
+    private ObjectBox? Frame => Object?.Box ?? (_layer is { Object: null, IsAdjustment: false } pixels ? FlashEditor.App.Tools.Selecting.TransformHandles.FrameOf(pixels) : null);
+
     /// <summary>A layer of plain pixels (painted, or turned into pixels): it has no object settings such as a shadow.</summary>
-    public bool IsPixelLayer => _layer is { Object: null };
+    public bool IsPixelLayer => _layer is { Object: null, IsAdjustment: false };
+
+    /// <summary>An adjustment layer (brightness / contrast, Levels, Curves): its settings are shown here.</summary>
+    public bool IsAdjustmentLayer => _layer is { IsAdjustment: true };
 
     /// <summary>The "click something to edit it" hint: when no object is selected and the layer is not a pixel layer either.</summary>
-    public bool ShowHint => !HasObject && !IsPixelLayer;
+    public bool ShowHint => !HasObject && !IsPixelLayer && !IsAdjustmentLayer;
 
     /// <summary>True when a part inside a group is selected (Canva style) rather than the group itself.</summary>
     public bool IsPart => Target.IsPart;
 
     /// <summary>Locked objects show their settings but cannot be changed.</summary>
     public bool IsLocked => _layer?.IsLocked == true;
-    public bool CanEdit => HasObject && !IsLocked;
-    public bool IsShape => Shape != null;
-    public bool IsText => Text != null;
-    public bool IsImage => Object is ImageObject;
-    public bool IsGroup => !IsPart && Object is GroupObject;
+    public bool CanEdit => CanInspect && !IsLocked;
+    // ---- several layers selected: a change goes to all of them; settings that only fit one kind of object need a selection of that kind only
+
+    /// <summary>The layers a change is applied to: all selected layers when several are selected, otherwise the active one.</summary>
+    private IReadOnlyList<Layer> Targets
+    {
+        get
+        {
+            if (_main.ActivePartIndex == null && _main.SelectedLayers.Count > 1)
+            {
+                var many = _main.SelectedLayers.Where(l => !l.IsAdjustment).ToList();
+                if (many.Count > 1) return many;
+            }
+            return _layer is { IsAdjustment: false } one ? new[] { one } : Array.Empty<Layer>();
+        }
+    }
+
+    private static string KindOfLayer(Layer layer) => layer.Object switch
+    {
+        ShapeObject => "shape",
+        TextObject => "text",
+        GroupObject => "group",
+        _ => "image",                    // a layer of plain pixels becomes a picture on the first change
+    };
+
+    /// <summary>True when more than one layer is selected.</summary>
+    public bool IsMulti => Targets.Count > 1;
+
+    /// <summary>True when the selected layers are of different kinds (a text and a shape, for example).</summary>
+    public bool IsMixed => Targets.Count > 1 && Targets.Select(KindOfLayer).Distinct().Count() > 1;
+
+    /// <summary>Saving a look, reshaping and typing new words only make sense for one object.</summary>
+    public bool IsSingle => !IsMulti;
+    public bool CanSaveLook => HasObject && !IsMulti;
+
+    public bool IsShape => Shape != null && !IsMixed;
+    public bool IsText => Text != null && !IsMixed;
+    public bool IsImage => Object is ImageObject && !IsMixed;
+    public bool IsGroup => !IsPart && Object is GroupObject && !IsMulti;
     public bool CanFill => Shape?.CanFill == true;
     public bool HasCorners => Shape?.HasCorners == true;
     public bool HasPoints => Shape?.HasPoints == true;
     public bool IsLine => Shape?.IsLineLike == true;
 
-    public string Title => (IsPart ? "Part: " : "") + Object switch
+    public string Title => IsMulti ? $"{Targets.Count} layers selected" + (IsMixed ? " (different kinds)" : "") : (IsPart ? "Part: " : "") + Object switch
     {
         ShapeObject s => $"{s.SuggestedLayerName} shape",
         TextObject => "Text",
@@ -126,18 +181,18 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     // ------------------------------------------------------------------ position and size
 
-    public double X { get => Round(Object?.Box.X); set => ChangeBox("Move", b => b with { X = value }); }
-    public double Y { get => Round(Object?.Box.Y); set => ChangeBox("Move", b => b with { Y = value }); }
+    public double X { get => Round(Frame?.X); set => ChangeBox("Move", b => b with { X = value }); }
+    public double Y { get => Round(Frame?.Y); set => ChangeBox("Move", b => b with { Y = value }); }
 
     public double Width
     {
-        get => Round(Object?.Box.Width);
+        get => Round(Frame?.Width);
         set => Resize(Math.Max(1, value), null);
     }
 
     public double Height
     {
-        get => Round(Object?.Box.Height);
+        get => Round(Frame?.Height);
         set => Resize(null, Math.Max(1, value));
     }
 
@@ -156,7 +211,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public ShapeKind ShapeKind => Shape?.Shape ?? ShapeKind.Rectangle;
 
     /// <summary>True for shapes with straight sides: their corner points can be dragged.</summary>
-    public bool CanReshape => !IsPart && Object?.CanReshape == true;
+    public bool CanReshape => !IsPart && !IsMulti && Object?.CanReshape == true;
 
     /// <summary>True once the corners were dragged (a custom outline).</summary>
     public bool HasCustomOutline => !IsPart && Object?.HasCustomOutline == true;
@@ -183,6 +238,71 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     }
 
     public Brush StrokeBrush => ToBrush(Shape?.Stroke);
+
+    // ------------------------------------------------------------------ adjust (brightness, contrast, saturation, hue, blur)
+
+    public bool HasTone => Object?.Tone is { IsNeutral: false } || Object?.BlurAmount > 0;
+
+    public double ToneBrightness { get => Math.Round(Object?.Tone?.Brightness ?? 0); set => ChangeTone(t => t with { Brightness = Math.Clamp(value, -100, 100) }); }
+    public double ToneContrast { get => Math.Round(Object?.Tone?.Contrast ?? 0); set => ChangeTone(t => t with { Contrast = Math.Clamp(value, -100, 100) }); }
+    public double ToneSaturation { get => Math.Round(Object?.Tone?.Saturation ?? 0); set => ChangeTone(t => t with { Saturation = Math.Clamp(value, -100, 100) }); }
+    public double ToneHue { get => Math.Round(Object?.Tone?.Hue ?? 0); set => ChangeTone(t => t with { Hue = Math.Clamp(value, -180, 180) }); }
+
+    public double BlurAmount
+    {
+        get => Math.Round(Object?.BlurAmount ?? 0, 1);
+        set => Change("Blur", o => o with { BlurAmount = Math.Clamp(value, 0, 100) });
+    }
+
+    public RelayCommand ResetToneCommand => _resetTone ??= new RelayCommand(
+        () => Change("Reset Adjustments", o => o with { Tone = null, BlurAmount = 0 }), () => HasTone);
+    private RelayCommand? _resetTone;
+
+    private void ChangeTone(Func<AdjustmentStyle, AdjustmentStyle> change)
+        => Change("Adjust", o =>
+        {
+            var tone = change(o.Tone ?? AdjustmentStyle.Neutral);
+            return o with { Tone = tone.IsNeutral ? null : tone };
+        });
+
+    /// <summary>0 = solid, 1 = dashed, 2 = dotted.</summary>
+    public int StrokeStyleIndex
+    {
+        get => (int)(Shape?.Dash ?? StrokeStyle.Solid);
+        set => Change("Border Style", o => ((ShapeObject)o) with { Dash = (StrokeStyle)Math.Clamp(value, 0, 2) });
+    }
+
+    public bool HasDash => Shape is { Dash: not StrokeStyle.Solid };
+    public bool IsDashed => Shape?.Dash == StrokeStyle.Dashed;
+    public bool IsDotted => Shape?.Dash == StrokeStyle.Dotted;
+
+    /// <summary>Length of one dash in pixels (shown as the automatic length when nothing was chosen).</summary>
+    public double DashLengthPx
+    {
+        get => Math.Round(Shape is { DashLength: > 0 } s ? s.DashLength : (Shape?.StrokeWidth ?? 0) * 3);
+        set => Change("Dash Length", o => ((ShapeObject)o) with { DashLength = Math.Clamp(value, 1, 400) });
+    }
+
+    /// <summary>Space between the dashes (or the dots) in pixels.</summary>
+    public double DashGapPx
+    {
+        get => Math.Round(Shape is { DashGap: > 0 } s ? s.DashGap : (Shape?.StrokeWidth ?? 0) * (Shape?.Dash == StrokeStyle.Dotted ? 1.2 : 2));
+        set => Change("Dash Gap", o => ((ShapeObject)o) with { DashGap = Math.Clamp(value, 1, 400) });
+    }
+
+    public static IReadOnlyList<string> StrokeStyleNames { get; } = new[] { "Solid", "Dashed", "Dotted" };
+
+    public bool ArrowStart
+    {
+        get => Shape?.ArrowStart == true;
+        set => Change("Arrow Head", o => ((ShapeObject)o) with { ArrowStart = value });
+    }
+
+    public bool ArrowEnd
+    {
+        get => Shape?.ArrowEnd == true;
+        set => Change("Arrow Head", o => ((ShapeObject)o) with { ArrowEnd = value });
+    }
 
     public double StrokeWidth
     {
@@ -277,13 +397,131 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public Brush OutlineBrush => ToBrush(Text?.OutlineColor ?? new ColorRgba(0, 0, 0));
 
     /// <summary>Space between the lines, 50..300 % (100 = normal).</summary>
+    /// <summary>Extra space between letters, in percent of the font size (negative = tighter).</summary>
+    public double LetterSpacingPercent
+    {
+        get => Math.Round((Text?.LetterSpacing ?? 0) * 100);
+        set => ChangeText("Letter Spacing", t => t with { LetterSpacing = Math.Clamp(value, -30, 200) / 100.0 });
+    }
+
+    /// <summary>Extra space added at every space between words, in percent of the font size.</summary>
+    public double WordSpacingPercent
+    {
+        get => Math.Round((Text?.WordSpacing ?? 0) * 100);
+        set => ChangeText("Word Spacing", t => t with { WordSpacing = Math.Clamp(value, -50, 400) / 100.0 });
+    }
+
     public double LineSpacingPercent
     {
         get => Math.Round((Text?.LineSpacing ?? 1) * 100);
         set => ChangeText("Line Spacing", t => t with { LineSpacing = Math.Clamp(value, 50, 300) / 100.0 });
     }
 
+    /// <summary>Text on a curve: 0 = straight, positive bends it like a rainbow, negative like a smile (degrees of the circle the text follows).</summary>
+    public double TextArc
+    {
+        get => Math.Round(Text?.Arc ?? 0);
+        set => ChangeText("Curve", t => t with { Arc = Math.Clamp(value, -360, 360) });
+    }
+
     public RelayCommand PickOutlineColorCommand { get; }
+
+    // ------------------------------------------------------------------ glow, inner shadow and outline (every kind of object)
+
+    public bool HasGlow => Object?.Glow != null;
+
+    public bool GlowEnabled
+    {
+        get => HasGlow;
+        set => Change("Glow", o => o with { Glow = value ? o.Glow ?? GlowStyle.Default : null });
+    }
+
+    public Brush GlowBrush => ToBrush(Object?.Glow is { } g ? g.Color with { A = 255 } : null);
+
+    /// <summary>How strong the glow's color is, 0..100 %.</summary>
+    public double GlowOpacity
+    {
+        get => Math.Round((Object?.Glow?.Color.A ?? 0) / 255.0 * 100);
+        set => ChangeGlow("Glow Opacity", g => g with { Color = g.Color with { A = (byte)Math.Round(Math.Clamp(value, 0, 100) * 2.55) } });
+    }
+
+    public double GlowSize
+    {
+        get => Math.Round(Object?.Glow?.Size ?? 0);
+        set => ChangeGlow("Glow Size", g => g with { Size = Math.Clamp(value, 1, 200) });
+    }
+
+    public double GlowIntensity
+    {
+        get => Math.Round(Object?.Glow?.Intensity ?? 0);
+        set => ChangeGlow("Glow Intensity", g => g with { Intensity = Math.Clamp(value, 10, 400) });
+    }
+
+    private void ChangeGlow(string name, Func<GlowStyle, GlowStyle> change)
+        => Change(name, o => o.Glow is { } glow ? o with { Glow = change(glow) } : o);
+
+    public RelayCommand PickGlowColorCommand { get; }
+
+    public bool HasInnerShadow => Object?.InnerShadow != null;
+
+    public bool InnerShadowEnabled
+    {
+        get => HasInnerShadow;
+        set => Change("Inner Shadow", o => o with { InnerShadow = value ? o.InnerShadow ?? InnerShadowStyle.Default : null });
+    }
+
+    public Brush InnerShadowBrush => ToBrush(Object?.InnerShadow is { } s ? s.Color with { A = 255 } : null);
+
+    public double InnerShadowOpacity
+    {
+        get => Math.Round((Object?.InnerShadow?.Color.A ?? 0) / 255.0 * 100);
+        set => ChangeInnerShadow("Inner Shadow Opacity", s => s with { Color = s.Color with { A = (byte)Math.Round(Math.Clamp(value, 0, 100) * 2.55) } });
+    }
+
+    public double InnerShadowDistance
+    {
+        get => Math.Round(Object?.InnerShadow?.Distance ?? 0);
+        set => ChangeInnerShadow("Inner Shadow Distance", s => s with { Distance = Math.Clamp(value, 0, 200) });
+    }
+
+    public double InnerShadowAngle
+    {
+        get => Math.Round(Object?.InnerShadow?.Angle ?? 0);
+        set => ChangeInnerShadow("Inner Shadow Angle", s => s with { Angle = ObjectBox.NormalizeAngle(value) });
+    }
+
+    public double InnerShadowBlur
+    {
+        get => Math.Round(Object?.InnerShadow?.Blur ?? 0);
+        set => ChangeInnerShadow("Inner Shadow Blur", s => s with { Blur = Math.Clamp(value, 0, 200) });
+    }
+
+    private void ChangeInnerShadow(string name, Func<InnerShadowStyle, InnerShadowStyle> change)
+        => Change(name, o => o.InnerShadow is { } shadow ? o with { InnerShadow = change(shadow) } : o);
+
+    public RelayCommand PickInnerShadowColorCommand { get; }
+
+    public bool HasObjectOutline => Object?.Outline != null;
+
+    /// <summary>A line around the outside of the whole object (a shape's own border and a text's own outline are separate settings).</summary>
+    public bool ObjectOutlineEnabled
+    {
+        get => HasObjectOutline;
+        set => Change("Outline", o => o with { Outline = value ? o.Outline ?? OutlineStyle.Default : null });
+    }
+
+    public Brush ObjectOutlineBrush => ToBrush(Object?.Outline?.Color);
+
+    public double ObjectOutlineWidth
+    {
+        get => Math.Round(Object?.Outline?.Width ?? 0);
+        set => ChangeObjectOutline("Outline Width", o => o with { Width = Math.Clamp(value, 1, 100) });
+    }
+
+    private void ChangeObjectOutline(string name, Func<OutlineStyle, OutlineStyle> change)
+        => Change(name, o => o.Outline is { } line ? o with { Outline = change(line) } : o);
+
+    public RelayCommand PickObjectOutlineColorCommand { get; }
 
     // ------------------------------------------------------------------ shadow (every kind of object)
 
@@ -389,6 +627,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
 
     /// <summary>The looks the user saved (shadow, 3D, gradient and colors).</summary>
     public ObservableCollection<SavedStyle> SavedStyles => StyleLibrary.Default.Items;
+    public bool HasSavedStyles => SavedStyles.Count > 0;
 
     public RelayCommand SaveStyleCommand { get; }
     public RelayCommand ApplyStyleCommand { get; }
@@ -406,7 +645,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     // ------------------------------------------------------------------ gradient (shapes with a fill, and text)
 
     /// <summary>Shapes that can be filled and text can have a fading color instead of a flat one.</summary>
-    public bool CanGradient => Shape?.CanFill == true || IsText || IsImage;
+    public bool CanGradient => !IsMixed && (Shape?.CanFill == true || IsText || IsImage);
 
     public bool HasGradient => CanGradient && Object?.Gradient != null;
 
@@ -505,6 +744,20 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     private IReadOnlyList<ShadowPresetItem>? _presetItems;
 
     /// <summary>The shadow presets with their pictures (made the first time they are needed).</summary>
+    /// <summary>The ready-made text designs, each with a small picture.</summary>
+    public IReadOnlyList<TextPresetItem> TextPresetItems => _textPresetItems ??= TextPresetPreviews.Create();
+    private IReadOnlyList<TextPresetItem>? _textPresetItems;
+    public RelayCommand ApplyTextPresetCommand { get; }
+
+    /// <summary>The fonts saved in the Brand Kit (shown as quick buttons).</summary>
+    public IReadOnlyList<string> BrandFonts => AppSettings.Current.BrandFonts;
+    public bool HasBrandFonts => AppSettings.Current.BrandFonts.Count > 0;
+    public RelayCommand ApplyFontCommand => _applyFont ??= new RelayCommand(p =>
+    {
+        if (p is string name) ChangeText("Font", t => t with { FontFamily = name });
+    }, _ => IsText);
+    private RelayCommand? _applyFont;
+
     public IReadOnlyList<ShadowPresetItem> ShadowPresetItems => _presetItems ??= ShadowPresetPreviews.Create();
 
     /// <summary>The ready-made shadow looks (Soft, Hard, Lifted) shown as quick buttons.</summary>
@@ -533,6 +786,12 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public RelayCommand FlipHorizontalCommand { get; }
     public RelayCommand FlipVerticalCommand { get; }
     public RelayCommand ResetRotationCommand { get; }
+
+    /// <summary>Align to the canvas (parameter Left, CenterHorizontally, Right, Top, CenterVertically, Bottom).</summary>
+    public RelayCommand AlignCommand => _main.Align.AlignCommand;
+    public RelayCommand AlignBothCommand => _main.Align.AlignBothCommand;
+    public RelayCommand RotateRightCommand => _main.Layers.RotateRightCommand;
+    public RelayCommand RotateLeftCommand => _main.Layers.RotateLeftCommand;
     public RelayCommand ConvertToPixelsCommand { get; }
     public RelayCommand EditTextCommand { get; }
     public RelayCommand OriginalSizeCommand { get; }
@@ -542,6 +801,9 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     /// <summary>Applies a change to the selected object and records it (merging repeats of the same change).</summary>
     public void Change(string name, Func<LayerObject, LayerObject> change)
     {
+        var targets = Targets;
+        if (targets.Count > 1) { ChangeMany(name, targets, change); return; }
+        if (!EnsureObject()) return;
         var target = Target;
         if (_layer == null || target.Object is not { } current) return;
         if (_layer.IsLocked) { _main.IsLockedWithMessage(_layer); return; }
@@ -552,6 +814,26 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         var layerObject = target.WithObject(updated);
         if (layerObject == null) return;
         _main.Push(ObjectChangeAction.Apply(name, _layer, layerObject, mergeKey: target.IsPart ? $"{name} (part {target.Part})" : name));
+    }
+
+    /// <summary>The same change on every selected layer, as one undo step (locked layers are left alone).</summary>
+    private void ChangeMany(string name, IReadOnlyList<Layer> targets, Func<LayerObject, LayerObject> change)
+    {
+        var steps = new List<IHistoryAction?>();
+        int locked = 0;
+        foreach (var layer in targets)
+        {
+            if (layer.IsLocked) { locked++; continue; }
+            if (layer.Object == null && !_main.MakePictureObject(layer, "Make Editable")) continue;
+            if (layer.Object is not { } current) continue;
+            LayerObject updated;
+            try { updated = change(current); }
+            catch (InvalidCastException) { continue; }          // a setting that only fits another kind of object
+            steps.Add(ObjectChangeAction.Apply(name, layer, updated, mergeKey: name));
+        }
+        steps.RemoveAll(s => s == null);
+        if (steps.Count > 0) _main.Push(new CompositeAction(name, steps));
+        if (locked > 0) _main.SetStatus($"{locked} locked layer{(locked == 1 ? " was" : "s were")} left unchanged.");
     }
 
     /// <summary>Text changes keep the box fitted to the text (top-left stays put).</summary>
@@ -565,8 +847,20 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     private void ChangeBox(string name, Func<ObjectBox, ObjectBox> change)
         => Change(name, o => o with { Box = change(o.Box) });
 
+    /// <summary>
+    /// A layer of plain pixels becomes an editable picture the first time something about it is changed here (so position, size, rotation,
+    /// shadow and the other settings work on every layer). True when there is an object to change.
+    /// </summary>
+    private bool EnsureObject()
+    {
+        if (_layer is not { Object: null, IsAdjustment: false } pixels) return Object != null;
+        if (pixels.IsLocked) { _main.IsLockedWithMessage(pixels); return false; }
+        return _main.MakePictureObject(pixels, "Make Editable");
+    }
+
     private void Resize(double? newWidth, double? newHeight)
     {
+        if (!EnsureObject()) return;
         if (Object is not { } obj) return;
         var b = obj.Box;
         bool keep = KeepRatio || obj is TextObject;

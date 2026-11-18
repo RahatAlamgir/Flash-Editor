@@ -140,6 +140,11 @@ public static class ProjectReader
             };
             if (entry.Object != null || entry.Extended != null)
                 layer.RestoreState(new LayerState(pixels, entry.Extended, entry.ExtendedX, entry.ExtendedY, entry.Object));
+            if (entry.MaskPicture is { } maskPicture && maskPicture.Width == page.Width && maskPicture.Height == page.Height)
+            {
+                layer.SetMask(LayerMask.FromGrayPicture(maskPicture));
+                layer.MaskEnabled = entry.MaskEnabled;
+            }
             layers.Add(layer);
         }
         document.SetLayers(layers, layers[Math.Clamp(page.ActiveLayer, 0, layers.Count - 1)]);

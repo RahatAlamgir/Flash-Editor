@@ -21,6 +21,25 @@ public class AlignmentTests
     }
 
     [Fact]
+    public void A_corner_or_the_middle_moves_in_both_directions_at_once()
+    {
+        var box = new[] { new PixelRect(100, 50, 200, 100) };
+        Assert.Equal((-100, -50), Alignment.AlignBoth(box, Canvas, AlignKind.Left, AlignKind.Top)[0]);
+        Assert.Equal((700, 450), Alignment.AlignBoth(box, Canvas, AlignKind.Right, AlignKind.Bottom)[0]);
+        Assert.Equal((300, 200), Alignment.AlignBoth(box, Canvas, AlignKind.CenterHorizontally, AlignKind.CenterVertically)[0]);
+        Assert.Equal((-100, 450), Alignment.AlignBoth(box, Canvas, AlignKind.Left, AlignKind.Bottom)[0]);
+    }
+
+    [Fact]
+    public void Several_boxes_go_to_a_corner_of_the_area_they_cover_together()
+    {
+        var boxes = new[] { new PixelRect(100, 100, 50, 50), new PixelRect(300, 200, 100, 100) };
+        var moves = Alignment.AlignBoth(boxes, Canvas, AlignKind.Right, AlignKind.Top);
+        Assert.Equal((250, 0), moves[0]);
+        Assert.Equal((0, -100), moves[1]);
+    }
+
+    [Fact]
     public void Several_boxes_line_up_with_the_area_they_cover_together()
     {
         var boxes = new[] { new PixelRect(100, 100, 50, 50), new PixelRect(400, 300, 100, 80), new PixelRect(250, 200, 20, 20) };

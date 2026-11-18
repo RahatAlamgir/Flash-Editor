@@ -1,6 +1,6 @@
 # Builds both Flash Editor installers into installer\output:
-#   FlashEditor-Setup-<version>.exe      Standard: AI models are downloaded on first use
-#   FlashEditor-Setup-<version>-AI.exe   AI: both AI models included
+#   FlashEditor-Setup-<version>.exe      Standard: AI models can be ticked for download during setup, or are downloaded on first use
+#   FlashEditor-Setup-<version>-AI.exe   AI: all AI models included
 #
 # Needs: .NET 10 SDK and Inno Setup 6 (winget install JRSoftware.InnoSetup).
 # The AI models are taken from a "models" folder (default: the Debug build's models folder).
@@ -39,7 +39,8 @@ Get-ChildItem "$build\app" -Filter *.lib | Remove-Item       # linker files, not
 # --- 2. Collect the AI models for the AI edition --------------------------------
 $models = "$build\models"
 New-Item -ItemType Directory -Force $models | Out-Null
-$needed = @("isnet-general-use.onnx", "lama_fp32.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.data")
+$needed = @("isnet-general-use.onnx", "lama_fp32.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.onnx", "real_esrgan_x4plus\real_esrgan_x4plus.data",
+    "mobile_sam_image_encoder.onnx", "sam_mask_decoder_single.onnx")
 foreach ($file in $needed) {
     $src = Join-Path $ModelsFrom $file
     if (-not (Test-Path $src)) { throw "AI model missing: $src  (run the app once and use the AI tools, or pass -ModelsFrom)" }

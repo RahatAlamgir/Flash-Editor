@@ -116,23 +116,6 @@
                               Value="{Binding Document.ActiveLayer.OpacityPercent}" />
         </Grid>
 
-        <!-- Settings of an adjustment layer -->
-        <StackPanel DockPanel.Dock="Top" Margin="10,0,10,6" Visibility="{Binding Document.ActiveLayer.IsAdjustment, Converter={StaticResource BoolToVisibility}}">
-            <TextBlock Text="Adjustment: changes the colors of the layers below" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap" Margin="0,0,0,4" />
-            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                <TextBlock Text="Brightness" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
-                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustBrightness}" /></Grid>
-            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                <TextBlock Text="Contrast" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
-                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustContrast}" /></Grid>
-            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                <TextBlock Text="Saturation" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
-                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustSaturation}" /></Grid>
-            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                <TextBlock Text="Hue" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
-                <ctl:NumberSlider Grid.Column="1" Minimum="-180" Maximum="180" SliderWidth="96" BoxWidth="58" Unit="&#xB0;" Value="{Binding Document.ActiveLayer.AdjustHue}" /></Grid>
-        </StackPanel>
-
         <!-- Select every layer, and lock / unlock the selected layers -->
         <Grid DockPanel.Dock="Top" Margin="10,0,10,6">
             <Grid.ColumnDefinitions>
@@ -184,7 +167,7 @@
         <!-- Layer list (top layer first) -->
         <Grid>
         <ListBox x:Name="LayerList" Style="{StaticResource PanelList}" SelectionMode="Extended" AllowDrop="True"
-                 SelectionChanged="OnLayerSelectionChanged"
+                 SelectionChanged="OnLayerSelectionChanged" PreviewMouseRightButtonDown="OnListRightClick"
                  ToolTip="Drag a layer up or down to change its order. Ctrl+click or Shift+click selects several layers (Ctrl+G groups them)."
                  PreviewMouseLeftButtonDown="OnListMouseDown" PreviewMouseMove="OnListMouseMove" PreviewMouseLeftButtonUp="OnListMouseUp"
                  DragOver="OnListDragOver" DragLeave="OnListDragLeave" Drop="OnListDrop"
@@ -205,10 +188,29 @@
                             <CheckBox Grid.Column="1" Style="{StaticResource ExpandToggle}" IsChecked="{Binding IsExpanded}"
                                       Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisibility}}" />
                             <CheckBox Grid.Column="4" Style="{StaticResource LockToggle}" IsChecked="{Binding IsLocked}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                            <Border Grid.Column="2" Width="42" Height="28" Margin="2,0,8,0" Background="{StaticResource ThumbChecker}"
-                                    BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
-                                <Image Source="{Binding Icon}" Stretch="Uniform" />
-                            </Border>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="2,0,8,0">
+                                <Border Width="42" Height="28" Background="{StaticResource ThumbChecker}"
+                                        BorderBrush="{StaticResource DividerBrush}" BorderThickness="1">
+                                    <Image Source="{Binding Icon}" Stretch="Uniform" />
+                                </Border>
+                                <!-- The layer mask (click to switch it on or off) -->
+                                <Button Command="{Binding ToggleMaskCommand}" Margin="4,0,0,0" Padding="0" MinWidth="0" MinHeight="0" Width="30" Height="28" Cursor="Hand"
+                                        Background="#FF111111" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1"
+                                        Visibility="{Binding HasMask, Converter={StaticResource BoolToVisibility}}"
+                                        ToolTip="Layer mask. Click to switch it on or off. Paint on it with the Mask Brush (K).">
+                                    <Image Source="{Binding MaskIcon}" Stretch="Uniform" Margin="1">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding MaskEnabled}" Value="False">
+                                                        <Setter Property="Opacity" Value="0.3" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                            </StackPanel>
                             <TextBlock Grid.Column="3" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12.5"
                                        Foreground="{StaticResource TextBrush}" MouseLeftButtonDown="OnNameMouseDown" ToolTip="Double-click to rename" />
                             <TextBox Grid.Column="3" Text="{Binding Name, UpdateSourceTrigger=Explicit}" VerticalAlignment="Center"

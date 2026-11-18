@@ -98,7 +98,7 @@ public class ModelStoreTests : IDisposable
     [Fact]
     public void Every_known_model_has_a_name_and_says_what_it_is_for()
     {
-        Assert.Equal(3, ModelCatalog.All.Count);
+        Assert.Equal(5, ModelCatalog.All.Count);
         foreach (var model in ModelCatalog.All)
         {
             var description = ModelCatalog.Describe(model);

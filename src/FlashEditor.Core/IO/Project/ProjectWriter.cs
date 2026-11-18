@@ -103,6 +103,8 @@ public static class ProjectWriter
                     ExtendedY = extended ? fullY : 0,
                     Restore = layer.RestoreSource,
                     Object = layer.Object,
+                    MaskPicture = layer.Mask?.ToGrayPicture(),
+                    MaskEnabled = layer.MaskEnabled,
                 });
             }
             manifest.Pages.Add(entry);

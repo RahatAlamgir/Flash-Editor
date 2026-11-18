@@ -64,6 +64,44 @@ public class ProjectFileTests : IDisposable
     }
 
     [Fact]
+    public void Adjustments_blur_dashes_and_arrows_survive_saving()
+    {
+        var line = new ShapeObject(new ObjectBox(5, 5, 60, 6), ShapeKind.Line, new ColorRgba(1, 2, 3), new ColorRgba(1, 2, 3), 4, Dash: StrokeStyle.Dotted, ArrowStart: true, ArrowEnd: true)
+        {
+            Tone = new AdjustmentStyle(Brightness: 20, Contrast: -10, Saturation: 35, Hue: 40),
+            BlurAmount = 2.5,
+        };
+        var doc = new Document(80, 60);
+        var back = new Layer("Background", Solid(80, 60, new ColorRgba(255, 255, 255)));
+        doc.SetLayers(new List<Layer> { back, ObjectLayer("Line", line, 80, 60) }, null);
+        var path = PathFor("tone.flash");
+        ProjectWriter.Save(doc, path);
+
+        var loaded = (ShapeObject)ProjectReader.Open(path).Layers[1].Object!;
+        Assert.Equal(StrokeStyle.Dotted, loaded.Dash);
+        Assert.True(loaded.ArrowStart && loaded.ArrowEnd);
+        Assert.Equal(2.5, loaded.BlurAmount);
+        Assert.Equal(20, loaded.Tone!.Brightness);
+        Assert.Equal(40, loaded.Tone.Hue);
+    }
+
+    [Fact]
+    public void Text_spacing_and_dash_gaps_survive_saving()
+    {
+        var text = new TextObject(new ObjectBox(2, 2, 60, 20), "a b", "Segoe UI", 20, new ColorRgba(0, 0, 0), LetterSpacing: 0.25, WordSpacing: 1.5, LineSpacing: 1.4);
+        var rect = new ShapeObject(new ObjectBox(5, 30, 40, 20), ShapeKind.Rectangle, null, new ColorRgba(1, 1, 1), 3, Dash: StrokeStyle.Dashed, DashLength: 9, DashGap: 5);
+        var doc = new Document(80, 60);
+        doc.SetLayers(new List<Layer> { new Layer("Background", Solid(80, 60, new ColorRgba(255, 255, 255))), ObjectLayer("T", text, 80, 60), ObjectLayer("R", rect, 80, 60) }, null);
+        var path = PathFor("spacing.flash");
+        ProjectWriter.Save(doc, path);
+        var back = ProjectReader.Open(path);
+        var t = (TextObject)back.Layers[1].Object!;
+        var r = (ShapeObject)back.Layers[2].Object!;
+        Assert.Equal((0.25, 1.5, 1.4), (t.LetterSpacing, t.WordSpacing, t.LineSpacing));
+        Assert.Equal((9.0, 5.0), (r.DashLength, r.DashGap));
+    }
+
+    [Fact]
     public void A_project_comes_back_the_way_it_was_saved()
     {
         var doc = Sample();

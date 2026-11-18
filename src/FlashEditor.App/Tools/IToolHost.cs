@@ -19,6 +19,12 @@ public interface IToolHost
     SnapSession? CreateSnapSession(IEnumerable<Layer> exclude);
 
     void SelectTool<T>() where T : ToolBase;
+
+    /// <summary>Runs the AI Remove / Fill on the current selection (Remove Brush).</summary>
+    void RunAiFill();
+
+    /// <summary>Click Select (AI): selects the object under the click or box (downloads the model first when needed).</summary>
+    void RunClickSelect(FlashEditor.AI.Segmentation.ClickPrompt prompt, System.Windows.Input.ModifierKeys modifiers);
     void SetStatus(string message);
 
     /// <summary>Turns a layer of plain pixels into a picture object (resizable, rotatable, can have a shadow). Undoable.</summary>

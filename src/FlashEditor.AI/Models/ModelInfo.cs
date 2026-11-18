@@ -69,5 +69,30 @@ public sealed record ModelInfo(
         Mean: new[] { 0f, 0f, 0f },
         Std: new[] { 1f, 1f, 1f });
 
+    /// <summary>
+    /// MobileSAM (Apache 2.0 license) image encoder, as converted to ONNX by Acly (huggingface.co/Acly/MobileSAM). Studies a picture so that
+    /// clicking on an object can select it. Works on pictures whose longest side is 1024; the model normalizes the colors itself.
+    /// </summary>
+    public static readonly ModelInfo MobileSamEncoder = new(
+        DisplayName: "MobileSAM click-to-select model (picture part)",
+        FileName: "mobile_sam_image_encoder.onnx",
+        DownloadUrl: "https://huggingface.co/Acly/MobileSAM/resolve/main/mobile_sam_image_encoder.onnx",
+        SizeBytes: 28_157_093,
+        Sha256: "580f5fb648ea1062c0aabc26217aed56921985f03f0cbbd852bba81d760cc749",
+        InputSize: 1024,
+        Mean: new[] { 0f, 0f, 0f },
+        Std: new[] { 1f, 1f, 1f });
+
+    /// <summary>MobileSAM mask decoder (the small second part): turns a click or box into the outline of the object.</summary>
+    public static readonly ModelInfo MobileSamDecoder = new(
+        DisplayName: "MobileSAM click-to-select model (outline part)",
+        FileName: "sam_mask_decoder_single.onnx",
+        DownloadUrl: "https://huggingface.co/Acly/MobileSAM/resolve/main/sam_mask_decoder_single.onnx",
+        SizeBytes: 16_501_323,
+        Sha256: "93915fc7c993ab9d59ab8c9ccd3bce37f7509c81ab4150a74abd4d2abbd8570d",
+        InputSize: 256,
+        Mean: new[] { 0f, 0f, 0f },
+        Std: new[] { 1f, 1f, 1f });
+
     public string SizeText => $"{SizeBytes / (1024.0 * 1024.0):0} MB";
 }

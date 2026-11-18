@@ -59,6 +59,69 @@ public static class GifEncoder
         return output.ToArray();
     }
 
+    /// <summary>
+    /// An animated GIF: every picture is one frame (all frames take the size of the first one; others are scaled to it).
+    /// Each frame has its own best 256 colors.
+    /// </summary>
+    /// <param name="delayMs">How long each frame is shown, in milliseconds (the GIF format counts in hundredths of a second).</param>
+    /// <param name="loop">True: repeats forever. False: plays once.</param>
+    public static byte[] EncodeAnimation(IReadOnlyList<PixelBuffer> frames, int delayMs = 1000, bool loop = true, bool dither = true)
+    {
+        if (frames.Count == 0) throw new ArgumentException("An animation needs at least one frame.", nameof(frames));
+        int width = frames[0].Width, height = frames[0].Height;
+        int delay = Math.Clamp((int)Math.Round(delayMs / 10.0), 1, 65535);
+
+        using var output = new MemoryStream();
+        void Byte(int value) => output.WriteByte((byte)value);
+        void Word(int value) { Byte(value & 0xFF); Byte(value >> 8); }
+
+        foreach (char c in "GIF89a") Byte(c);
+        Word(width);
+        Word(height);
+        Byte(0x70);                          // no global color table, 8 bits of color resolution
+        Byte(0);
+        Byte(0);
+        if (loop)
+        {
+            Byte(0x21); Byte(0xFF); Byte(11);
+            foreach (char c in "NETSCAPE2.0") Byte(c);
+            Byte(3); Byte(1); Word(0);       // repeat forever
+            Byte(0);
+        }
+
+        foreach (var original in frames)
+        {
+            var frame = original.Width == width && original.Height == height
+                ? original
+                : Transforms.Resampler.Resize(original, width, height, Transforms.ResampleMode.Smooth);
+            var (palette, indices) = Quantize(frame, dither);
+            int tableBits = 1;
+            while ((1 << tableBits) < palette.Count) tableBits++;
+            int tableSize = 1 << tableBits;
+            bool transparent = HasClearPixels(frame);
+
+            Byte(0x21); Byte(0xF9); Byte(4);
+            Byte((2 << 2) | (transparent ? 1 : 0));   // frame is cleared before the next one is drawn; transparent flag
+            Word(delay);
+            Byte(0);
+            Byte(0);
+
+            Byte(0x2C);
+            Word(0); Word(0); Word(width); Word(height);
+            Byte(0x80 | (tableBits - 1));            // a color table of its own for this frame
+            for (int i = 0; i < tableSize; i++)
+            {
+                var c = i < palette.Count ? palette[i] : (R: (byte)0, G: (byte)0, B: (byte)0);
+                Byte(c.R); Byte(c.G); Byte(c.B);
+            }
+            int minCodeSize = Math.Max(2, tableBits);
+            Byte(minCodeSize);
+            WriteSubBlocks(output, Lzw.Compress(indices, minCodeSize));
+        }
+        Byte(0x3B);
+        return output.ToArray();
+    }
+
     private static bool HasClearPixels(PixelBuffer image)
     {
         for (int i = 3; i < image.Data.Length; i += 4)

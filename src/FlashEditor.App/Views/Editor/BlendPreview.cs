@@ -76,6 +76,8 @@ public sealed class BlendPreview : Image
             layer.PropertyChanged += OnLayerPropertyChanged;
             layer.PixelsChanged += OnPixelsChanged;
             layer.PixelsReplaced += OnPixelsReplaced;
+            layer.MaskChanged += OnPixelsChanged;
+            layer.MaskReplaced += OnPixelsReplaced;
             _watched.Add(layer);
         }
     }
@@ -87,6 +89,8 @@ public sealed class BlendPreview : Image
             layer.PropertyChanged -= OnLayerPropertyChanged;
             layer.PixelsChanged -= OnPixelsChanged;
             layer.PixelsReplaced -= OnPixelsReplaced;
+            layer.MaskChanged -= OnPixelsChanged;
+            layer.MaskReplaced -= OnPixelsReplaced;
         }
         _watched.Clear();
     }

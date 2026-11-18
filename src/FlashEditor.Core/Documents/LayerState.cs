@@ -10,16 +10,17 @@ namespace FlashEditor.Core.Documents;
 /// canvas (zero or negative). The extended buffer always covers the whole canvas.
 /// <see cref="Object"/> is set for object layers (shape, text, image); their pixels are its rendering.
 /// </summary>
-public sealed record LayerState(PixelBuffer Pixels, PixelBuffer? Extended, int ExtendedX, int ExtendedY, LayerObject? Object = null)
+public sealed record LayerState(PixelBuffer Pixels, PixelBuffer? Extended, int ExtendedX, int ExtendedY, LayerObject? Object = null,
+    LayerMask? Mask = null, bool IncludesMask = false)
 {
     /// <summary>A layer state with no hidden pixels.</summary>
     public static LayerState Simple(PixelBuffer pixels) => new(pixels, null, 0, 0);
 
     /// <summary>Memory used by the pixel buffers of this state, in bytes.</summary>
-    public long ByteSize => (long)Pixels.Data.Length + (Extended?.Data.Length ?? 0);
+    public long ByteSize => (long)Pixels.Data.Length + (Extended?.Data.Length ?? 0) + (Mask?.ByteSize ?? 0);
 
     /// <summary>Deep copy (new buffers).</summary>
-    public LayerState DeepCopy() => new(Pixels.Clone(), Extended?.Clone(), ExtendedX, ExtendedY, Object);
+    public LayerState DeepCopy() => new(Pixels.Clone(), Extended?.Clone(), ExtendedX, ExtendedY, Object, Mask?.Clone(), IncludesMask);
 
     /// <summary>
     /// Builds the state for a canvas of <paramref name="canvasWidth"/> x <paramref name="canvasHeight"/>

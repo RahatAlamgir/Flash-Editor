@@ -203,6 +203,7 @@ public sealed class EffectCommands
         }
         else if (model == ModelInfo.RealEsrganX4Plus) _main.Upscale.Release();
         else if (model == ModelInfo.LamaInpainting) _main.Inpaint.Release();
+        else if (model == ModelInfo.MobileSamEncoder || model == ModelInfo.MobileSamDecoder) _main.ClickSelect.Release();
     }
 
     /// <summary>

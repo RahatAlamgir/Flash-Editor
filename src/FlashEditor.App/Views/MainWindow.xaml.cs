@@ -133,7 +133,7 @@ public partial class MainWindow : Window
             ? files[0]
             : null;
 
-    private static bool CanOpenDropped(string path) => ImageFileFormats.CanOpen(path) || ProjectFile.IsProject(path);
+    private static bool CanOpenDropped(string path) => ImageFileFormats.CanOpen(path) || ProjectFile.IsProject(path) || Core.IO.Psd.PsdFile.IsPsd(path) || Core.IO.Svg.SvgFile.IsSvg(path);
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {

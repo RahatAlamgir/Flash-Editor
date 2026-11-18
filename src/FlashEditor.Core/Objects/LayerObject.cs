@@ -1,3 +1,4 @@
+using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
 
 namespace FlashEditor.Core.Objects;
@@ -12,6 +13,21 @@ public abstract record LayerObject(ObjectBox Box, bool FlipX = false, bool FlipY
 {
     /// <summary>The drop shadow behind the object, or null for none (any kind of object can have one).</summary>
     public ShadowStyle? Shadow { get; init; }
+
+    /// <summary>Brightness, contrast, saturation and hue of the object's own colors (its effects such as the shadow are not changed), or null for none.</summary>
+    public AdjustmentStyle? Tone { get; init; }
+
+    /// <summary>How much the object itself is blurred (0 = sharp), in pixels.</summary>
+    public double BlurAmount { get; init; }
+
+    /// <summary>A soft light around the object, or null for none.</summary>
+    public GlowStyle? Glow { get; init; }
+
+    /// <summary>A shadow inside the object's edges, or null for none.</summary>
+    public InnerShadowStyle? InnerShadow { get; init; }
+
+    /// <summary>A line around the outside of the object, or null for none.</summary>
+    public OutlineStyle? Outline { get; init; }
 
     /// <summary>A fading color for the fill of a shape or the color of a text, or null for a flat color. (Pictures and groups ignore it.)</summary>
     public GradientStyle? Gradient { get; init; }

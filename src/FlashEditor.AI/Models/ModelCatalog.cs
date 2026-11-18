@@ -12,6 +12,8 @@ public static class ModelCatalog
         ModelInfo.IsNetGeneralUse,
         ModelInfo.RealEsrganX4Plus,
         ModelInfo.LamaInpainting,
+        ModelInfo.MobileSamEncoder,
+        ModelInfo.MobileSamDecoder,
     };
 
     /// <summary>The name and the features that need the model.</summary>
@@ -23,6 +25,10 @@ public static class ModelCatalog
             return new ModelDescription("Upscaling and clean-up", "Image > AI Upscale / Clean Up");
         if (model == ModelInfo.LamaInpainting)
             return new ModelDescription("Object removal (fill)", "Image > Remove / Fill Selection (AI)");
+        if (model == ModelInfo.MobileSamEncoder)
+            return new ModelDescription("Click to select (part 1 of 2)", "Click Select tool (W group): studies the picture");
+        if (model == ModelInfo.MobileSamDecoder)
+            return new ModelDescription("Click to select (part 2 of 2)", "Click Select tool (W group): outlines the object you click");
         return new ModelDescription(model.DisplayName, "");
     }
 }

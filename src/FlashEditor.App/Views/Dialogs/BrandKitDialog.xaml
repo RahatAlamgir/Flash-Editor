@@ -1,0 +1,50 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.BrandKitDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:opt="clr-namespace:FlashEditor.App.Tools.Options"
+        Title="Brand Kit" Width="520" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}">
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
+                <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Style="{StaticResource DialogButton}" />
+                <Button DockPanel.Dock="Right" Content="Save" IsDefault="True" Click="OnOk" Style="{StaticResource DialogPrimaryButton}" />
+            </DockPanel>
+        </Border>
+
+        <StackPanel Margin="24,20,24,22">
+            <TextBlock Text="Brand Kit" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
+                       Text="Your colors and fonts, kept for every project. The colors appear first in every color picker; the fonts appear as quick buttons when a text is selected." />
+
+            <DockPanel Margin="0,16,0,6">
+                <Button DockPanel.Dock="Right" x:Name="FromPictureButton" Content="Add colors from this picture" Click="OnFromPicture" Padding="8,2" MinWidth="0" MinHeight="0" FontSize="11"
+                        ToolTip="Takes the main colors of the picture you are working on" />
+                <TextBlock Text="Colors" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
+            </DockPanel>
+            <ItemsControl x:Name="ColorList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="34" Height="34" Margin="0,0,6,6" CornerRadius="4" Cursor="Hand"
+                                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1"
+                                Background="{Binding}" MouseLeftButtonDown="OnColorClick" MouseRightButtonDown="OnColorRemove"
+                                ToolTip="Click to change this color, right-click to remove it" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button x:Name="AddColorButton" Content="+ Add a color" Click="OnAddColor" HorizontalAlignment="Left" Padding="10,3" />
+            <TextBlock x:Name="ColorHint" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,6,0,0" />
+
+            <TextBlock Text="Fonts (up to 3)" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" Margin="0,16,0,6" />
+            <ComboBox x:Name="Font1" Margin="0,0,0,6" ItemsSource="{Binding Source={x:Static opt:TextToolOptions.InstalledFonts}}" />
+            <ComboBox x:Name="Font2" Margin="0,0,0,6" ItemsSource="{Binding Source={x:Static opt:TextToolOptions.InstalledFonts}}" />
+            <ComboBox x:Name="Font3" ItemsSource="{Binding Source={x:Static opt:TextToolOptions.InstalledFonts}}" />
+        </StackPanel>
+    </DockPanel>
+</Window>

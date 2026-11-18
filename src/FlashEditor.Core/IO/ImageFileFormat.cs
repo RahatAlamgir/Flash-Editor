@@ -30,7 +30,9 @@ public static class ImageFileFormats
 
     /// <summary>File > Open: pictures and Flash Editor projects.</summary>
     public static readonly string OpenAnyFilter =
-        "Pictures and projects|*" + Project.ProjectFile.Extension + ";" + Pattern(OpenExtensions) + "|" +
+        "Pictures, projects, Photoshop and SVG files|*" + Project.ProjectFile.Extension + ";*" + Psd.PsdFile.Extension + ";*" + Svg.SvgFile.Extension + ";" + Pattern(OpenExtensions) + "|" +
+        "Photoshop file|*" + Psd.PsdFile.Extension + "|" +
+        "SVG vector picture|*" + Svg.SvgFile.Extension + "|" +
         Project.ProjectFile.Filter + "|" + OpenFilter;
 
     /// <summary>Order matches <see cref="FromFilterIndex"/>.</summary>

@@ -59,20 +59,30 @@ public sealed class ObjectRenderer : IObjectRenderer
             dc.Pop();
         }, highQualityImages: (obj is ImageObject or GroupObject || obj.Warp != null));
 
-        // The 3D look comes first (the shadow is then cast by the object together with its side).
+        // Color and blur of the object itself come first, so shadows and the other looks are made from the adjusted object.
+        if (pixels != null && obj.Tone is { IsNeutral: false } tone) tone.Apply(pixels, pixels.Bounds);
+        if (pixels != null && obj.BlurAmount >= 0.3) pixels = FlashEditor.Core.Effects.Filters.Blur.Gaussian(pixels, obj.BlurAmount);
+
+        // The 3D look comes next (the shadow is then cast by the object together with its side).
         if (pixels != null && obj.ThreeD is { } threeD)
             pixels = ThreeDFx.Apply(pixels, threeD.OffsetX, threeD.OffsetY, threeD.Color, threeD.Bevel, BevelSize(obj, 1));
+        // Then the looks that follow the outline: a shadow inside the edges, and a line around the outside.
+        if (pixels != null && obj.InnerShadow is { } inner) pixels = SurfaceFx.InnerShadow(pixels, inner.Color, inner.OffsetX, inner.OffsetY, inner.Blur);
+        if (pixels != null && obj.Outline is { } line) pixels = SurfaceFx.Outline(pixels, line.Color, line.Width);
+        var shape = pixels;                                  // what the glow is made from: the object with its outline, without the shadow
         if (pixels != null && shadow != null)
         {
             var center = obj.Box.Center;
             pixels = ShadowFx.Apply(pixels, shadow.Color, shadow.OffsetX, shadow.OffsetY, shadow.Blur, shadow.Size, center.X - area.X, center.Y - area.Y);
         }
+        if (pixels != null && shape != null && obj.Glow is { } glow)
+            pixels = SurfaceFx.Under(pixels, SurfaceFx.GlowLayer(shape, glow.Color, glow.Size, glow.Intensity));
         if (pixels != null) canvas.CopyFrom(pixels, area.X, area.Y);
     }
 
     /// <summary>How far the shadow and the 3D side can reach beyond the object, in canvas pixels.</summary>
     private static double EffectReach(LayerObject obj)
-        => (obj.Shadow?.ExtentFor(obj.Box.Width, obj.Box.Height) ?? 0) + (obj.ThreeD?.Extent ?? 0);
+        => (obj.Shadow?.ExtentFor(obj.Box.Width, obj.Box.Height) ?? 0) + (obj.ThreeD?.Extent ?? 0) + (obj.Glow?.Extent ?? 0) + (obj.Outline?.Extent ?? 0) + obj.BlurAmount * 3;
 
     /// <summary>Width of the lit and shaded bevel edges: a few percent of the object's smaller side.</summary>
     private static double BevelSize(LayerObject obj, double scale)
@@ -80,6 +90,8 @@ public sealed class ObjectRenderer : IObjectRenderer
 
     public (double Width, double Height) MeasureText(TextObject text)
     {
+        if (Math.Abs(text.Arc) >= 0.5) return ArcText.Measure(text);
+        if (SpacedText.Applies(text)) { var spaced = SpacedText.Build(text); return (spaced.Width, spaced.Height); }
         var formatted = CreateText(text);
         return (Math.Ceiling(formatted.WidthIncludingTrailingWhitespace) + 2, Math.Ceiling(formatted.Height) + 2);
     }
@@ -90,6 +102,7 @@ public sealed class ObjectRenderer : IObjectRenderer
     /// </summary>
     private static double MarginFor(LayerObject obj) => obj switch
     {
+        ShapeObject { IsLineLike: true } l when l.ArrowStart || l.ArrowEnd => ArrowLength(l) / 2 + 2,
         ShapeObject { Stroke: not null } s => s.StrokeWidth / 2 + 2,
         TextObject { OutlineWidth: > 0, OutlineColor: not null } t => t.OutlineWidth + 2,
         GroupObject g => 2 + g.Members.Max(m => MarginFor(m.Object) + EffectReach(m.Object)) * Math.Max(g.Scale.Sx, g.Scale.Sy),
@@ -110,6 +123,29 @@ public sealed class ObjectRenderer : IObjectRenderer
 
     /// <param name="toCanvas">Maps the object's own space (0,0 = its top-left) to the canvas, including every group around it.</param>
     /// <param name="shadowScale">How much the groups around the object were stretched (shadows grow with them).</param>
+    /// <summary>How long an arrow head is: it grows with the line width.</summary>
+    private static double ArrowLength(ShapeObject line) => Math.Max(10, line.StrokeWidth * 4);
+
+    /// <summary>Filled triangles at the ends of a line (drawn in the same space as the line: from the left end to the right end of the box).</summary>
+    private static void DrawArrowHeads(DrawingContext dc, ShapeObject line, ObjectBox box, Brush brush)
+    {
+        double len = ArrowLength(line), half = len * 0.5, y = box.Height / 2;
+        StreamGeometry Head(double tipX, double dir)
+        {
+            var g = new StreamGeometry();
+            using (var ctx = g.Open())
+            {
+                ctx.BeginFigure(new Point(tipX, y), true, true);
+                ctx.LineTo(new Point(tipX - dir * len, y - half), true, false);
+                ctx.LineTo(new Point(tipX - dir * len, y + half), true, false);
+            }
+            g.Freeze();
+            return g;
+        }
+        if (line.ArrowEnd) dc.DrawGeometry(brush, null, Head(box.Width + line.StrokeWidth / 2, 1));
+        if (line.ArrowStart) dc.DrawGeometry(brush, null, Head(-line.StrokeWidth / 2, -1));
+    }
+
     private static void Draw(DrawingContext dc, LayerObject obj, Matrix toCanvas, double shadowScale)
     {
         if (obj.Warp is { Count: 4 } corners)
@@ -134,15 +170,72 @@ public sealed class ObjectRenderer : IObjectRenderer
                     Brush strokeBrush = shape.GradientBorder && shape.Gradient is { } borderGradient
                         ? GradientBrushFor(borderGradient, b.Width, b.Height)
                         : Frozen(new SolidColorBrush(BitmapConverter.ToWpf(sc)));
+                    // Dashes are counted in line widths: a dash is 3 wide with 2 of gap; a dot is round with a gap of 1.6.
+                    var cap = shape.Dash == StrokeStyle.Dotted ? PenLineCap.Round : shape.IsLineLike ? PenLineCap.Round : PenLineCap.Flat;
                     pen = new Pen(strokeBrush, shape.StrokeWidth)
                     {
                         LineJoin = PenLineJoin.Round,
-                        StartLineCap = shape.IsLineLike ? PenLineCap.Round : PenLineCap.Flat,
-                        EndLineCap = shape.IsLineLike ? PenLineCap.Round : PenLineCap.Flat,
+                        StartLineCap = cap,
+                        EndLineCap = cap,
+                        DashCap = shape.Dash == StrokeStyle.Dotted ? PenLineCap.Round : PenLineCap.Flat,
                     };
+                    // Length and gap of the dashes in pixels (0 = automatic); the pen counts in line widths. A round dot is as wide as the line,
+                    // so for dots the gap is measured between the edges of the dots.
+                    double lineWidth = Math.Max(0.1, shape.StrokeWidth);
+                    if (shape.Dash == StrokeStyle.Dashed)
+                        pen.DashStyle = new DashStyle(new double[] { shape.DashLength > 0 ? shape.DashLength / lineWidth : 3, shape.DashGap > 0 ? shape.DashGap / lineWidth : 2 }, 0);
+                    else if (shape.Dash == StrokeStyle.Dotted)
+                        pen.DashStyle = new DashStyle(new double[] { 0.01, (shape.DashGap > 0 ? shape.DashGap / lineWidth : 1.2) + 1 }, 0);
                     pen.Freeze();
                 }
                 dc.DrawGeometry(fill, pen, geometry);
+                if (shape.IsLineLike && (shape.ArrowStart || shape.ArrowEnd) && strokeColor is { } arrowColor)
+                    DrawArrowHeads(dc, shape, b, Frozen(new SolidColorBrush(BitmapConverter.ToWpf(arrowColor))));
+                break;
+            }
+            case TextObject { Arc: not 0 } curved when Math.Abs(curved.Arc) >= 0.5:
+            {
+                // Text on a curve: every letter is placed along a circle (one line; the line breaks become spaces).
+                var letters = ArcText.Build(curved);
+                var area = letters.Bounds;
+                if (area.IsEmpty) break;
+                var (arcW, arcH) = ArcText.Measure(curved);
+                Brush fillBrush = curved.Gradient is { } curvedGradient
+                    ? GradientBrushFor(curvedGradient, arcW, arcH)
+                    : Frozen(new SolidColorBrush(BitmapConverter.ToWpf(curved.Color)));
+                // The box may have been resized: stretch the curved text to fill it.
+                dc.PushTransform(new ScaleTransform(b.Width / arcW, b.Height / arcH));
+                dc.PushTransform(new TranslateTransform(-area.X + 1 + curved.OutlineWidth, -area.Y + 1 + curved.OutlineWidth));
+                Pen? arcPen = null;
+                if (curved.OutlineWidth > 0 && curved.OutlineColor is { } arcOutline)
+                {
+                    arcPen = new Pen(Frozen(new SolidColorBrush(BitmapConverter.ToWpf(arcOutline))), curved.OutlineWidth * 2) { LineJoin = PenLineJoin.Round };
+                    arcPen.Freeze();
+                    dc.DrawGeometry(null, arcPen, letters);
+                }
+                dc.DrawGeometry(fillBrush, null, letters);
+                dc.Pop();
+                dc.Pop();
+                break;
+            }
+            case TextObject spacedText when SpacedText.Applies(spacedText):
+            {
+                // Extra space between letters and / or words: the letters are placed one by one and drawn as outlines.
+                var (letters, spacedW, spacedH) = SpacedText.Build(spacedText);
+                Brush spacedFill = spacedText.Gradient is { } spacedGradient
+                    ? GradientBrushFor(spacedGradient, spacedW, spacedH)
+                    : Frozen(new SolidColorBrush(BitmapConverter.ToWpf(spacedText.Color)));
+                dc.PushTransform(new ScaleTransform(b.Width / spacedW, b.Height / spacedH));
+                dc.PushTransform(new TranslateTransform(1, 1));
+                if (spacedText.OutlineWidth > 0 && spacedText.OutlineColor is { } spacedOutline)
+                {
+                    var spacedPen = new Pen(Frozen(new SolidColorBrush(BitmapConverter.ToWpf(spacedOutline))), spacedText.OutlineWidth * 2) { LineJoin = PenLineJoin.Round };
+                    spacedPen.Freeze();
+                    dc.DrawGeometry(null, spacedPen, letters);
+                }
+                dc.DrawGeometry(spacedFill, null, letters);
+                dc.Pop();
+                dc.Pop();
                 break;
             }
             case TextObject text:
@@ -195,7 +288,8 @@ public sealed class ObjectRenderer : IObjectRenderer
                     var memberToCanvas = local * toBox * toCanvas;
                     dc.PushOpacity(member.Opacity);
                     dc.PushTransform(new MatrixTransform(local));
-                    if (member.Object.Shadow != null || member.Object.ThreeD != null) DrawWithShadow(dc, member.Object, memberToCanvas, childShadowScale);
+                    if (member.Object.Shadow != null || member.Object.ThreeD != null || member.Object.Glow != null || member.Object.InnerShadow != null || member.Object.Outline != null)
+                        DrawWithShadow(dc, member.Object, memberToCanvas, childShadowScale);
                     else Draw(dc, member.Object, memberToCanvas, childShadowScale);
                     dc.Pop();
                     dc.Pop();
@@ -258,7 +352,10 @@ public sealed class ObjectRenderer : IObjectRenderer
     {
         var shadow = obj.Shadow?.Scaled(shadowScale);
         var threeD = obj.ThreeD?.Scaled(shadowScale);
-        var plain = obj with { Shadow = null, ThreeD = null };
+        var glow = obj.Glow?.Scaled(shadowScale);
+        var inner = obj.InnerShadow?.Scaled(shadowScale);
+        var outline = obj.Outline?.Scaled(shadowScale);
+        var plain = obj with { Shadow = null, ThreeD = null, Glow = null, InnerShadow = null, Outline = null };
 
         var linear = new Matrix(toCanvas.M11, toCanvas.M12, toCanvas.M21, toCanvas.M22, 0, 0);
         double determinant = linear.Determinant;
@@ -273,7 +370,7 @@ public sealed class ObjectRenderer : IObjectRenderer
         double res = Math.Clamp(Math.Sqrt(Math.Abs(determinant)), 0.05, 16);
         res = Math.Min(res, 3000 / box); // keep the bitmap a sane size
         double perCanvasPixel = res / Math.Sqrt(Math.Abs(determinant));      // bitmap pixels per canvas pixel (extents are given on the canvas)
-        double reach = ((shadow?.ExtentFor(obj.Box.Width, obj.Box.Height) ?? 0) + (threeD?.Extent ?? 0)) * perCanvasPixel;
+        double reach = ((shadow?.ExtentFor(obj.Box.Width, obj.Box.Height) ?? 0) + (threeD?.Extent ?? 0) + (glow?.Extent ?? 0) + (outline?.Extent ?? 0)) * perCanvasPixel;
         int pad = (int)Math.Ceiling(MarginFor(plain) * res + reach);
         int width = (int)Math.Ceiling(obj.Box.Width * res) + 2 * pad;
         int height = (int)Math.Ceiling(obj.Box.Height * res) + 2 * pad;
@@ -293,12 +390,20 @@ public sealed class ObjectRenderer : IObjectRenderer
             var side = linear.Transform(new Vector(threeD.OffsetX, threeD.OffsetY)) * res;
             drawn = ThreeDFx.Apply(drawn, side.X, side.Y, threeD.Color, threeD.Bevel, BevelSize(obj, res));
         }
+        if (inner != null)
+        {
+            var shift = linear.Transform(new Vector(inner.OffsetX, inner.OffsetY)) * res;
+            drawn = SurfaceFx.InnerShadow(drawn, inner.Color, shift.X, shift.Y, inner.Blur * perCanvasPixel);
+        }
+        if (outline != null) drawn = SurfaceFx.Outline(drawn, outline.Color, outline.Width * perCanvasPixel);
+        var shape = drawn;
         if (shadow != null)
         {
             var shift = linear.Transform(new Vector(shadow.OffsetX, shadow.OffsetY)) * res;
             drawn = ShadowFx.Apply(drawn, shadow.Color, shift.X, shift.Y, shadow.Blur * perCanvasPixel, shadow.Size,
                 pad + obj.Box.Width * res / 2, pad + obj.Box.Height * res / 2);
         }
+        if (glow != null) drawn = SurfaceFx.Under(drawn, SurfaceFx.GlowLayer(shape, glow.Color, glow.Size * perCanvasPixel, glow.Intensity));
 
         dc.DrawImage(BitmapConverter.ToFrozenBitmap(drawn), new Rect(-pad / res, -pad / res, width / res, height / res));
     }

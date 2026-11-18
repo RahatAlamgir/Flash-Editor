@@ -2,8 +2,10 @@
 ; Flash Editor installer (Inno Setup 6)
 ;
 ; One script, two editions:
-;   * Standard  - the app only. AI tools ask to download their model on first use.
-;   * AI        - the app plus both AI models, ready to use offline.
+;   * Standard  - the app only. During setup you can tick the AI models to download (checked and
+;                 verified with SHA-256); anything not downloaded is offered by the AI tools on first use,
+;                 or in Settings > AI Models.
+;   * AI        - the app plus all AI models, ready to use offline.
 ; Build with build-installers.ps1 (it publishes the app and passes /DWithAI=0 or 1).
 ;
 ; EVERYTHING lives in the install folder: the program, its libraries, the .NET runtime
@@ -77,7 +79,7 @@ Name: "{app}\settings"; Permissions: users-modify
 ; The program, its libraries and the .NET runtime (self-contained), all in {app}.
 Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 #if WithAI == "1"
-; AI models, ready to use (background removal 170 MB, object removal / fill 198 MB, upscaling 67 MB).
+; AI models, ready to use (background removal 170 MB, object removal / fill 198 MB, upscaling 67 MB, click to select 44 MB).
 Source: "{#ModelsDir}\*"; DestDir: "{app}\models"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 
@@ -95,3 +97,117 @@ Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags
 Type: filesandordirs; Name: "{app}\models"
 Type: filesandordirs; Name: "{app}\settings"
 Type: dirifempty; Name: "{app}"
+
+#if WithAI == "0"
+[Code]
+// ---- Optional AI model download (Standard edition) -------------------------------------------
+// A page after the task list lets the user tick the AI features to download. The downloads run at the end of the
+// installation (after the files are copied), are verified with SHA-256 and saved in the "models" folder of the
+// install folder, where the program finds them. A failed or skipped download never fails the installation: the
+// program offers it again when the feature is first used (or in Settings > AI Models). Silent installs download nothing.
+
+const
+  UrlIsNet   = 'https://github.com/danielgatis/rembg/releases/download/v0.0.0/isnet-general-use.onnx';
+  UrlLama    = 'https://huggingface.co/Carve/LaMa-ONNX/resolve/main/lama_fp32.onnx';
+  UrlEsrgan  = 'https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/real_esrgan_x4plus/releases/v0.66.0/real_esrgan_x4plus-onnx-float.zip';
+  UrlSamEnc  = 'https://huggingface.co/Acly/MobileSAM/resolve/main/mobile_sam_image_encoder.onnx';
+  UrlSamDec  = 'https://huggingface.co/Acly/MobileSAM/resolve/main/sam_mask_decoder_single.onnx';
+
+var
+  ModelsPage: TInputOptionWizardPage;
+  DownloadPage: TDownloadWizardPage;
+
+procedure InitializeWizard;
+begin
+  ModelsPage := CreateInputOptionPage(wpSelectTasks,
+    'AI features (optional)',
+    'Download the AI models you want to use now',
+    'The AI tools need a model file each. Tick the ones to download now (about 470 MB in total, needs internet). ' +
+    'Anything you skip is offered later, the first time you use that tool, or in Settings > AI Models.',
+    False, False);
+  ModelsPage.Add('Remove Background and Select Subject (170 MB)');
+  ModelsPage.Add('Remove / Fill and Remove Brush (198 MB)');
+  ModelsPage.Add('AI Upscale / Clean Up (62 MB)');
+  ModelsPage.Add('Click Select (44 MB)');
+  ModelsPage.Values[0] := True;
+  ModelsPage.Values[1] := True;
+  ModelsPage.Values[2] := True;
+  ModelsPage.Values[3] := True;
+  DownloadPage := CreateDownloadPage('Downloading AI models', 'Please wait while the AI models are downloaded.', nil);
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := (PageID = ModelsPage.ID) and WizardSilent;
+end;
+
+{ Takes the two model files out of the Real-ESRGAN zip (the program expects them side by side, without folders). }
+procedure UnpackEsrgan(const Zip, DestDir: String);
+var
+  Cmd: String;
+  Code: Integer;
+begin
+  ForceDirectories(DestDir);
+  Cmd := '-NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; ' +
+    '$z=[IO.Compression.ZipFile]::OpenRead(''' + Zip + '''); ' +
+    'foreach($e in $z.Entries){ if($e.Name -eq ''real_esrgan_x4plus.onnx'' -or $e.Name -eq ''real_esrgan_x4plus.data''){ ' +
+    '[IO.Compression.ZipFileExtensions]::ExtractToFile($e, ''' + DestDir + '\'' + $e.Name, $true) } }; $z.Dispose()"';
+  Exec('powershell.exe', Cmd, '', SW_HIDE, ewWaitUntilTerminated, Code);
+end;
+
+procedure DownloadModels;
+var
+  Models, Tmp: String;
+  Failed: Boolean;
+begin
+  Models := ExpandConstant('{app}\models');
+  Tmp := ExpandConstant('{tmp}');
+  ForceDirectories(Models);
+  DownloadPage.Clear;
+  if ModelsPage.Values[0] then
+    DownloadPage.Add(UrlIsNet, 'isnet-general-use.onnx', '60920e99c45464f2ba57bee2ad08c919a52bbf852739e96947fbb4358c0d964a');
+  if ModelsPage.Values[1] then
+    DownloadPage.Add(UrlLama, 'lama_fp32.onnx', '1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6');
+  if ModelsPage.Values[2] then
+    DownloadPage.Add(UrlEsrgan, 'real_esrgan_x4plus.zip', '05aa31323c6a7e831493171cac970e398697709cae7e7ae8e0760e6da4d64ca4');
+  if ModelsPage.Values[3] then
+  begin
+    DownloadPage.Add(UrlSamEnc, 'mobile_sam_image_encoder.onnx', '580f5fb648ea1062c0aabc26217aed56921985f03f0cbbd852bba81d760cc749');
+    DownloadPage.Add(UrlSamDec, 'sam_mask_decoder_single.onnx', '93915fc7c993ab9d59ab8c9ccd3bce37f7509c81ab4150a74abd4d2abbd8570d');
+  end;
+  if not (ModelsPage.Values[0] or ModelsPage.Values[1] or ModelsPage.Values[2] or ModelsPage.Values[3]) then Exit;     { nothing ticked }
+
+  Failed := False;
+  DownloadPage.Show;
+  try
+    try
+      DownloadPage.Download;
+    except
+      Failed := True;
+      if DownloadPage.AbortedByUser then
+        Log('AI model download cancelled by the user.')
+      else
+        SuppressibleMsgBox('The AI models could not be downloaded:' + #13#10 + GetExceptionMessage + #13#10#13#10 +
+          'Flash Editor is installed. Each AI tool offers to download its model the first time you use it ' +
+          '(or use Settings > AI Models).', mbInformation, MB_OK, IDOK);
+    end;
+  finally
+    DownloadPage.Hide;
+  end;
+  if Failed then Exit;
+
+  if ModelsPage.Values[0] then FileCopy(Tmp + '\isnet-general-use.onnx', Models + '\isnet-general-use.onnx', False);
+  if ModelsPage.Values[1] then FileCopy(Tmp + '\lama_fp32.onnx', Models + '\lama_fp32.onnx', False);
+  if ModelsPage.Values[2] then UnpackEsrgan(Tmp + '\real_esrgan_x4plus.zip', Models + '\real_esrgan_x4plus');
+  if ModelsPage.Values[3] then
+  begin
+    FileCopy(Tmp + '\mobile_sam_image_encoder.onnx', Models + '\mobile_sam_image_encoder.onnx', False);
+    FileCopy(Tmp + '\sam_mask_decoder_single.onnx', Models + '\sam_mask_decoder_single.onnx', False);
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if (CurStep = ssPostInstall) and (not WizardSilent) then DownloadModels;
+end;
+#endif

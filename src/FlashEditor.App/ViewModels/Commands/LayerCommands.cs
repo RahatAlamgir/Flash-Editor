@@ -25,6 +25,9 @@ public sealed class LayerCommands
         UnlockSelectedCommand = new RelayCommand(() => SetLockOfSelected(false), () => _main.SelectedLayers.Any(l => l.IsLocked));
         CropToSelectionCommand = new RelayCommand(CropToSelection, () => Doc.Selection != null && Doc.ActiveLayer is { IsLocked: false });
         CropObjectCommand = new RelayCommand(CropObject, () => Doc.ActiveLayer is { IsLocked: false });
+        RotateRightCommand = new RelayCommand(() => RotateLayer(90), () => Doc.ActiveLayer is { IsLocked: false, IsAdjustment: false });
+        RotateLeftCommand = new RelayCommand(() => RotateLayer(-90), () => Doc.ActiveLayer is { IsLocked: false, IsAdjustment: false });
+        SplitCommand = new RelayCommand(Split, () => Doc.Selection != null && Doc.ActiveLayer is { IsLocked: false, IsAdjustment: false });
         GroupCommand = new RelayCommand(Group, () => _main.SelectedLayers.Count >= 2 && _main.SelectedLayers.All(l => !l.IsLocked));
         UngroupCommand = new RelayCommand(Ungroup, () => Doc.ActiveLayer is { Object: GroupObject, IsLocked: false });
         MoveUpCommand = new RelayCommand(() => Move(+1), () => Doc.ActiveLayer != null && Doc.ActiveLayerIndex < Doc.Layers.Count - 1);
@@ -37,7 +40,10 @@ public sealed class LayerCommands
         MergeSelectedCommand = new RelayCommand(MergeSelected, () => MergeCandidates().Count >= 2);
         AddGradientBackgroundCommand = new RelayCommand(AddGradientBackground);
         AddAdjustmentLayerCommand = new RelayCommand(AddAdjustmentLayer);
+        AddLevelsLayerCommand = new RelayCommand(AddLevelsLayer);
+        AddCurvesLayerCommand = new RelayCommand(AddCurvesLayer);
         // Ctrl+E: with several layers selected it merges them all, otherwise the active layer goes into the one below it.
+        MergeUpCommand = new RelayCommand(MergeUp, () => Doc.ActiveLayerIndex >= 0 && Doc.ActiveLayerIndex < Doc.Layers.Count - 1);
         MergeDownCommand = new RelayCommand(
             () => { if (_main.SelectedLayers.Count >= 2) MergeSelected(); else MergeDown(); },
             () => _main.SelectedLayers.Count >= 2
@@ -59,11 +65,14 @@ public sealed class LayerCommands
     public RelayCommand MoveUpCommand { get; }
     public RelayCommand MoveDownCommand { get; }
     public RelayCommand MergeDownCommand { get; }
+    public RelayCommand MergeUpCommand { get; }
 
     /// <summary>Merges every selected (visible, unlocked) layer into one new layer.</summary>
     public RelayCommand MergeSelectedCommand { get; }
     public RelayCommand AddGradientBackgroundCommand { get; }
     public RelayCommand AddAdjustmentLayerCommand { get; }
+    public RelayCommand AddLevelsLayerCommand { get; }
+    public RelayCommand AddCurvesLayerCommand { get; }
     public RelayCommand ToggleLockCommand { get; }
 
     /// <summary>Selects every layer (the Select all button of the Layers panel).</summary>
@@ -77,6 +86,9 @@ public sealed class LayerCommands
     public RelayCommand GroupCommand { get; }
     public RelayCommand CropToSelectionCommand { get; }
     public RelayCommand CropObjectCommand { get; }
+    public RelayCommand RotateRightCommand { get; }
+    public RelayCommand RotateLeftCommand { get; }
+    public RelayCommand SplitCommand { get; }
     public RelayCommand UngroupCommand { get; }
     public RelayCommand BringToFrontCommand { get; }
     public RelayCommand SendToBackCommand { get; }
@@ -97,6 +109,20 @@ public sealed class LayerCommands
         var layer = new Layer("Adjustment", Doc.Width, Doc.Height) { Adjustment = new AdjustmentStyle(Brightness: 0, Contrast: 15, Saturation: 15) };
         InsertAboveActive("Add Adjustment Layer", layer);
         _main.SetStatus("Added an adjustment layer. Use the sliders in the Layers panel; it changes every layer below it.");
+    }
+
+    /// <summary>A Levels adjustment layer: set where black and white are and move the middle tones (with sliders), without changing the pictures.</summary>
+    private void AddLevelsLayer()
+    {
+        InsertAboveActive("Add Levels Layer", new Layer("Levels", Doc.Width, Doc.Height) { Adjustment = AdjustmentStyle.NewLevels });
+        _main.SetStatus("Added a Levels layer. Move the black and white points and the middle tones in the Layers panel; it changes every layer below it.");
+    }
+
+    /// <summary>A Curves adjustment layer: bend the tone curve of all colors or of one color channel.</summary>
+    private void AddCurvesLayer()
+    {
+        InsertAboveActive("Add Curves Layer", new Layer("Curves", Doc.Width, Doc.Height) { Adjustment = AdjustmentStyle.NewCurves });
+        _main.SetStatus("Added a Curves layer. Click the curve in the Layers panel to add a point and drag it; it changes every layer below it.");
     }
 
     /// <summary>A rectangle covering the whole picture with a gradient, placed behind everything (change its colors in the Properties panel).</summary>
@@ -320,6 +346,15 @@ public sealed class LayerCommands
     }
 
     /// <summary>Paints the active layer onto the layer below it, then removes it.</summary>
+    /// <summary>Merges the selected layer with the one above it (the same as selecting that one and merging it down).</summary>
+    private void MergeUp()
+    {
+        int index = Doc.ActiveLayerIndex;
+        if (index < 0 || index >= Doc.Layers.Count - 1) return;
+        Doc.ActiveLayer = Doc.Layers[index + 1];
+        MergeDown();
+    }
+
     private void MergeDown()
     {
         int index = Doc.ActiveLayerIndex;
@@ -377,6 +412,45 @@ public sealed class LayerCommands
     {
         var flat = new Layer("Background", Compositor.Flatten(Doc));
         _main.Push(LayerStructureAction.Record("Flatten Image", Doc, () => Doc.SetLayers(new[] { flat }, flat)));
+    }
+
+    /// <summary>Turns the selected layer a quarter turn around its middle. A layer of plain pixels first becomes a movable picture.</summary>
+    private void RotateLayer(double degrees)
+    {
+        var layer = Doc.ActiveLayer;
+        if (layer == null || layer.IsLocked || !layer.IsVisible) return;
+        if (layer.Object == null && !_main.MakePictureObject(layer, "Rotate")) return;
+        if (layer.Object is not { } obj) return;
+        _main.Push(ObjectChangeAction.Apply(degrees > 0 ? "Rotate 90° Right" : "Rotate 90° Left", layer,
+            obj with { Box = obj.Box with { Rotation = ObjectBox.NormalizeAngle(obj.Box.Rotation + degrees) } }));
+    }
+
+    /// <summary>
+    /// Split: the selected part of the layer moves onto a new layer above it (like Cut, then Paste in place). The original layer
+    /// stays visible, without that part.
+    /// </summary>
+    private void Split()
+    {
+        if (Doc.Selection is not { } selection || !_main.TryGetEditableLayer(out var layer)) return;
+        var piece = layer.Duplicate(layer.Name + " (split)");
+        piece.ReplacePixels(layer.Pixels.Clone());
+        if (selection.Invert() is { } outside) SelectionPixels.Clear(piece.Pixels, outside);   // the new layer keeps only the selected part (nothing to remove when everything is selected)
+
+        var before = layer.Pixels.Clone();
+        var dirty = SelectionPixels.Clear(layer.Pixels, selection);              // the original loses it
+        layer.NotifyPixelsChanged(dirty);
+        var cut = PixelChangeAction.Create("Split", layer, before, dirty);
+        int index = Doc.Layers.ToList().IndexOf(layer);
+        var insert = LayerStructureAction.Record("Split", Doc, () =>
+        {
+            var layers = Doc.Layers.ToList();
+            layers.Insert(index + 1, piece);
+            Doc.SetLayers(layers, piece);
+        });
+        _main.Push(new CompositeAction("Split", new IHistoryAction?[] { cut, insert }));
+        Doc.Selection = null;
+        _main.SelectOnly(piece);
+        _main.SetStatus($"Split the selected part onto a new layer \"{piece.Name}\". \"{layer.Name}\" is still there without it. Ctrl+Z undoes it.");
     }
 
     private void FlipLayer(bool horizontal)

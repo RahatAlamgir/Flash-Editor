@@ -29,6 +29,8 @@ public sealed class ImageCommands
         Rotate90CounterClockwiseCommand = new RelayCommand(() => Transform("Rotate 90° CCW", ImageTransforms.Rotate90CounterClockwise, RotateObjects(-90)));
         Rotate180Command = new RelayCommand(() => Transform("Rotate 180°", ImageTransforms.Rotate180, RotateObjects(180)));
         RotateCustomCommand = new RelayCommand(RotateCustom);
+        StraightenCommand = new RelayCommand(Straighten);
+        PerspectiveCropCommand = new RelayCommand(() => _main.Tools.ActiveTool = _main.Tools.Get<Tools.Transform.PerspectiveCropTool>());
         FlipHorizontalCommand = new RelayCommand(() => Transform("Flip Horizontal", ImageTransforms.FlipHorizontal,
             (o, w, h) => ObjectTransforms.FlipHorizontal(o, w)));
         FlipVerticalCommand = new RelayCommand(() => Transform("Flip Vertical", ImageTransforms.FlipVertical,
@@ -46,6 +48,8 @@ public sealed class ImageCommands
     public RelayCommand Rotate90CounterClockwiseCommand { get; }
     public RelayCommand Rotate180Command { get; }
     public RelayCommand RotateCustomCommand { get; }
+    public RelayCommand StraightenCommand { get; }
+    public RelayCommand PerspectiveCropCommand { get; }
     public RelayCommand FlipHorizontalCommand { get; }
     public RelayCommand FlipVerticalCommand { get; }
 
@@ -223,6 +227,20 @@ public sealed class ImageCommands
         if (values == null || values["angle"] == 0) return;
         double angle = values["angle"];
         Transform($"Rotate {angle:0.#}°", p => ImageTransforms.Rotate(p, angle), RotateObjects(angle));
+    }
+
+    /// <summary>Straighten: turn the picture a little (a tilted horizon) and, if wanted, cut off the empty corners that the turn leaves.</summary>
+    private void Straighten()
+    {
+        var angle = new EffectParameter("angle", "Angle (clockwise)", -45, 45, 0, 0.1, "°");
+        var crop = EffectParameter.Toggle("crop", "Cut off the empty corners", true);
+        var values = _main.Dialogs.ShowParameters("Straighten", new[] { angle, crop },
+            new EffectValues(new[] { angle, crop }), null,
+            "For a tilted horizon or a crooked photo: turn the picture until it is level. Positive turns clockwise.");
+        if (values == null || values["angle"] == 0) return;
+        double degrees = values["angle"];
+        bool cut = values["crop"] >= 0.5;
+        Transform($"Straighten {degrees:0.#}°", p => PerspectiveTools.Straighten(p, degrees, cut), RotateObjects(degrees));
     }
 
     /// <summary>Objects turn with the image around its center (the canvas may grow).</summary>

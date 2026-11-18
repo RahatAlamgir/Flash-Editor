@@ -84,6 +84,60 @@
                 </StackPanel>
             </StackPanel>
 
+            <!-- Colors picked last, and colors you saved -->
+            <TextBlock x:Name="BrandTitle" Text="Brand colors" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,4" />
+            <ItemsControl x:Name="BrandList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="22" Height="22" Margin="0,0,4,4" CornerRadius="3" Cursor="Hand"
+                                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1"
+                                Background="{Binding}" MouseLeftButtonDown="OnSwatchClick" ToolTip="Brand color (Settings > Brand Kit)" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Recent" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,4" />
+            <ItemsControl x:Name="RecentList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="22" Height="22" Margin="0,0,4,4" CornerRadius="3" Cursor="Hand"
+                                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1"
+                                Background="{Binding}" MouseLeftButtonDown="OnSwatchClick" ToolTip="{Binding Color}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <DockPanel Margin="0,6,0,4">
+                <Button DockPanel.Dock="Right" Content="+ Save this color" Click="OnSaveSwatch" Padding="8,2" MinWidth="0" MinHeight="0" FontSize="11"
+                        ToolTip="Keep this color in My swatches" />
+                <TextBlock Text="My swatches" FontSize="12" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
+            </DockPanel>
+            <ItemsControl x:Name="MineList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="22" Height="22" Margin="0,0,4,4" CornerRadius="3" Cursor="Hand"
+                                BorderBrush="{StaticResource DividerBrush}" BorderThickness="1"
+                                Background="{Binding}" MouseLeftButtonDown="OnSwatchClick" MouseRightButtonDown="OnSwatchRemove"
+                                ToolTip="Click to use this color, right-click to remove it" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="NoSwatchesHint" Text="Click + Save this color to keep colors you like here." FontSize="11"
+                       Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,4" />
+
             <!-- Quick swatches -->
             <ItemsControl x:Name="SwatchList" Margin="0,14,0,0">
                 <ItemsControl.ItemsPanel>

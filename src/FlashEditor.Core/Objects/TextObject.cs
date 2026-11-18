@@ -21,7 +21,10 @@ public sealed record TextObject(
     bool FlipY = false,
     double OutlineWidth = 0,
     ColorRgba? OutlineColor = null,
-    double LineSpacing = 1.0) : LayerObject(Box, FlipX, FlipY)
+    double LineSpacing = 1.0,
+    double Arc = 0,
+    double LetterSpacing = 0,
+    double WordSpacing = 0) : LayerObject(Box, FlipX, FlipY)
 {
     public override string KindName => "Text";
 

@@ -64,10 +64,13 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         File = new FileCommands(this);
         Edit = new EditCommands(this);
         Image = new ImageCommands(this);
+        PagesExport = new PagesExportCommands(this);
         Layers = new LayerCommands(this);
         Align = new AlignCommands(this);
         Effects = new EffectCommands(this);
         Inpaint = new InpaintCommands(this);
+        ClickSelect = new ClickSelectCommands(this);
+        Mask = new MaskCommands(this);
         Upscale = new UpscaleCommands(this);
         View = new ViewCommands(this);
         Properties = new ObjectPropertiesViewModel(this);
@@ -303,10 +306,13 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     public FileCommands File { get; }
     public EditCommands Edit { get; }
     public ImageCommands Image { get; }
+    public PagesExportCommands PagesExport { get; }
     public LayerCommands Layers { get; }
     public AlignCommands Align { get; }
     public EffectCommands Effects { get; }
     public InpaintCommands Inpaint { get; }
+    public ClickSelectCommands ClickSelect { get; }
+    public MaskCommands Mask { get; }
     public UpscaleCommands Upscale { get; }
     public ViewCommands View { get; }
 
@@ -533,6 +539,10 @@ public sealed class MainViewModel : ObservableObject, IToolHost
 
     public void SelectTool<T>() where T : ToolBase => Tools.ActiveTool = Tools.Get<T>();
 
+    public void RunClickSelect(FlashEditor.AI.Segmentation.ClickPrompt prompt, System.Windows.Input.ModifierKeys modifiers) => ClickSelect.Run(prompt, modifiers);
+
+    public void RunAiFill() => Inpaint.FillSelectionCommand.Execute(null);
+
     /// <summary>
     /// Shows a newly created or opened picture as a new project (a new tab along the top). An untouched blank picture is replaced
     /// instead of keeping a useless extra tab. With <paramref name="into"/> the picture becomes the next page of that project instead.
@@ -709,7 +719,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
                     : obj.Box.Contains(point, margin + (obj.IsLineLike ? 4 : 0));
                 if (hit) return layer;
             }
-            else if (doc.Bounds.Contains(x, y) && layer.Pixels.GetPixel(x, y).A > 16)
+            else if (doc.Bounds.Contains(x, y) && layer.Pixels.GetPixel(x, y).A * (layer.EffectiveMask?.Coverage(x, y) ?? 1.0) > 16)
             {
                 return layer;
             }

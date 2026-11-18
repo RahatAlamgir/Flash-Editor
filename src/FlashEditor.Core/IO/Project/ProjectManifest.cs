@@ -64,4 +64,10 @@ internal sealed class LayerEntry
 
     /// <summary>The editable shape, text, picture or group, or null for a normal pixel layer.</summary>
     public LayerObject? Object { get; set; }
+
+    /// <summary>The layer mask as a grey picture (white = shows, black = hidden), or null when the layer has no mask.</summary>
+    public PixelBuffer? MaskPicture { get; set; }
+
+    /// <summary>False when the mask is kept but switched off.</summary>
+    public bool MaskEnabled { get; set; } = true;
 }

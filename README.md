@@ -75,7 +75,7 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 
 ### Layers and history
 * Add, duplicate, delete, reorder, show / hide, lock, opacity, rename, merge down, flatten. **Select all**, **Lock all** and **Unlock all** buttons act on the selected layers (Ctrl+A with the Select / Move tool also selects every layer).
-* A layer of plain pixels (painted, or after "To pixels") has no shadow, size or rotation settings: click **Make editable** in the Properties panel to turn it into a picture object that has them. "To pixels" does the opposite: it makes an object paintable but no longer editable as an object.
+* **Every layer has the same Properties**: a layer of plain pixels (painted) also shows Position, Size, Rotate, Turn, Flip, Align and the effects (shadow, glow, outline, 3D...). The first time you change one of them, the layer is turned into a movable picture automatically (a separate Ctrl+Z step brings it back to pixels). Painting on a picture or shape turns it into pixels automatically too, so there are no "Make editable" or "To pixels" buttons.
 * **Groups show their parts** (like Canva): a grouped layer has an arrow to open or close the list of its parts, each with a small picture and its name (double-click to rename).
 * **Edit inside a group** (like Canva): double-click a group, or click one of its parts in the Layers panel, to select just that part. Move, resize, rotate, recolor, change text, add a shadow or delete it (Delete) while it stays in the group. **Esc** goes back to the whole group. All undoable.
 * **Gradient colors**: tick **Gradient** (Properties) to fill a shape or color a text with a fade through **two to eight colors**. Click a color to change it, drag its slider to move it along the gradient, **+ Add color** for another one, the cross removes one, **Reverse** flips the direction. Or pick one of eleven ready-made looks (Sunset, Ocean, Forest, Candy, Fire, Night, Gold, Glow, Rainbow, Aurora, Sunrise). Set the **Angle**, or tick **Radial** to fade from the middle outward. The gradient turns and mirrors with the object and works together with shadows and 3D.
@@ -102,6 +102,37 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 * **Filter:** AI Clean Up, Enhance (no AI), Gaussian Blur, Motion Blur, Sharpen, Reduce Noise, Add Noise, Pixelate, Vignette, Emboss, Find Edges.
 * With an active selection they only change the selected area.
 
+### More tools
+* **Layer masks**: Layer > Layer Mask adds a mask to a layer. Paint with the **Mask Brush (K)**: black hides, white shows, grey is half way (X swaps colors). The pixels are never changed, so hidden parts can always come back. Masks are saved in projects.
+* **Levels and Curves adjustment layers**: Layer > Add Adjustment Layer. Curves has a draggable curve per channel; Levels has black, white and gamma points. Both are non-destructive.
+* **Effects** (Properties panel): **Glow**, **Inner shadow** and **Outline**, next to the existing shadow and 3D look.
+* **Text designs**: select a text and open **Properties > Text > Designs** for 16 ready-made looks (Clean, Impact, Neon Pink, Neon Blue, Retro 3D, Sticker, Sunset, Ocean, Gold, Fire, Elegant, Script, Comic, Long Shadow, Letterpress, Terminal), each shown as a small picture. One click sets the font, color or gradient and the effects; the words, place and size stay, and the effects scale with the text size. One undo step.
+* **Text on a curve**: the **Curve** setting of a text bends it along an arc.
+* **Straighten** and **Perspective Crop** (Image menu): straighten a tilted horizon, or use Perspective Crop to flatten a sheet or sign: drag a box over it, drag the four corners onto the real corners (drag inside to move the box), then press Enter. The flattened part becomes a new layer, the original layer is hidden (not changed) and the canvas keeps its size.
+* **Liquify (Q group)**: push, pull and smooth parts of a picture with the brush.
+* **Remove Brush (AI)** (J group): paint over something, let go, and the AI fills it in on a new "AI Fill" layer (same model as Remove / Fill Selection).
+* **Click Select (AI)** (W group): click an object and the AI selects just that object, or drag a box around it. Shift adds, Alt subtracts. It uses MobileSAM (two small files, about 44 MB together, MIT/Apache licensed, from huggingface.co/Acly/MobileSAM), downloaded once after you say yes (Settings > AI Models lists and removes them). The first click on a picture takes a few seconds while the AI studies it; more clicks on the same picture are almost instant. It runs on the processor, because the graphics-card version gave wrong outlines.
+* **Crop (C)** works like a selection tool: drag a box over the picture, then adjust it with the mouse (corners and edges resize it, dragging inside moves it, dragging outside draws a new one). Choose a shape (Square, 16:9...) if you want, then press **Enter**. The part inside the box becomes a **new layer** and the original layer is **hidden, not changed** (show it again with the eye icon). The canvas is never resized (use Image > Canvas Size for that). Esc cancels.
+* **Colors**: the color picker keeps your **recent colors** and **swatches** (saved in `settings\app.json`).
+* **File > Export** holds every way to export in one submenu (it opens when the mouse rests on it): picture (Ctrl+Alt+S), ready-made sizes, all pages as pictures, PDF, animated GIF, SVG and Photoshop file.
+* **Export For** (File > Export): ready-made sizes and quality for Instagram, YouTube, print and more, for one page or all pages.
+* **Photoshop files**: open `.psd` (layers, opacity, blend modes) and **Export as Photoshop File** with layers. Objects, text and effects become pictures in Photoshop; adjustment layers are left out. Tested with hand-built files only, not with Photoshop itself.
+* **SVG**: **Export as SVG** keeps plain shapes and text as vectors (anything with effects becomes an embedded picture). Opening an `.svg` reads rectangles, circles, ellipses, lines, polygons, paths (curves are flattened, arcs become straight lines), text and embedded pictures as editable objects. Gradients, filters and clipping in SVG files are not supported.
+* **Right-click menu** (with icons): lock, group, merge, align (several layers), cut / copy / paste, duplicate, **Split to New Layer** (with a selection: the selected part moves onto a new layer like Cut, the original stays visible without it), delete, order, **Rotate 90° Right / Left**, flip, recolor, AI tools and **Fill Selection (AI)**. **Align to canvas**, rotate buttons, Original size and To pixels are in the Properties panel.
+* **Right-click a layer in the Layers panel** for quick layer options: show / hide, lock, rename, duplicate, group, merge, order, layer mask, rotate, flip and delete.
+* **Properties > Adjust**: brightness, contrast, saturation, hue and blur for any object or picture layer, live, with no dialog (the shadow and other looks are not changed). **Reset** clears it.
+* **Line style**: borders and lines can be **solid, dashed or dotted**, with their own **Dash** length and **Gap** sliders; lines can have an **arrow head** at either end (Properties > Shape).
+* **Several layers selected**: a change in Properties (shadow, glow, outline, 3D, adjust, rotate, flip...) goes to every selected layer as one undo step. Settings that only fit one kind of object (the Text and Text designs sections, or the Shape section) show only when all selected layers are of that kind, so a text and a shape together get only the common settings. Position, size, the words of a text, Reshape and Save this look need a single layer. Locked layers are left unchanged.
+* **Align section** (Properties): a 3 x 3 grid of squares moves the layer to a corner, an edge or the middle of the canvas in one click (like the anchor presets of game editors), and two rows line it up along one direction only. With several layers selected they line up with each other. **Styles** (saved looks) now live in the Transform section, next to **Save this look...**.
+* **Text spacing**: **Letter gap**, **Word gap** and **Line gap** sliders (Properties > Text); they also work on curved text, where several lines follow concentric arcs. Reshape corners and Save this look are in the Transform section.
+* **Clip to Layer Below** (Layer > Layer Mask, or right-click a layer): the layer shows only inside the shape of the layer under it, for example a photo inside a shape or text. It makes a mask from the shape as it is now; the layer's pixels are not changed.
+* **Export as PDF** (all pages, one PDF page each, JPEG pictures, choose quality and dpi) and **Export as Animated GIF** (every page is a frame; choose the time per page and looping). Both in File > Export.
+* **Batch Convert Folder** (File menu): turns every picture of a folder into another format and / or a smaller size (never enlarged, never overwriting; subfolders optional).
+* **Save as Template** (File menu) keeps the current picture, fully editable, as a starting point: it appears in File > New under **Start from**, marked with a star (saved in `settings	emplates`).
+* **Brand Kit** (Settings menu): up to 12 colors (they come first in every color picker; "Add colors from this picture" finds the main colors of your picture) and 3 fonts (quick buttons when a text is selected).
+* **Quick Tour** (Help menu, also shown the first time you start the program).
+* **Settings** menu: undo steps, AI models (download or remove), and more.
+
 Press **F1** in the app for all keyboard shortcuts.
 
 ---
@@ -112,8 +143,8 @@ Download one of the two installers (Windows 10 / 11, 64-bit; no .NET needed):
 
 | Installer | Size | AI tools |
 |---|---|---|
-| `FlashEditor-Setup-1.0.0.exe` (Standard) | 60 MB | Asks to download each AI model (170 MB / 62 MB) the first time you use it |
-| `FlashEditor-Setup-1.0.0-AI.exe` | 274 MB | Both AI models included, ready offline |
+| `FlashEditor-Setup-1.0.0.exe` (Standard) | 60 MB | During setup you can tick the AI models to download now (about 470 MB in total, checked with SHA-256); anything you skip is offered the first time you use that tool, or in Settings > AI Models |
+| `FlashEditor-Setup-1.0.0-AI.exe` | 489 MB | All AI models included (background removal, fill, upscaling, click select), ready offline |
 
 **Everything is installed in one folder** (default `C:\Program Files\Flash Editor`): the program, all libraries, the .NET runtime and the AI models (`models\`). Nothing is written to AppData or anywhere else. Uninstall (Settings > Apps, or the Start-menu shortcut) removes the whole folder, including models downloaded later. Installing one edition over the other upgrades in place.
 

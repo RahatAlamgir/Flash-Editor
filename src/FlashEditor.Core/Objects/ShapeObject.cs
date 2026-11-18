@@ -62,6 +62,9 @@ public enum ShapeKind
 /// Custom corner points, in the box (0,0 = top-left corner of the box, 1,1 = bottom-right), set when the user dragged the
 /// corners of a straight-sided shape (reshape). Null = the normal outline of <see cref="Shape"/>.
 /// </param>
+/// <summary>How the border or line of a shape is drawn.</summary>
+public enum StrokeStyle { Solid, Dashed, Dotted }
+
 public sealed record ShapeObject(
     ObjectBox Box,
     ShapeKind Shape,
@@ -75,7 +78,12 @@ public sealed record ShapeObject(
     double Inner = 0.5,
     double Sweep = 270,
     IReadOnlyList<PointD>? Vertices = null,
-    bool GradientBorder = false) : LayerObject(Box, FlipX, FlipY)
+    bool GradientBorder = false,
+    StrokeStyle Dash = StrokeStyle.Solid,
+    bool ArrowStart = false,
+    bool ArrowEnd = false,
+    double DashLength = 0,
+    double DashGap = 0) : LayerObject(Box, FlipX, FlipY)
 {
     public override string KindName => "Shape";
 

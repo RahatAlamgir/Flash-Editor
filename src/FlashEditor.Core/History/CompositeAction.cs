@@ -16,6 +16,16 @@ public sealed class CompositeAction : IHistoryAction
 
     public long SizeInBytes => _steps.Sum(step => step.SizeInBytes);
 
+    /// <summary>Several changes made together (for example one slider on several selected objects) fold into the previous step when every part can.</summary>
+    public bool TryMerge(IHistoryAction next)
+    {
+        if (next is not CompositeAction other || other._steps.Count != _steps.Count || other.Name != Name) return false;
+        for (int i = 0; i < _steps.Count; i++)
+            if (_steps[i] is not ObjectChangeAction mine || !mine.CanMerge(other._steps[i])) return false;
+        for (int i = 0; i < _steps.Count; i++) _steps[i].TryMerge(other._steps[i]);
+        return true;
+    }
+
     public void Undo()
     {
         for (int i = _steps.Count - 1; i >= 0; i--) _steps[i].Undo();

@@ -22,7 +22,7 @@ public static class ObjectTransforms
             _ => WithBox(obj, box),
         };
         double f = Math.Sqrt(sx * sy);
-        return Effects(scaled, s => s.Scaled(f), t => t.Scaled(f));
+        return Effects(scaled, s => s.Scaled(f), t => t.Scaled(f), f);
     }
 
     /// <summary>Mirrors left-right across a canvas of width <paramref name="canvasWidth"/>.</summary>
@@ -31,7 +31,7 @@ public static class ObjectTransforms
         var c = obj.Box.Center;
         var box = obj.Box.WithCenter(new PointD(canvasWidth - c.X, c.Y)) with { Rotation = -obj.Box.Rotation };
         var flipped = WithBox(obj, box) with { FlipX = !obj.FlipX };
-        return Effects(flipped, s => s with { Angle = ObjectBox.NormalizeAngle(180 - s.Angle) }, t => t with { Angle = ObjectBox.NormalizeAngle(180 - t.Angle) });
+        return Effects(flipped, s => s with { Angle = ObjectBox.NormalizeAngle(180 - s.Angle) }, t => t with { Angle = ObjectBox.NormalizeAngle(180 - t.Angle) }, 1, a => ObjectBox.NormalizeAngle(180 - a));
     }
 
     /// <summary>Mirrors top-bottom across a canvas of height <paramref name="canvasHeight"/>.</summary>
@@ -40,7 +40,7 @@ public static class ObjectTransforms
         var c = obj.Box.Center;
         var box = obj.Box.WithCenter(new PointD(c.X, canvasHeight - c.Y)) with { Rotation = -obj.Box.Rotation };
         var flipped = WithBox(obj, box) with { FlipY = !obj.FlipY };
-        return Effects(flipped, s => s with { Angle = ObjectBox.NormalizeAngle(-s.Angle) }, t => t with { Angle = ObjectBox.NormalizeAngle(-t.Angle) });
+        return Effects(flipped, s => s with { Angle = ObjectBox.NormalizeAngle(-s.Angle) }, t => t with { Angle = ObjectBox.NormalizeAngle(-t.Angle) }, 1, a => ObjectBox.NormalizeAngle(-a));
     }
 
     /// <summary>
@@ -55,12 +55,20 @@ public static class ObjectTransforms
         var center = new PointD(newWidth / 2.0 + dx * cos - dy * sin, newHeight / 2.0 + dx * sin + dy * cos);
         var box = obj.Box.WithCenter(center) with { Rotation = ObjectBox.NormalizeAngle(obj.Box.Rotation + degrees) };
         var rotated = WithBox(obj, box);
-        return Effects(rotated, s => s.Rotated(degrees), t => t.Rotated(degrees));
+        return Effects(rotated, s => s.Rotated(degrees), t => t.Rotated(degrees), 1, a => ObjectBox.NormalizeAngle(a + degrees));
     }
 
     public static LayerObject WithBox(LayerObject obj, ObjectBox box) => obj with { Box = box };
 
     /// <summary>The object with its shadow and 3D effect changed the same way the object itself was changed.</summary>
-    private static LayerObject Effects(LayerObject obj, Func<ShadowStyle, ShadowStyle> shadow, Func<ThreeDStyle, ThreeDStyle> threeD)
-        => obj with { Shadow = obj.Shadow is { } s ? shadow(s) : null, ThreeD = obj.ThreeD is { } t ? threeD(t) : null };
+    private static LayerObject Effects(LayerObject obj, Func<ShadowStyle, ShadowStyle> shadow, Func<ThreeDStyle, ThreeDStyle> threeD,
+        double scale = 1, Func<double, double>? angle = null)
+        => obj with
+        {
+            Shadow = obj.Shadow is { } s ? shadow(s) : null,
+            ThreeD = obj.ThreeD is { } t ? threeD(t) : null,
+            Glow = obj.Glow is { } g ? g.Scaled(scale) : null,
+            Outline = obj.Outline is { } o ? o.Scaled(scale) : null,
+            InnerShadow = obj.InnerShadow is { } i ? (angle == null ? i : i with { Angle = angle(i.Angle) }).Scaled(scale) : null,
+        };
 }

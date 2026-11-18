@@ -26,7 +26,7 @@ public partial class LayersPanel
         if (e.OriginalSource is not DependencyObject source) return;
 
         // Only the row itself starts a drag: not the eye / lock / arrow buttons, the name box, or a group's part rows.
-        if (FindAncestor<ToggleButton>(source) != null || FindAncestor<TextBox>(source) != null) return;
+        if (FindAncestor<ButtonBase>(source) != null || FindAncestor<TextBox>(source) != null) return;
         if (FindAncestor<FrameworkElement>(source, element => element.DataContext is GroupChildViewModel) != null) return;
         if (FindAncestor<ListBoxItem>(source) is not { DataContext: LayerViewModel row }) return;
 

@@ -43,11 +43,14 @@ public sealed class ObjectChangeAction : IHistoryAction
 
     public void Redo() => _layer.SetObject(_after);
 
+    /// <summary>True when <see cref="TryMerge"/> would accept <paramref name="next"/> (nothing is changed).</summary>
+    public bool CanMerge(IHistoryAction next)
+        => _mergeKey != null && next is ObjectChangeAction other && other._layer == _layer && other._mergeKey == _mergeKey;
+
     public bool TryMerge(IHistoryAction next)
     {
-        if (_mergeKey == null || next is not ObjectChangeAction other) return false;
-        if (other._layer != _layer || other._mergeKey != _mergeKey) return false;
-        _after = other._after;
+        if (!CanMerge(next)) return false;
+        _after = ((ObjectChangeAction)next)._after;
         return true;
     }
 }

@@ -36,6 +36,16 @@ public static class Alignment
         return result;
     }
 
+    /// <summary>Lines up along both directions at once (one corner or the middle of the canvas, or of the area the boxes cover together).</summary>
+    public static (int Dx, int Dy)[] AlignBoth(IReadOnlyList<PixelRect> boxes, PixelRect canvas, AlignKind horizontal, AlignKind vertical)
+    {
+        var across = Align(boxes, canvas, horizontal);
+        var down = Align(boxes, canvas, vertical);
+        var result = new (int, int)[boxes.Count];
+        for (int i = 0; i < result.Length; i++) result[i] = (across[i].Dx, down[i].Dy);
+        return result;
+    }
+
     /// <summary>
     /// How far each box has to move so that the gaps between neighbouring boxes are equal. The two outer boxes stay where they are.
     /// Needs at least three boxes (otherwise nothing moves).

@@ -15,7 +15,7 @@ public static class Compositor
         {
             if (!layer.IsVisible || layer.Opacity <= 0) continue;
             if (layer.Adjustment is { } adjustment) adjustment.Apply(result, result.Bounds, layer.Opacity);
-            else DrawOver(result, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode);
+            else DrawOver(result, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode, null, layer.EffectiveMask);
         }
         return result;
     }
@@ -33,7 +33,7 @@ public static class Compositor
         {
             if (!layer.IsVisible || layer.Opacity <= 0) continue;
             if (layer.Adjustment is { } adjustment) adjustment.Apply(target, region, layer.Opacity);
-            else DrawOver(target, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode, region);
+            else DrawOver(target, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode, region, layer.EffectiveMask);
         }
     }
 
@@ -50,7 +50,7 @@ public static class Compositor
                 if (pixel[3] != 0) adjustment.Apply(ref pixel[0], ref pixel[1], ref pixel[2], layer.Opacity);
                 continue;
             }
-            BlendMath.BlendPixel(pixel, 0, layer.Pixels.Data, layer.Pixels.IndexOf(x, y), layer.Opacity, layer.BlendMode);
+            BlendMath.BlendPixel(pixel, 0, layer.Pixels.Data, layer.Pixels.IndexOf(x, y), layer.Opacity * (layer.EffectiveMask?.Coverage(x, y) ?? 1.0), layer.BlendMode);
         }
         return new ColorRgba(pixel[2], pixel[1], pixel[0], pixel[3]);
     }
@@ -60,7 +60,7 @@ public static class Compositor
     /// When a selection is given, only selected pixels are affected. Returns the changed rectangle.
     /// </summary>
     public static PixelRect DrawOver(PixelBuffer target, PixelBuffer source, int x, int y,
-        double opacity = 1.0, Selection? selection = null, BlendMode mode = BlendMode.Normal, PixelRect? clip = null)
+        double opacity = 1.0, Selection? selection = null, BlendMode mode = BlendMode.Normal, PixelRect? clip = null, LayerMask? mask = null)
     {
         var area = new PixelRect(x, y, source.Width, source.Height).Intersect(target.Bounds);
         if (selection != null) area = area.Intersect(selection.Bounds);
@@ -69,7 +69,7 @@ public static class Compositor
 
         var dst = target.Data;
         var src = source.Data;
-        bool plain = selection == null && opacity >= 1.0 && mode == BlendMode.Normal;
+        bool plain = selection == null && mask == null && opacity >= 1.0 && mode == BlendMode.Normal;
 
         void Row(int ty)
         {
@@ -89,6 +89,11 @@ public static class Compositor
                 }
 
                 double factor = opacity;
+                if (mask != null && tx < mask.Width && ty < mask.Height)
+                {
+                    factor *= mask.Alpha[ty * mask.Width + tx] / 255.0;
+                    if (factor <= 0) continue;
+                }
                 if (selection != null)
                 {
                     factor *= selection.Coverage(tx, ty);
@@ -109,6 +114,6 @@ public static class Compositor
     {
         // An adjustment layer changes what is already in the target (Merge Down bakes it into the layer below).
         if (layer.Adjustment is { } adjustment) adjustment.Apply(target, target.Bounds, layer.Opacity);
-        else DrawOver(target, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode);
+        else DrawOver(target, layer.Pixels, 0, 0, layer.Opacity, null, layer.BlendMode, null, layer.EffectiveMask);
     }
 }

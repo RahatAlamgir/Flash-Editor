@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:opt="clr-namespace:FlashEditor.App.Tools.Options"
+             xmlns:vm="clr-namespace:FlashEditor.App.ViewModels"
              xmlns:ctl="clr-namespace:FlashEditor.App.Views.Controls">
     <!-- Settings of the selected shape / text / image, as an inspector: a title bar and sections that open and close. Every change is undoable. -->
     <UserControl.Resources>
@@ -29,16 +30,56 @@
         </Border>
 
         <Grid>
-            <!-- A layer of plain pixels: no shadow / size / rotation settings until it is made into a picture object -->
-            <StackPanel Margin="10,8,10,10" DataContext="{Binding Properties}"
-                        Visibility="{Binding IsPixelLayer, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12"
-                           Text="This layer is made of plain pixels (painted, or turned into pixels), so it has no shadow, size or rotation settings." />
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12" Margin="0,6,0,0"
-                           Text="Make it editable to get them: it becomes a picture you can resize, rotate and give a shadow." />
-                <Button Content="Make editable" Command="{Binding MakeEditableCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,3"
-                        ToolTip="Turn this layer into a picture object (resize, rotate, shadow). Ctrl+Z undoes it." />
+            <!-- An adjustment layer (brightness / contrast, Levels, Curves): its settings -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding Properties.IsAdjustmentLayer, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Margin="10,8,10,10">
+            <TextBlock Text="This layer changes the colors of all layers below it. Nothing in the pictures is changed, so you can tune it or delete it at any time." FontSize="12" Foreground="{StaticResource SubtleTextBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+            <!-- Levels -->
+            <StackPanel Visibility="{Binding Document.ActiveLayer.AdjustIsLevels, Converter={StaticResource BoolToVisibility}}">
+                <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="Black point" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" ToolTip="This brightness and everything darker becomes black" />
+                    <ctl:NumberSlider Grid.Column="1" Minimum="0" Maximum="254" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.LevelsBlack}" /></Grid>
+                <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="Middle tones" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" ToolTip="Above 1 lighter, below 1 darker" />
+                    <ctl:NumberSlider Grid.Column="1" Minimum="0.1" Maximum="5" Step="0.05" Decimals="2" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.LevelsGamma}" /></Grid>
+                <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="White point" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" ToolTip="This brightness and everything lighter becomes white" />
+                    <ctl:NumberSlider Grid.Column="1" Minimum="1" Maximum="255" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.LevelsWhite}" /></Grid>
+                <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="Output dark" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" ToolTip="Black becomes this brightness (lifts the shadows)" />
+                    <ctl:NumberSlider Grid.Column="1" Minimum="0" Maximum="254" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.OutputBlack}" /></Grid>
+                <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="Output light" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" ToolTip="White becomes this brightness (dims the highlights)" />
+                    <ctl:NumberSlider Grid.Column="1" Minimum="1" Maximum="255" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.OutputWhite}" /></Grid>
             </StackPanel>
+
+            <!-- Curves -->
+            <StackPanel Visibility="{Binding Document.ActiveLayer.AdjustIsCurves, Converter={StaticResource BoolToVisibility}}">
+                <ComboBox Style="{StaticResource CompactCombo}" ItemsSource="{Binding Document.ActiveLayer.CurveChannels}" SelectedIndex="{Binding Document.ActiveLayer.CurveChannel}"
+                          ToolTip="Which colors the curve changes" Margin="0,0,0,6" />
+                <ctl:CurveEditor Layer="{Binding Document.ActiveLayer}" HorizontalAlignment="Left" />
+                <TextBlock Text="Click the curve to add a point, drag to bend it. Double-click a point to remove it." FontSize="11" TextWrapping="Wrap"
+                           Foreground="{StaticResource SubtleTextBrush}" Margin="0,4,0,0" />
+            </StackPanel>
+
+            <!-- Brightness, contrast, color -->
+            <StackPanel Visibility="{Binding Document.ActiveLayer.AdjustIsBasic, Converter={StaticResource BoolToVisibility}}">
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Brightness" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustBrightness}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Contrast" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustContrast}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Saturation" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustSaturation}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Hue" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-180" Maximum="180" SliderWidth="96" BoxWidth="58" Unit="&#xB0;" Value="{Binding Document.ActiveLayer.AdjustHue}" /></Grid>
+            </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
 
             <!-- Nothing editable selected (no layer, or a layer that is not an object) -->
             <TextBlock Margin="10,8,10,10" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12"
@@ -46,7 +87,7 @@
                        Visibility="{Binding Properties.ShowHint, Converter={StaticResource BoolToVisibility}}" />
 
             <ScrollViewer VerticalScrollBarVisibility="Auto"
-                          Visibility="{Binding Properties.HasObject, Converter={StaticResource BoolToVisibility}}">
+                          Visibility="{Binding Properties.CanInspect, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel DataContext="{Binding Properties}">
                     <StackPanel Orientation="Horizontal" Margin="10,8,10,0"
                                 Visibility="{Binding IsLocked, Converter={StaticResource BoolToVisibility}}">
@@ -66,36 +107,203 @@
                         </StackPanel>
                     </Border>
 
+                    <TextBlock Margin="10,8,10,0" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="11.5"
+                               Visibility="{Binding IsPixelLayer, Converter={StaticResource BoolToVisibility}}"
+                               Text="This layer is plain pixels. Changing its size, rotation or looks here turns it into a movable picture automatically (Ctrl+Z undoes it)." />
                     <StackPanel IsEnabled="{Binding CanEdit}">
                         <!-- Position, size, rotation -->
                         <Expander Header="Transform" IsExpanded="True">
                             <StackPanel>
-                                <Grid>
+                                <Grid IsEnabled="{Binding IsSingle}" ToolTip="Position and size can only be set for one layer at a time (use Align to line several layers up)">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="58" />
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="14" />
-                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="8" />
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="X" Style="{StaticResource ShortLabel}" />
-                                    <TextBox Grid.Column="1" Style="{StaticResource Number}" Text="{Binding X, UpdateSourceTrigger=LostFocus}" />
-                                    <TextBlock Grid.Column="3" Text="Y" Style="{StaticResource ShortLabel}" />
-                                    <TextBox Grid.Column="4" Style="{StaticResource Number}" Text="{Binding Y, UpdateSourceTrigger=LostFocus}" />
-                                    <TextBlock Grid.Row="1" Text="W" Style="{StaticResource ShortLabel}" Margin="0,6,0,0" />
-                                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource Number}" Margin="0,6,0,0" Text="{Binding Width, UpdateSourceTrigger=LostFocus}" />
-                                    <TextBlock Grid.Row="1" Grid.Column="3" Text="H" Style="{StaticResource ShortLabel}" Margin="0,6,0,0" />
-                                    <TextBox Grid.Row="1" Grid.Column="4" Style="{StaticResource Number}" Margin="0,6,0,0" Text="{Binding Height, UpdateSourceTrigger=LostFocus}"
-                                             IsEnabled="{Binding IsLine, Converter={StaticResource InverseBool}}" />
+                                    <TextBlock Text="Position" Style="{StaticResource Label}" Width="58" VerticalAlignment="Center" />
+                                    <DockPanel Grid.Row="0" Grid.Column="1" >
+                                        <TextBlock DockPanel.Dock="Left" Text="X" Style="{StaticResource ShortLabel}" VerticalAlignment="Center" />
+                                        <TextBox Style="{StaticResource Number}" Text="{Binding X, UpdateSourceTrigger=LostFocus}" />
+                                    </DockPanel>
+                                    <DockPanel Grid.Row="0" Grid.Column="3" >
+                                        <TextBlock DockPanel.Dock="Left" Text="Y" Style="{StaticResource ShortLabel}" VerticalAlignment="Center" />
+                                        <TextBox Style="{StaticResource Number}" Text="{Binding Y, UpdateSourceTrigger=LostFocus}" />
+                                    </DockPanel>
+                                    <TextBlock Grid.Row="1" Text="Size" Style="{StaticResource Label}" Width="58" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,6,0,0">
+                                        <TextBlock DockPanel.Dock="Left" Text="W" Style="{StaticResource ShortLabel}" VerticalAlignment="Center" />
+                                        <TextBox Style="{StaticResource Number}" Text="{Binding Width, UpdateSourceTrigger=LostFocus}" />
+                                    </DockPanel>
+                                    <DockPanel Grid.Row="1" Grid.Column="3" Margin="0,6,0,0">
+                                        <TextBlock DockPanel.Dock="Left" Text="H" Style="{StaticResource ShortLabel}" VerticalAlignment="Center" />
+                                        <TextBox Style="{StaticResource Number}" Text="{Binding Height, UpdateSourceTrigger=LostFocus}"
+                                                 IsEnabled="{Binding IsLine, Converter={StaticResource InverseBool}}" />
+                                    </DockPanel>
+                                    <ToggleButton Grid.Row="1" Grid.Column="4" IsChecked="{Binding KeepRatio}" Margin="6,6,0,0" Padding="5,3" VerticalAlignment="Stretch"
+                                                  ToolTip="Keep proportions: when on, changing the width also changes the height (and the other way round)">
+                                        <Viewbox Width="14" Height="14"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Link}" /></Viewbox>
+                                    </ToggleButton>
+                                    <TextBlock Grid.Row="2" Text="Rotate" Style="{StaticResource Label}" Width="58" VerticalAlignment="Center" Margin="0,8,0,0" />
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Orientation="Horizontal" Margin="0,8,0,0">
+                                        <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding Rotation}" SliderWidth="84" BoxWidth="50" Unit="°" />
+                                    </StackPanel>
                                 </Grid>
-                                <CheckBox IsChecked="{Binding KeepRatio}" Content="Keep proportions" Margin="0,6,0,0" ToolTip="Keep the width/height ratio" />
-                                <StackPanel Style="{StaticResource Row}" Margin="0,4,0,0">
-                                    <TextBlock Text="Rotation" Style="{StaticResource Label}" />
-                                    <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding Rotation}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Turn" Style="{StaticResource Label}" Width="58" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Grid.ColumnSpan="5" Orientation="Horizontal">
+                                        <Button Command="{Binding RotateLeftCommand}" ToolTip="Rotate 90° left" Padding="10,4" Margin="0,0,4,0">
+                                            <StackPanel Orientation="Horizontal"><Viewbox Width="15" Height="15"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.RotateLeft}" /></Viewbox><TextBlock Text="90° left" Margin="6,0,0,0" VerticalAlignment="Center" /></StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding RotateRightCommand}" ToolTip="Rotate 90° right" Padding="10,4">
+                                            <StackPanel Orientation="Horizontal"><Viewbox Width="15" Height="15"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.RotateRight}" /></Viewbox><TextBlock Text="90° right" Margin="6,0,0,0" VerticalAlignment="Center" /></StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Flip" Style="{StaticResource Label}" Width="58" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Button Command="{Binding FlipHorizontalCommand}" ToolTip="Mirror left-right" Padding="10,4" Margin="0,0,4,0">
+                                            <StackPanel Orientation="Horizontal"><Viewbox Width="15" Height="15"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.FlipH}" /></Viewbox><TextBlock Text="Horizontal" Margin="6,0,0,0" VerticalAlignment="Center" /></StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding FlipVerticalCommand}" ToolTip="Mirror top-bottom" Padding="10,4">
+                                            <StackPanel Orientation="Horizontal"><Viewbox Width="15" Height="15"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.FlipV}" /></Viewbox><TextBlock Text="Vertical" Margin="6,0,0,0" VerticalAlignment="Center" /></StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Margin="0,8,0,0" Visibility="{Binding CanReshape, Converter={StaticResource BoolToVisibility}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Reshape" Style="{StaticResource Label}" Width="58" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <ToggleButton Content="Reshape corners" IsChecked="{Binding IsReshaping, Mode=OneWay}" Command="{Binding ToggleReshapeCommand}" Padding="10,4"
+                                                      ToolTip="Drag the round corner points on the canvas to change the form of the object (also outward). Esc or a second click finishes." />
+                                        <Button Content="Reset" Command="{Binding ResetShapeCommand}" Margin="6,0,0,0" Padding="10,4"
+                                                Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}"
+                                                ToolTip="Back to the normal form of this object" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Margin="0,8,0,0" Visibility="{Binding CanSaveLook, Converter={StaticResource BoolToVisibility}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Look" Style="{StaticResource Label}" Width="58" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Content="Save this look..." Command="{Binding SaveStyleCommand}" HorizontalAlignment="Left" Padding="10,4"
+                                            ToolTip="Saves the shadow, 3D, gradient and colors of this object under a name, to use on other objects (they appear below to use again)" />
+                                </Grid>
+                                <TextBlock Text="Saved looks: click one to put it on the selected object (right-click: delete it)" FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{StaticResource SubtleTextBrush}" Margin="0,8,0,0" Visibility="{Binding HasSavedStyles, Converter={StaticResource BoolToVisibility}}" />
+                                <ItemsControl ItemsSource="{Binding SavedStyles}" Margin="0,6,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding Name}" Margin="0,0,5,5" ToolTip="Put this look on the selected object (right-click: delete it)"
+                                                    Command="{Binding DataContext.ApplyStyleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                                <Button.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Delete this saved look"
+                                                                  Command="{Binding PlacementTarget.Tag.DeleteStyleCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                    </ContextMenu>
+                                                </Button.ContextMenu>
+                                                <Button.Tag>
+                                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                                </Button.Tag>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Align: snap to a spot of the canvas (the squares), or along one direction (the rows) -->
+                        <Expander Header="Align" IsExpanded="True">
+                            <StackPanel>
+                                <TextBlock Text="Line the selected layer up with the canvas (several layers line up with each other)" FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,8" />
+                                <StackPanel Orientation="Horizontal">
+                                    <StackPanel>
+                                        <TextBlock Text="Position" Style="{StaticResource Label}" Width="Auto" Margin="0,0,0,4" />
+                                        <UniformGrid Columns="3" Rows="3" Width="111">
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="Left,Top" ToolTip="Move to the top left of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorTopLeft}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="CenterHorizontally,Top" ToolTip="Move to the top center of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorTopCenter}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="Right,Top" ToolTip="Move to the top right of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorTopRight}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="Left,CenterVertically" ToolTip="Move to the middle left of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorMiddleLeft}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="CenterHorizontally,CenterVertically" ToolTip="Move to the the center of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorMiddleCenter}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="Right,CenterVertically" ToolTip="Move to the middle right of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorMiddleRight}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="Left,Bottom" ToolTip="Move to the bottom left of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorBottomLeft}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="CenterHorizontally,Bottom" ToolTip="Move to the bottom center of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorBottomCenter}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignBothCommand}" CommandParameter="Right,Bottom" ToolTip="Move to the bottom right of the canvas" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AnchorBottomRight}" /></Viewbox>
+                                        </Button>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                    <StackPanel Margin="18,0,0,0">
+                                        <TextBlock Text="Horizontal" Style="{StaticResource Label}" Width="Auto" Margin="0,0,0,4" />
+                                        <StackPanel Orientation="Horizontal">
+                                        <Button Command="{Binding AlignCommand}" CommandParameter="Left" ToolTip="Align to the left edge" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AlignLeft}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignCommand}" CommandParameter="CenterHorizontally" ToolTip="Center horizontally" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AlignCenter}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignCommand}" CommandParameter="Right" ToolTip="Align to the right edge" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AlignRight}" /></Viewbox>
+                                        </Button>
+                                        </StackPanel>
+                                        <TextBlock Text="Vertical" Style="{StaticResource Label}" Width="Auto" Margin="0,8,0,4" />
+                                        <StackPanel Orientation="Horizontal">
+                                        <Button Command="{Binding AlignCommand}" CommandParameter="Top" ToolTip="Align to the top edge" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AlignTop}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignCommand}" CommandParameter="CenterVertically" ToolTip="Center vertically" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AlignMiddle}" /></Viewbox>
+                                        </Button>
+                                        <Button Command="{Binding AlignCommand}" CommandParameter="Bottom" ToolTip="Align to the bottom edge" Padding="0" Margin="0,0,3,3" Width="34" Height="28" >
+                                            <Viewbox Width="16" Height="16"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.AlignBottom}" /></Viewbox>
+                                        </Button>
+                                        </StackPanel>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
                         </Expander>
@@ -129,6 +337,23 @@
                                     <TextBlock Text="Width" Style="{StaticResource Label}" />
                                     <ctl:NumberSlider Minimum="0" Maximum="200" Value="{Binding StrokeWidth}" SliderWidth="96" BoxWidth="52" Unit="px" />
                                 </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Line style" Style="{StaticResource Label}" />
+                                    <ComboBox Width="110" ItemsSource="{Binding Source={x:Static vm:ObjectPropertiesViewModel.StrokeStyleNames}}" SelectedIndex="{Binding StrokeStyleIndex}"
+                                              ToolTip="Solid, dashed or dotted border / line" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding IsDashed, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Dash" Style="{StaticResource Label}" ToolTip="Length of each dash" />
+                                    <ctl:NumberSlider Minimum="1" Maximum="200" Value="{Binding DashLengthPx}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasDash, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Gap" Style="{StaticResource Label}" ToolTip="Space between the dashes or dots" />
+                                    <ctl:NumberSlider Minimum="1" Maximum="200" Value="{Binding DashGapPx}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0" Visibility="{Binding IsLine, Converter={StaticResource BoolToVisibility}}">
+                                    <CheckBox Content="Arrow at start" IsChecked="{Binding ArrowStart}" Margin="0,0,12,0" />
+                                    <CheckBox Content="Arrow at end" IsChecked="{Binding ArrowEnd}" />
+                                </StackPanel>
                                 <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasCorners, Converter={StaticResource BoolToVisibility}}">
                                     <TextBlock Text="Corners" Style="{StaticResource Label}" />
                                     <ctl:NumberSlider Minimum="0" Maximum="500" Value="{Binding CornerRadius}" SliderWidth="96" BoxWidth="52" Unit="px" />
@@ -148,12 +373,50 @@
                             </StackPanel>
                         </Expander>
 
+                        <!-- Text designs: ready-made looks, one click -->
+                        <Expander Header="Text designs" IsExpanded="True" Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl ItemsSource="{Binding TextPresetItems}" Margin="0,0,0,2">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Width="60" MinHeight="0" Margin="0,0,5,5" Padding="2" ToolTip="{Binding Description}"
+                                                        Command="{Binding DataContext.ApplyTextPresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding Preset}">
+                                                    <StackPanel>
+                                                        <Border CornerRadius="3" ClipToBounds="True" HorizontalAlignment="Center">
+                                                            <Image Source="{Binding Preview}" Width="52" Height="52" Stretch="Uniform" />
+                                                        </Border>
+                                                        <TextBlock Text="{Binding Name}" FontSize="10.5" HorizontalAlignment="Center" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                        </Expander>
+
                         <!-- Text -->
                         <Expander Header="Text" IsExpanded="True" Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel>
-                                <TextBox Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap" FontSize="12"
+                                <TextBox IsEnabled="{Binding IsSingle}" Text="{Binding TextContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap" FontSize="12"
                                          MinHeight="44" MaxHeight="110" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6"
                                          HorizontalContentAlignment="Left" ToolTip="Type, then click elsewhere to apply" />
+                                <ItemsControl ItemsSource="{Binding BrandFonts}" Visibility="{Binding HasBrandFonts, Converter={StaticResource BoolToVisibility}}" Margin="0,0,0,4">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding}" FontFamily="{Binding}" Margin="0,0,4,4" Padding="8,3" ToolTip="Your brand font (Settings > Brand Kit)"
+                                                    Command="{Binding DataContext.ApplyFontCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                                 <ComboBox ItemsSource="{Binding Source={x:Static opt:TextToolOptions.InstalledFonts}}" SelectedItem="{Binding FontFamily}"
                                           Margin="0,0,0,4">
                                     <ComboBox.ItemsPanel>
@@ -169,9 +432,11 @@
                                 </ComboBox>
                                 <StackPanel Style="{StaticResource Row}">
                                     <TextBlock Text="Size" Style="{StaticResource Label}" />
-                                    <ctl:NumberSlider Minimum="4" Maximum="1000" Value="{Binding FontSize}" SliderWidth="60" BoxWidth="52" Unit="px" />
-                                    <Button Style="{StaticResource ColorSwatchButton}" Background="{Binding TextBrush}" Command="{Binding PickTextColorCommand}" ToolTip="Text color" Margin="8,0,0,0"
-                                            Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <ctl:NumberSlider Minimum="4" Maximum="1000" Value="{Binding FontSize}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding HasGradient, Converter={StaticResource InverseBoolToVisibility}}">
+                                    <TextBlock Text="Color" Style="{StaticResource Label}" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding TextBrush}" Command="{Binding PickTextColorCommand}" ToolTip="Text color" />
                                 </StackPanel>
                                 <StackPanel Style="{StaticResource Row}">
                                     <ToggleButton Content="B" FontWeight="Bold" Width="30" Padding="0" IsChecked="{Binding Bold}" ToolTip="Bold" />
@@ -179,8 +444,20 @@
                                     <ComboBox ItemsSource="{Binding Alignments}" SelectedItem="{Binding Align}" Width="96" Margin="8,0,0,0" ToolTip="Alignment of the lines" />
                                 </StackPanel>
                                 <StackPanel Style="{StaticResource Row}">
-                                    <TextBlock Text="Lines" Style="{StaticResource Label}" ToolTip="Space between the lines of text" />
+                                    <TextBlock Text="Letter gap" Style="{StaticResource Label}" ToolTip="Space between the letters (100 % = the size of the text; negative = tighter)" />
+                                    <ctl:NumberSlider Minimum="-30" Maximum="200" Value="{Binding LetterSpacingPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Word gap" Style="{StaticResource Label}" ToolTip="Extra space between the words" />
+                                    <ctl:NumberSlider Minimum="-50" Maximum="400" Value="{Binding WordSpacingPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Line gap" Style="{StaticResource Label}" ToolTip="Space between the lines of text (100 % = the font's own spacing)" />
                                     <ctl:NumberSlider Minimum="50" Maximum="300" Value="{Binding LineSpacingPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Curve" Style="{StaticResource Label}" ToolTip="Bend the text along a circle: positive like a rainbow, negative like a smile (one line)" />
+                                    <ctl:NumberSlider Minimum="-360" Maximum="360" Value="{Binding TextArc}" SliderWidth="96" BoxWidth="52" Unit="°" />
                                 </StackPanel>
                                 <StackPanel Style="{StaticResource Row}">
                                     <CheckBox Content="Outline" IsChecked="{Binding OutlineEnabled}" Width="72" VerticalAlignment="Center" ToolTip="A line around the letters" />
@@ -199,16 +476,6 @@
                         </Expander>
 
                         <!-- Reshape: drag the corner points of any object (a square becomes a trapezium, a picture gets a perspective...) -->
-                        <Expander Header="Reshape" Visibility="{Binding CanReshape, Converter={StaticResource BoolToVisibility}}">
-                            <StackPanel Orientation="Horizontal">
-                                <ToggleButton Content="Reshape corners" IsChecked="{Binding IsReshaping, Mode=OneWay}" Command="{Binding ToggleReshapeCommand}"
-                                              ToolTip="Drag the round corner points on the canvas to change the form of the object (also outward). Esc or a second click finishes." />
-                                <Button Content="Reset" Command="{Binding ResetShapeCommand}" Margin="6,0,0,0"
-                                        Visibility="{Binding HasCustomOutline, Converter={StaticResource BoolToVisibility}}"
-                                        ToolTip="Back to the normal form of this object" />
-                            </StackPanel>
-                        </Expander>
-
                         <!-- Gradient (filled shapes and text): opens by itself when a gradient is applied -->
                         <Expander Header="{Binding GradientTitle}" IsExpanded="{Binding GradientEnabled, Mode=OneWay}" Visibility="{Binding CanGradient, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel>
@@ -240,7 +507,7 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <!-- Minimized while no gradient is applied; opens by itself when one is -->
-                                <Expander Style="{StaticResource MiniFoldout}" Header="Presets" IsExpanded="{Binding GradientEnabled, Mode=OneWay}">
+                                <TextBlock Text="Presets" Style="{StaticResource Label}" Width="Auto" Margin="0,2,0,4" />
                                     <ItemsControl ItemsSource="{Binding GradientPresets}" Margin="0,2,0,4">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -255,7 +522,6 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                </Expander>
                                 <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibility}}">
                                     <CheckBox Content="Also on the border" IsChecked="{Binding GradientBorder}" Margin="0,3,0,0"
                                               Visibility="{Binding CanGradientBorder, Converter={StaticResource BoolToVisibility}}" />
@@ -269,34 +535,37 @@
                             </StackPanel>
                         </Expander>
 
-                        <!-- Saved looks -->
-                        <Expander Header="Styles">
+                        <!-- Adjust: brightness, contrast, color and blur of the object itself, without any dialog -->
+                        <Expander IsExpanded="{Binding HasTone, Mode=OneWay}">
+                            <Expander.Header>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
+                                               Visibility="{Binding HasTone, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="Adjust" FontWeight="SemiBold" />
+                                </DockPanel>
+                            </Expander.Header>
                             <StackPanel>
-                                <Button Content="Save this look..." Command="{Binding SaveStyleCommand}" HorizontalAlignment="Left"
-                                        ToolTip="Saves the shadow, 3D, gradient and colors of this object under a name, to use on other objects" />
-                                <ItemsControl ItemsSource="{Binding SavedStyles}" Margin="0,6,0,0">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Content="{Binding Name}" Margin="0,0,5,5" ToolTip="Put this look on the selected object (right-click: delete it)"
-                                                    Command="{Binding DataContext.ApplyStyleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
-                                                <Button.ContextMenu>
-                                                    <ContextMenu>
-                                                        <MenuItem Header="Delete this saved look"
-                                                                  Command="{Binding PlacementTarget.Tag.DeleteStyleCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                    </ContextMenu>
-                                                </Button.ContextMenu>
-                                                <Button.Tag>
-                                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
-                                                </Button.Tag>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Brightness" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding ToneBrightness}" SliderWidth="96" BoxWidth="52" Unit="" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Contrast" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding ToneContrast}" SliderWidth="96" BoxWidth="52" Unit="" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Saturation" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding ToneSaturation}" SliderWidth="96" BoxWidth="52" Unit="" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Hue" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ToneHue}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Blur" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding BlurAmount}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                                <Button Content="Reset" Command="{Binding ResetToneCommand}" HorizontalAlignment="Left" Margin="0,4,0,0" />
                             </StackPanel>
                         </Expander>
 
@@ -306,7 +575,7 @@
                                 <DockPanel>
                                     <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
                                                Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}" />
-                                    <TextBlock Text="Shadow" />
+                                    <TextBlock Text="Shadow" FontWeight="SemiBold" />
                                 </DockPanel>
                             </Expander.Header>
                             <StackPanel>
@@ -316,7 +585,7 @@
                                     <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding ShadowBrush}" Command="{Binding PickShadowColorCommand}" ToolTip="Shadow color" />
                                 </StackPanel>
                                 <!-- Quick looks: one click adds the shadow and sets everything -->
-                                <Expander Style="{StaticResource MiniFoldout}" Header="Presets" IsExpanded="{Binding ShadowEnabled, Mode=OneWay}">
+                                <TextBlock Text="Presets" Style="{StaticResource Label}" Width="Auto" Margin="0,2,0,4" />
                                     <ItemsControl ItemsSource="{Binding ShadowPresetItems}" Margin="0,0,0,4">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -339,7 +608,6 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                </Expander>
                                 <StackPanel Visibility="{Binding ShadowEnabled, Converter={StaticResource BoolToVisibility}}">
                                     <StackPanel Style="{StaticResource Row}">
                                         <TextBlock Text="Opacity" Style="{StaticResource Label}" />
@@ -366,13 +634,105 @@
                             </StackPanel>
                         </Expander>
 
+                        <!-- Glow: a soft light around the object -->
+                        <Expander IsExpanded="{Binding GlowEnabled, Mode=OneWay}">
+                            <Expander.Header>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
+                                               Visibility="{Binding GlowEnabled, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="Glow" FontWeight="SemiBold" />
+                                </DockPanel>
+                            </Expander.Header>
+                            <StackPanel>
+                                <CheckBox Content="Add a glow" IsChecked="{Binding GlowEnabled}" Margin="0,0,0,4" />
+                                <StackPanel Visibility="{Binding GlowEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Color" Style="{StaticResource Label}" />
+                                        <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding GlowBrush}" Command="{Binding PickGlowColorCommand}" ToolTip="Glow color" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Size" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="1" Maximum="200" Value="{Binding GlowSize}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Strength" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="10" Maximum="400" Value="{Binding GlowIntensity}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Opacity" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding GlowOpacity}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Inner shadow: a shadow inside the edges -->
+                        <Expander IsExpanded="{Binding InnerShadowEnabled, Mode=OneWay}">
+                            <Expander.Header>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
+                                               Visibility="{Binding InnerShadowEnabled, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="Inner shadow" FontWeight="SemiBold" />
+                                </DockPanel>
+                            </Expander.Header>
+                            <StackPanel>
+                                <CheckBox Content="Add an inner shadow" IsChecked="{Binding InnerShadowEnabled}" Margin="0,0,0,4" />
+                                <StackPanel Visibility="{Binding InnerShadowEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Color" Style="{StaticResource Label}" />
+                                        <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding InnerShadowBrush}" Command="{Binding PickInnerShadowColorCommand}" ToolTip="Inner shadow color" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Opacity" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="100" Value="{Binding InnerShadowOpacity}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Distance" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="200" Value="{Binding InnerShadowDistance}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Angle" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding InnerShadowAngle}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Blur" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="0" Maximum="200" Value="{Binding InnerShadowBlur}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Outline: a line around the outside of the object -->
+                        <Expander IsExpanded="{Binding ObjectOutlineEnabled, Mode=OneWay}">
+                            <Expander.Header>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
+                                               Visibility="{Binding ObjectOutlineEnabled, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="Outline" FontWeight="SemiBold" />
+                                </DockPanel>
+                            </Expander.Header>
+                            <StackPanel>
+                                <CheckBox Content="Add an outline around the object" IsChecked="{Binding ObjectOutlineEnabled}" Margin="0,0,0,4" />
+                                <StackPanel Visibility="{Binding ObjectOutlineEnabled, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Color" Style="{StaticResource Label}" />
+                                        <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding ObjectOutlineBrush}" Command="{Binding PickObjectOutlineColorCommand}" ToolTip="Outline color" />
+                                    </StackPanel>
+                                    <StackPanel Style="{StaticResource Row}">
+                                        <TextBlock Text="Width" Style="{StaticResource Label}" />
+                                        <ctl:NumberSlider Minimum="1" Maximum="100" Value="{Binding ObjectOutlineWidth}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
                         <!-- 3D (shapes, text, images and groups): a solid side behind the object and lit / shaded edges on its face -->
                         <Expander IsExpanded="{Binding ThreeDEnabled, Mode=OneWay}">
                             <Expander.Header>
                                 <DockPanel>
                                     <TextBlock DockPanel.Dock="Right" Text="On" FontSize="11" FontWeight="Normal" Foreground="{StaticResource AccentBrush}"
                                                Visibility="{Binding ThreeDEnabled, Converter={StaticResource BoolToVisibility}}" />
-                                    <TextBlock Text="3D" />
+                                    <TextBlock Text="3D" FontWeight="SemiBold" />
                                 </DockPanel>
                             </Expander.Header>
                             <StackPanel>
@@ -423,13 +783,6 @@
                                 HorizontalAlignment="Left" />
                     </Expander>
 
-                    <!-- Actions -->
-                    <WrapPanel Margin="10,10,10,10">
-                        <Button Content="Flip H" Command="{Binding FlipHorizontalCommand}" Margin="0,0,4,4" ToolTip="Mirror left-right" />
-                        <Button Content="Flip V" Command="{Binding FlipVerticalCommand}" Margin="0,0,4,4" ToolTip="Mirror top-bottom" />
-                        <Button Content="To pixels" Command="{Binding ConvertToPixelsCommand}" Margin="0,0,4,4"
-                                ToolTip="Turns this object into plain pixels so you can paint on it. Afterwards you can no longer change its text, shadow or shape settings. (Use Make editable on a pixel layer to turn it back into a picture.) Ctrl+Z undoes it." />
-                    </WrapPanel>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

@@ -22,6 +22,8 @@ public sealed class Layer : ObservableObject
     private bool _isLocked;
     private BlendMode _blendMode;
     private AdjustmentStyle? _adjustment;
+    private LayerMask? _mask;
+    private bool _maskEnabled = true;
 
     // Larger copy of the layer including parts outside the canvas (null when nothing is hidden).
     private PixelBuffer? _extended;
@@ -40,6 +42,58 @@ public sealed class Layer : ObservableObject
 
     /// <summary>Raised after <see cref="Pixels"/> was swapped for a new buffer (possibly a new size).</summary>
     public event EventHandler? PixelsReplaced;
+
+    /// <summary>Raised after a part of the mask was painted (the area), so the screen can redraw the layer there.</summary>
+    public event EventHandler<PixelRect>? MaskChanged;
+
+    /// <summary>Raised after the mask was added, removed, replaced or switched on / off.</summary>
+    public event EventHandler? MaskReplaced;
+
+    /// <summary>
+    /// The layer mask (canvas sized), or null. Where it is dark the layer is hidden; the layer's pixels are never changed by it.
+    /// </summary>
+    public LayerMask? Mask => _mask;
+
+    public bool HasMask => _mask != null;
+
+    /// <summary>False = the mask is kept but ignored (to see the layer without it).</summary>
+    public bool MaskEnabled
+    {
+        get => _maskEnabled;
+        set
+        {
+            if (!SetField(ref _maskEnabled, value)) return;
+            Version++;
+            MaskReplaced?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>The mask that is in use when the layer is drawn: the mask, if there is one and it is switched on.</summary>
+    public LayerMask? EffectiveMask => _maskEnabled ? _mask : null;
+
+    /// <summary>Adds, replaces or (with null) removes the mask. The mask must have the canvas size.</summary>
+    public void SetMask(LayerMask? mask)
+    {
+        if (mask != null && (mask.Width != Pixels.Width || mask.Height != Pixels.Height))
+            throw new ArgumentException("The mask must have the size of the canvas.", nameof(mask));
+        _mask = mask;
+        Version++;
+        OnPropertyChanged(nameof(Mask));
+        OnPropertyChanged(nameof(HasMask));
+        MaskReplaced?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Tells the screen that part of the mask was painted.</summary>
+    public void NotifyMaskChanged(PixelRect region)
+    {
+        region = region.Intersect(Pixels.Bounds);
+        if (region.IsEmpty) return;
+        Version++;
+        MaskChanged?.Invoke(this, region);
+    }
+
+    /// <summary>The pixels with the mask applied (the layer as it looks). The same buffer when there is no mask in use.</summary>
+    public PixelBuffer MaskedPixels() => EffectiveMask is { } mask ? LayerMask.Bake(Pixels, mask) : Pixels;
 
     /// <summary>The part of the layer that lies on the canvas (always canvas-sized).</summary>
     public PixelBuffer Pixels { get; private set; }
@@ -148,7 +202,7 @@ public sealed class Layer : ObservableObject
     public LayerState SaveState()
     {
         _ownsPixels = false; // someone may keep these buffers (undo), so they must not be changed in place any more
-        return new(Pixels, _extended, _extendedX, _extendedY, Object);
+        return new(Pixels, _extended, _extendedX, _extendedY, Object, _mask, IncludesMask: true);
     }
 
     // True while Pixels is a buffer made by SetObject that nobody else holds. Only then can the next SetObject
@@ -274,6 +328,10 @@ public sealed class Layer : ObservableObject
         _extendedY = state.ExtendedY;
         bool objectChanged = !ReferenceEquals(Object, state.Object);
         Object = state.Object;
+        // A state made by SaveState brings its mask back; other states (moving pixels, cropping...) leave the mask where it is.
+        bool maskChanged = false;
+        if (state.IncludesMask && !ReferenceEquals(_mask, state.Mask)) { _mask = state.Mask; maskChanged = true; }
+        if (_mask != null && (_mask.Width != Pixels.Width || _mask.Height != Pixels.Height)) { _mask = null; maskChanged = true; }
         Version++;
         OnPropertyChanged(nameof(Pixels));
         OnPropertyChanged(nameof(HasHiddenPixels));
@@ -282,13 +340,20 @@ public sealed class Layer : ObservableObject
             OnPropertyChanged(nameof(Object));
             OnPropertyChanged(nameof(IsObjectLayer));
         }
+        if (maskChanged)
+        {
+            OnPropertyChanged(nameof(Mask));
+            OnPropertyChanged(nameof(HasMask));
+        }
         PixelsReplaced?.Invoke(this, EventArgs.Empty);
+        if (maskChanged) MaskReplaced?.Invoke(this, EventArgs.Empty);
     }
 
     public Layer Duplicate(string name)
     {
         var copy = new Layer(name, Pixels.Clone()) { Opacity = Opacity, IsVisible = IsVisible, BlendMode = BlendMode, Adjustment = Adjustment, RestoreSource = RestoreSource };
-        if (_extended != null || Object != null) copy.RestoreState(SaveState().DeepCopy());
+        if (_extended != null || Object != null) copy.RestoreState(SaveState().DeepCopy() with { Mask = null, IncludesMask = false });
+        if (_mask != null) { copy.SetMask(_mask.Clone()); copy._maskEnabled = _maskEnabled; }
         return copy;
     }
 

@@ -29,76 +29,79 @@ public partial class CanvasView
         bool hasSelection = doc.Selection != null;
 
         var menu = new ContextMenu { PlacementTarget = Viewport, Placement = PlacementMode.MousePoint };
-        void Add(string header, ICommand command, string? gesture = null, bool enabled = true)
+        void Add(string header, ICommand command, string? gesture = null, bool enabled = true, string? icon = null)
             => menu.Items.Add(new MenuItem
             {
                 Header = header,
                 Command = command,
                 InputGestureText = gesture ?? "",
                 IsEnabled = enabled && command.CanExecute(null),
+                Icon = Controls.MenuIcons.Of(Viewport, icon),
             });
         void Separator() => menu.Items.Add(new Separator());
 
         bool locked = layer?.IsLocked == true;
-        Add(locked ? "Unlock" : "Lock", _main.Layers.ToggleLockCommand, "Ctrl+L");
-        if (count > 1) Add($"Group {count} Layers", _main.Layers.GroupCommand, "Ctrl+G");
-        if (count > 1) Add($"Merge {count} Layers", _main.Layers.MergeSelectedCommand, "Ctrl+E");
-        // Align: one layer lines up with the canvas, several line up with each other.
+        Add(locked ? "Unlock" : "Lock", _main.Layers.ToggleLockCommand, "Ctrl+L", icon: locked ? "Unlock" : "Lock");
+        if (count > 1) Add($"Group {count} Layers", _main.Layers.GroupCommand, "Ctrl+G", icon: "Group");
+        if (count > 1) Add($"Merge {count} Layers", _main.Layers.MergeSelectedCommand, "Ctrl+E", icon: "Merge");
+        // Several layers line up with each other (one layer aligns to the canvas in the Properties panel).
+        if (count > 1)
         {
-            var align = new MenuItem { Header = count > 1 ? "Align" : "Align to Canvas" };
-            void AddAlign(string header, ICommand command, string parameter)
-                => align.Items.Add(new MenuItem { Header = header, Command = command, CommandParameter = parameter, IsEnabled = command.CanExecute(parameter) });
-            AddAlign("Left", _main.Align.AlignCommand, "Left");
-            AddAlign("Center", _main.Align.AlignCommand, "CenterHorizontally");
-            AddAlign("Right", _main.Align.AlignCommand, "Right");
+            var align = new MenuItem { Header = "Align", Icon = IconOf("Align") };
+            void AddAlign(string header, ICommand command, string parameter, string icon)
+                => align.Items.Add(new MenuItem { Header = header, Command = command, CommandParameter = parameter, IsEnabled = command.CanExecute(parameter), Icon = IconOf(icon) });
+            AddAlign("Left", _main.Align.AlignCommand, "Left", "AlignLeft");
+            AddAlign("Center", _main.Align.AlignCommand, "CenterHorizontally", "AlignCenter");
+            AddAlign("Right", _main.Align.AlignCommand, "Right", "AlignRight");
             align.Items.Add(new Separator());
-            AddAlign("Top", _main.Align.AlignCommand, "Top");
-            AddAlign("Middle", _main.Align.AlignCommand, "CenterVertically");
-            AddAlign("Bottom", _main.Align.AlignCommand, "Bottom");
+            AddAlign("Top", _main.Align.AlignCommand, "Top", "AlignTop");
+            AddAlign("Middle", _main.Align.AlignCommand, "CenterVertically", "AlignMiddle");
+            AddAlign("Bottom", _main.Align.AlignCommand, "Bottom", "AlignBottom");
             if (count > 2)
             {
                 align.Items.Add(new Separator());
-                AddAlign("Distribute Horizontally", _main.Align.DistributeCommand, "Horizontally");
-                AddAlign("Distribute Vertically", _main.Align.DistributeCommand, "Vertically");
+                AddAlign("Distribute Horizontally", _main.Align.DistributeCommand, "Horizontally", "AlignCenter");
+                AddAlign("Distribute Vertically", _main.Align.DistributeCommand, "Vertically", "AlignMiddle");
             }
-            align.IsEnabled = _main.Align.AlignCommand.CanExecute(null) || layer != null && !layer.IsLocked;
+            align.IsEnabled = _main.Align.AlignCommand.CanExecute(null);
             menu.Items.Add(align);
         }
-        if (obj is GroupObject) Add("Ungroup", _main.Layers.UngroupCommand, "Ctrl+Shift+G");
+        if (obj is GroupObject) Add("Ungroup", _main.Layers.UngroupCommand, "Ctrl+Shift+G", icon: "Ungroup");
         Separator();
-        if (obj is TextObject && !locked) Add("Edit Text...", _main.Properties.EditTextCommand);
-        Add(hasSelection ? "Cut Selection" : "Cut", _main.Edit.CutCommand, "Ctrl+X");
-        Add(hasSelection ? "Copy Selection" : "Copy", _main.Edit.CopyCommand, "Ctrl+C");
-        Add("Paste", _main.Edit.PasteCommand, "Ctrl+V");
-        Add("Duplicate", _main.Layers.DuplicateCommand, "Ctrl+D");
-        Add(hasSelection ? "Delete Selected Pixels" : count > 1 ? $"Delete {count} Layers" : "Delete Layer",
-            hasSelection ? _main.Edit.DeleteCommand : _main.Layers.DeleteCommand, "Delete");
+        if (obj is TextObject && !locked) Add("Edit Text...", _main.Properties.EditTextCommand, icon: "EditText");
+        Add(hasSelection ? "Cut Selection" : "Cut", _main.Edit.CutCommand, "Ctrl+X", icon: "Cut");
+        Add(hasSelection ? "Copy Selection" : "Copy", _main.Edit.CopyCommand, "Ctrl+C", icon: "Copy");
+        Add("Paste", _main.Edit.PasteCommand, "Ctrl+V", icon: "Paste");
+        Add("Duplicate", _main.Layers.DuplicateCommand, "Ctrl+D", icon: "Duplicate");
+        if (hasSelection) Add("Split to New Layer", _main.Layers.SplitCommand, icon: "Split");
+        if (hasSelection) Add("Delete Selected Pixels", _main.Edit.DeleteCommand, "Delete", icon: "Delete");
         Separator();
-        Add("Bring to Front", _main.Layers.BringToFrontCommand, "Ctrl+Shift+]");
-        Add("Bring Forward", _main.Layers.MoveUpCommand, "Ctrl+]");
-        Add("Send Backward", _main.Layers.MoveDownCommand, "Ctrl+[");
-        Add("Send to Back", _main.Layers.SendToBackCommand, "Ctrl+Shift+[");
+        Add("Bring to Front", _main.Layers.BringToFrontCommand, "Ctrl+Shift+]", icon: "Front");
+        Add("Bring Forward", _main.Layers.MoveUpCommand, "Ctrl+]", icon: "Up");
+        Add("Send Backward", _main.Layers.MoveDownCommand, "Ctrl+[", icon: "Down");
+        Add("Send to Back", _main.Layers.SendToBackCommand, "Ctrl+Shift+[", icon: "Back");
         Separator();
-        Add("Crop This Object...", _main.Layers.CropObjectCommand);
-        if (hasSelection) Add("Crop Layer to Selection", _main.Layers.CropToSelectionCommand);
-        Add("Flip Horizontal", _main.Layers.FlipLayerHorizontalCommand);
-        Add("Flip Vertical", _main.Layers.FlipLayerVerticalCommand);
-        if (obj != null) Add("Reset Rotation", _main.Properties.ResetRotationCommand);
-        if (obj is ImageObject) Add("Original Size", _main.Properties.OriginalSizeCommand);
+        if (hasSelection) Add("Crop Layer to Selection", _main.Layers.CropToSelectionCommand, icon: "Crop");
+        Add("Rotate 90° Right", _main.Layers.RotateRightCommand, icon: "RotateRight");
+        Add("Rotate 90° Left", _main.Layers.RotateLeftCommand, icon: "RotateLeft");
+        Add("Flip Horizontal", _main.Layers.FlipLayerHorizontalCommand, icon: "FlipH");
+        Add("Flip Vertical", _main.Layers.FlipLayerVerticalCommand, icon: "FlipV");
+        if (obj != null) Add("Reset Rotation", _main.Properties.ResetRotationCommand, icon: "ResetRotation");
         Separator();
-        Add(hasSelection ? "Recolor Selection..." : "Recolor...", _main.Effects.RecolorCommand, "Ctrl+Shift+R");
-        Add("Remove Background (AI)", _main.Effects.RemoveBackgroundCommand, "Ctrl+Alt+B");
-        Add("Select Subject (AI)", _main.Effects.SelectSubjectCommand);
-        Add(hasSelection ? "Remove / Fill Selection (AI)" : "Remove / Fill (AI): select an area first", _main.Inpaint.FillSelectionCommand, "Shift+F5");
-        Add("Split Asset Sheet into Pieces...", _main.Image.SplitSheetCommand);
-        Add("Select Layer Content", _main.Edit.SelectLayerContentCommand);
-        if (hasSelection) Add("Deselect", _main.Edit.DeselectCommand, "Ctrl+Shift+D");
-        if (obj != null)
-        {
-            Separator();
-            Add("Convert to Pixels", _main.Properties.ConvertToPixelsCommand);
-        }
+        Add(hasSelection ? "Recolor Selection..." : "Recolor...", _main.Effects.RecolorCommand, "Ctrl+Shift+R", icon: "Recolor");
+        Add("Remove Background (AI)", _main.Effects.RemoveBackgroundCommand, "Ctrl+Alt+B", icon: "RemoveBg");
+        Add("Select Subject (AI)", _main.Effects.SelectSubjectCommand, icon: "SelectSubject");
+        Add(hasSelection ? "Fill Selection (AI)" : "Select an area first to Fill (AI)", _main.Inpaint.FillSelectionCommand, "Shift+F5", icon: "FillAi");
+        if (hasSelection) Add("Deselect", _main.Edit.DeselectCommand, "Ctrl+Shift+D", icon: "Deselect");
 
         menu.IsOpen = true;
+    }
+
+    /// <summary>A small icon (from Themes/Icons.xaml) for a menu item, or null.</summary>
+    private object? IconOf(string? key)
+    {
+        if (key == null || TryFindResource("Icon." + key) is not System.Windows.Media.Geometry geometry) return null;
+        var path = new System.Windows.Shapes.Path { Data = geometry, Style = (System.Windows.Style)FindResource("IconPath") };
+        return new System.Windows.Controls.Viewbox { Width = 15, Height = 15, Child = path };
     }
 }

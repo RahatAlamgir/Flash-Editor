@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
 
 namespace FlashEditor.App.Rendering;
@@ -22,6 +23,29 @@ public static class BitmapConverter
         if (region.IsEmpty) return;
         bitmap.WritePixels(new Int32Rect(region.X, region.Y, region.Width, region.Height),
             pixels.Data, pixels.Stride, region.X, region.Y);
+    }
+
+    /// <summary>Like <see cref="Update(WriteableBitmap, PixelBuffer, PixelRect)"/>, but the pixels are as see-through as the layer mask says.</summary>
+    public static void Update(WriteableBitmap bitmap, PixelBuffer pixels, LayerMask? mask, PixelRect region)
+    {
+        if (mask == null) { Update(bitmap, pixels, region); return; }
+        region = region.Intersect(pixels.Bounds);
+        if (region.IsEmpty) return;
+
+        int stride = region.Width * 4;
+        var data = new byte[stride * region.Height];
+        for (int y = 0; y < region.Height; y++)
+        {
+            int source = pixels.IndexOf(region.X, region.Y + y);
+            int maskIndex = (region.Y + y) * mask.Width + region.X;
+            for (int x = 0; x < region.Width; x++)
+            {
+                int d = y * stride + x * 4, s = source + x * 4;
+                data[d] = pixels.Data[s]; data[d + 1] = pixels.Data[s + 1]; data[d + 2] = pixels.Data[s + 2];
+                data[d + 3] = (byte)(pixels.Data[s + 3] * mask.Alpha[maskIndex + x] / 255);
+            }
+        }
+        bitmap.WritePixels(new Int32Rect(region.X, region.Y, region.Width, region.Height), data, stride, 0);
     }
 
     public static BitmapSource ToFrozenBitmap(PixelBuffer pixels)

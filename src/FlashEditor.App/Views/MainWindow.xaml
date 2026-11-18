@@ -76,11 +76,30 @@
                 <Separator />
                 <MenuItem Header="_Save Project" InputGestureText="Ctrl+S" Command="{Binding File.SaveCommand}"
                           ToolTip="Saves a .flash file that keeps every layer, shape and text editable" />
+                <MenuItem Header="Save as _Template..." Command="{Binding File.SaveAsTemplateCommand}"
+                          ToolTip="Keep this picture as a starting point for new pictures (File > New > Start from)" />
                 <MenuItem Header="Save Project _As..." InputGestureText="Ctrl+Shift+S" Command="{Binding File.SaveAsCommand}" />
-                <MenuItem Header="Export _All Pages (PNG, JPG...)..." Command="{Binding File.ExportAllPagesCommand}"
-                          ToolTip="Makes one picture file for every page" />
-                <MenuItem Header="_Export as Picture (PNG, JPG...)..." InputGestureText="Ctrl+Alt+S" Command="{Binding File.ExportCommand}"
-                          ToolTip="Makes a normal picture file; choose format, quality and size" />
+                <!-- All the ways to export, in one place: opens when the mouse rests on it -->
+                <MenuItem Header="_Export">
+                    <MenuItem Header="As _Picture (PNG, JPG, WEBP...)..." InputGestureText="Ctrl+Alt+S" Command="{Binding File.ExportCommand}"
+                              ToolTip="Makes a normal picture file; choose format, quality and size" />
+                    <MenuItem Header="For _Social Media, Video, Print... (ready-made sizes)..." Command="{Binding File.ExportForCommand}"
+                              ToolTip="Make a picture of a ready-made size for social media, video, print or the web; also for all pages at once" />
+                    <MenuItem Header="_All Pages as Pictures..." Command="{Binding File.ExportAllPagesCommand}"
+                              ToolTip="Makes one picture file for every page" />
+                    <Separator />
+                    <MenuItem Header="As P_DF (all pages)..." Command="{Binding PagesExport.ExportPdfCommand}"
+                              ToolTip="One PDF page for every page of the project" />
+                    <MenuItem Header="As Animated _GIF (all pages)..." Command="{Binding PagesExport.ExportGifCommand}"
+                              ToolTip="Every page becomes one frame of an animated GIF" />
+                    <Separator />
+                    <MenuItem Header="As _SVG (vector)..." Command="{Binding File.ExportSvgCommand}"
+                              ToolTip="Shapes and text stay sharp vectors; effects and pictures are embedded" />
+                    <MenuItem Header="As _Photoshop File (.psd, with layers)..." Command="{Binding File.ExportPsdCommand}"
+                              ToolTip="Saves every layer so Photoshop and other editors can open it (objects, text and effects become pictures)" />
+                </MenuItem>
+                <MenuItem Header="_Batch Convert Folder..." Command="{Binding PagesExport.BatchConvertCommand}"
+                          ToolTip="Convert every picture in a folder to another format and / or size" />
                 <Separator />
                 <MenuItem Header="_Close Project" InputGestureText="Ctrl+W" Command="{Binding CloseProjectCommand}" />
                 <MenuItem Header="Close Pa_ge" Command="{Binding CloseDocumentCommand}" />
@@ -121,6 +140,10 @@
                 <MenuItem Header="Rotate 90° Counter-Clockwise" Command="{Binding Image.Rotate90CounterClockwiseCommand}" />
                 <MenuItem Header="Rotate 180°" Command="{Binding Image.Rotate180Command}" />
                 <MenuItem Header="Rotate by _Angle..." Command="{Binding Image.RotateCustomCommand}" />
+                <MenuItem Header="Stra_ighten (level a tilted photo)..." Command="{Binding Image.StraightenCommand}"
+                          ToolTip="Turn the picture a little and cut off the empty corners" />
+                <MenuItem Header="_Perspective Crop (flatten a page or sign)" Command="{Binding Image.PerspectiveCropCommand}"
+                          ToolTip="Click the four corners of something photographed at an angle: it is cut out and made flat (shares the C key with Crop)" />
                 <Separator />
                 <MenuItem Header="Flip _Horizontal" Command="{Binding Image.FlipHorizontalCommand}" />
                 <MenuItem Header="Flip _Vertical" Command="{Binding Image.FlipVerticalCommand}" />
@@ -134,6 +157,19 @@
                 <MenuItem Header="_New Layer" InputGestureText="Ctrl+Shift+N" Command="{Binding Layers.NewLayerCommand}" />
                 <MenuItem Header="_Duplicate Layer" InputGestureText="Ctrl+D" Command="{Binding Layers.DuplicateCommand}" />
                 <MenuItem Header="De_lete Layer" Command="{Binding Layers.DeleteCommand}" />
+                <MenuItem Header="Layer Mas_k">
+                    <MenuItem Header="_Clip to Layer Below" Command="{Binding Mask.ClipToBelowCommand}" ToolTip="The layer shows only inside the shape of the layer under it (a picture inside a shape or text)" />
+                    <Separator />
+                    <MenuItem Header="Add Mask: Show _All" Command="{Binding Mask.RevealAllCommand}" ToolTip="A mask that shows everything: paint black on it (Mask Brush, K) to hide parts" />
+                    <MenuItem Header="Add Mask: _Hide All" Command="{Binding Mask.HideAllCommand}" ToolTip="A mask that hides everything: paint white on it to show parts" />
+                    <MenuItem Header="Add Mask: Show _Selection Only" Command="{Binding Mask.FromSelectionCommand}" ToolTip="The layer shows only the selected area" />
+                    <MenuItem Header="Add Mask: Hide S_election" Command="{Binding Mask.HideSelectionCommand}" ToolTip="Hide the selected area of the layer (also on a layer that already has a mask)" />
+                    <Separator />
+                    <MenuItem Header="_Invert Mask" Command="{Binding Mask.InvertCommand}" />
+                    <MenuItem Header="_Switch Mask On / Off" Command="{Binding Mask.ToggleCommand}" ToolTip="See the layer without its mask, and back" />
+                    <MenuItem Header="A_pply Mask to Pixels" Command="{Binding Mask.ApplyCommand}" ToolTip="Make the hidden parts transparent pixels for good" />
+                    <MenuItem Header="_Delete Mask" Command="{Binding Mask.DeleteCommand}" />
+                </MenuItem>
                 <MenuItem Header="_Rename Layer" Command="{Binding Layers.RenameCommand}" />
                 <MenuItem Header="Lock / Unloc_k" InputGestureText="Ctrl+L" Command="{Binding Layers.ToggleLockCommand}" />
                 <MenuItem Header="Select All _Layers" Command="{Binding Layers.SelectAllLayersCommand}" />
@@ -164,6 +200,10 @@
                     <MenuItem Header="Distribute _Horizontally (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Horizontally" />
                     <MenuItem Header="Distribute _Vertically (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Vertically" />
                 </MenuItem>
+                <MenuItem Header="Add Le_vels Layer" Command="{Binding Layers.AddLevelsLayerCommand}"
+                          ToolTip="Black point, white point and middle tones, as a layer you can change later" />
+                <MenuItem Header="Add C_urves Layer" Command="{Binding Layers.AddCurvesLayerCommand}"
+                          ToolTip="Bend the tone curve of all colors or of red, green or blue, as a layer you can change later" />
                 <MenuItem Header="Add _Adjustment Layer" Command="{Binding Layers.AddAdjustmentLayerCommand}"
                           ToolTip="Brightness, contrast, saturation and hue for everything below it, without changing any picture" />
                 <MenuItem Header="Add _Gradient Background" Command="{Binding Layers.AddGradientBackgroundCommand}" ToolTip="A gradient behind everything" />
@@ -221,10 +261,13 @@
             <MenuItem Header="_Settings">
                 <MenuItem Header="_Undo Steps..." Command="{Binding View.SettingsCommand}"
                           ToolTip="How many steps Undo can go back in a project (default 30, at most 60)" />
+                <MenuItem Header="_Brand Kit..." Command="{Binding View.BrandKitCommand}"
+                          ToolTip="Your brand colors and fonts, kept for every project" />
                 <MenuItem Header="AI _Models..." Command="{Binding Effects.ShowAiModelsCommand}"
                           ToolTip="See which AI models are on this PC, how much space they use, and download or delete them" />
             </MenuItem>
             <MenuItem Header="_Help">
+                <MenuItem Header="Quick _Tour" Command="{Binding View.TourCommand}" />
                 <MenuItem Header="_Keyboard Shortcuts" InputGestureText="F1" Command="{Binding View.ShortcutsCommand}" />
                 <MenuItem Header="_About Flash Editor" Command="{Binding View.AboutCommand}" />
             </MenuItem>

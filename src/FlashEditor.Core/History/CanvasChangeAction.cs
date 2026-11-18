@@ -53,7 +53,7 @@ public sealed class CanvasChangeAction : IHistoryAction
         {
             before[layer] = layer.SaveState();
             if (layer.Object == null || objectTransform == null)
-                after[layer] = LayerState.Simple(transform(layer.Pixels));
+                after[layer] = Baked(LayerState.Simple(transform(layer.MaskedPixels())));
         }
         var (w, h) = after.Count > 0
             ? (after.Values.First().Pixels.Width, after.Values.First().Pixels.Height)
@@ -61,7 +61,7 @@ public sealed class CanvasChangeAction : IHistoryAction
 
         foreach (var layer in document.Layers)
             if (layer.Object != null && objectTransform != null)
-                after[layer] = Layer.RenderState(objectTransform(layer.Object, w, h), w, h);
+                after[layer] = Baked(Layer.RenderState(objectTransform(layer.Object, w, h), w, h));
 
         var action = new CanvasChangeAction(name, document, beforeSize, before, (w, h), after);
         action.Redo();
@@ -85,11 +85,12 @@ public sealed class CanvasChangeAction : IHistoryAction
             before[layer] = layer.SaveState();
             if (layer.Object != null)
             {
-                after[layer] = Layer.RenderState(ObjectTransforms.Offset(layer.Object, shiftX, shiftY), width, height);
+                after[layer] = Baked(Layer.RenderState(ObjectTransforms.Offset(layer.Object, shiftX, shiftY), width, height));
                 continue;
             }
             var (content, x, y) = layer.GetFullContent();
-            after[layer] = LayerState.Place(content, x + shiftX, y + shiftY, width, height);
+            if (layer.EffectiveMask is { } mask) content = LayerMask.Bake(content, mask, -x, -y);     // the mask is applied to the pixels it covers
+            after[layer] = Baked(LayerState.Place(content, x + shiftX, y + shiftY, width, height));
         }
 
         var action = new CanvasChangeAction(name, document, beforeSize, before, (width, height), after);
@@ -102,13 +103,16 @@ public sealed class CanvasChangeAction : IHistoryAction
     {
         var size = (document.Width, document.Height);
         var before = new Dictionary<Layer, LayerState> { [layer] = layer.SaveState() };
-        var after = new Dictionary<Layer, LayerState> { [layer] = LayerState.Simple(transform(layer.Pixels)) };
+        var after = new Dictionary<Layer, LayerState> { [layer] = Baked(LayerState.Simple(transform(layer.MaskedPixels()))) };
         var action = new CanvasChangeAction(name, document, size, before, size, after);
         action.Redo();
         return action;
     }
 
     private static (int, int) SizeOf(PixelBuffer p) => (p.Width, p.Height);
+
+    // The new layer has no mask: it was applied to the pixels before they were transformed (Undo brings the mask back with the old state).
+    private static LayerState Baked(LayerState state) => state with { Mask = null, IncludesMask = true };
 
     public void Undo() => Restore(_beforeSize, _before);
     public void Redo() => Restore(_afterSize, _after);

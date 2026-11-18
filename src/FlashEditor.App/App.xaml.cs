@@ -37,6 +37,7 @@ public partial class App : Application
         }
         ShutdownMode = ShutdownMode.OnMainWindowClose;
         window.Show();
+        viewModel.View.ShowTourOnFirstRun();
 
         // Backs up unsaved work every minute; brings it back if the last session did not end normally.
         var autoSave = new AutoSaveService(viewModel);

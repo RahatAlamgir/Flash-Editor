@@ -21,7 +21,11 @@
             <ComboBox x:Name="PresetBox" SelectionChanged="OnPresetChanged" MaxDropDownHeight="320" />
 
             <TextBlock Text="Start from" Margin="0,14,0,4" Foreground="{StaticResource SubtleTextBrush}" />
-            <ComboBox x:Name="TemplateBox" />
+            <DockPanel>
+                <Button x:Name="DeleteTemplateButton" DockPanel.Dock="Right" Content="Delete" Margin="6,0,0,0" Visibility="Collapsed" Click="OnDeleteTemplate"
+                        ToolTip="Remove this saved template" />
+                <ComboBox x:Name="TemplateBox" SelectionChanged="OnTemplateChanged" />
+            </DockPanel>
             <TextBlock Text="A ready-made layout with editable text and shapes. Blank = an empty picture." TextWrapping="Wrap"
                        Margin="0,4,0,0" Foreground="{StaticResource SubtleTextBrush}" FontSize="11" />
 

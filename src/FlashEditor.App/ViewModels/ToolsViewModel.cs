@@ -45,6 +45,11 @@ public sealed class ToolsViewModel : ObservableObject
             new TextTool(host),
             new HandTool(host),
             new ZoomTool(host),
+            new MaskBrushTool(host),
+            new PerspectiveCropTool(host),
+            new LiquifyTool(host),
+            new RemoveBrushTool(host),
+            new ClickSelectTool(host),
         };
         _activeTool = Get<MoveTool>(); // the program starts on Select / Move
         _activeTool.IsActive = true;
@@ -52,8 +57,8 @@ public sealed class ToolsViewModel : ObservableObject
         // Similar tools share one button in the toolbox (indexes into the list above).
         int[][] layout =
         {
-            new[] { 0 }, new[] { 1, 2 }, new[] { 3, 4 }, new[] { 5 }, new[] { 6, 7 }, new[] { 8 },
-            new[] { 9, 10, 11 }, new[] { 13, 14, 15 }, new[] { 12 }, new[] { 16 }, new[] { 17 },
+            new[] { 0 }, new[] { 1, 2 }, new[] { 3, 4 }, new[] { 5 }, new[] { 6, 7, 28 }, new[] { 8, 25 },
+            new[] { 9, 10, 11, 24 }, new[] { 13, 14, 15, 27 }, new[] { 12 }, new[] { 16 }, new[] { 17, 26 },
             new[] { 18 }, new[] { 19 }, new[] { 20 }, new[] { 21 }, new[] { 22 }, new[] { 23 },
         };
         Groups = layout.Select(ix => new ToolGroup(ix.Select(i => Tools[i]).ToList(), t => ActiveTool = t)).ToList();

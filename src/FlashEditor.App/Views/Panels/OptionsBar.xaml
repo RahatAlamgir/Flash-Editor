@@ -4,6 +4,7 @@
              xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              xmlns:opt="clr-namespace:FlashEditor.App.Tools.Options"
              xmlns:tr="clr-namespace:FlashEditor.App.Tools.Transform"
+             xmlns:rt="clr-namespace:FlashEditor.App.Tools.Retouch"
              xmlns:obj="clr-namespace:FlashEditor.Core.Objects;assembly=FlashEditor.Core"
              xmlns:conv="clr-namespace:FlashEditor.App.Converters"
              xmlns:ctl="clr-namespace:FlashEditor.App.Views.Controls">
@@ -186,16 +187,34 @@
             </StackPanel>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type rt:LiquifyOptions}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Mode" Style="{StaticResource OptionLabel}" />
+                <ComboBox Width="110" VerticalAlignment="Center" ItemsSource="{Binding Source={x:Static rt:LiquifyOptions.Modes}}" SelectedItem="{Binding Mode}"
+                          ToolTip="Push: smear along your drag. Bloat: swell. Pucker: pinch." />
+                <TextBlock Text="Size" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="5" Maximum="600" Value="{Binding Size}" SliderWidth="110" BoxWidth="58" Unit="px" Margin="6,0,4,0" />
+                <TextBlock Text="Strength" Style="{StaticResource OptionLabel}" />
+                <ctl:NumberSlider Minimum="1" Maximum="100" Value="{Binding Strength}" SliderWidth="110" BoxWidth="58" Unit="%" Margin="6,0,4,0" />
+                <TextBlock Text="  [ ] change size" Style="{StaticResource OptionLabel}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type tr:PerspectiveCropTool}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Hint}" Style="{StaticResource OptionLabel}" />
+                <Button Content="Straighten (Enter)" Command="{Binding ApplyCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                <Button Content="Start over (Esc)" Command="{Binding CancelCommand}" Margin="8,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type tr:CropTool}">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Crop" Style="{StaticResource OptionLabel}" />
-                <ComboBox Width="235" VerticalAlignment="Center" ItemsSource="{Binding Source={x:Static tr:CropTool.Targets}}"
-                          SelectedIndex="{Binding TargetIndex}" ToolTip="Crop the whole picture, or only the selected layer / object" />
                 <TextBlock Text="Shape" Style="{StaticResource OptionLabel}" />
                 <ComboBox Width="190" VerticalAlignment="Center" ItemsSource="{Binding Source={x:Static tr:CropTool.Aspects}}"
                           SelectedItem="{Binding Aspect}" />
                 <TextBlock Text="{Binding SizeText}" Style="{StaticResource OptionLabel}" />
-                <Button Content="Apply crop (Enter)" Command="{Binding ApplyCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                <Button Content="Crop (Enter)" Command="{Binding ApplyCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />
                 <Button Content="Cancel (Esc)" Command="{Binding CancelCommand}" Margin="8,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
         </DataTemplate>

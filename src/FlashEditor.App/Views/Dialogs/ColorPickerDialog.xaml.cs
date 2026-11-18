@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FlashEditor.App.Rendering;
+using FlashEditor.App.Services;
 using FlashEditor.Core.Imaging;
 
 namespace FlashEditor.App.Views.Dialogs;
@@ -33,10 +34,39 @@ public partial class ColorPickerDialog : Window
         SwatchList.ItemsSource = SwatchHex
             .Select(h => new SolidColorBrush((Color)ColorConverter.ConvertFromString(h)))
             .ToList();
+        FillColorLists();
         SetColor(initial);
     }
 
     public ColorRgba SelectedColor { get; private set; }
+
+    private static SolidColorBrush BrushOf(string hex) => new((Color)ColorConverter.ConvertFromString(hex));
+
+    private void FillColorLists()
+    {
+        BrandList.ItemsSource = AppSettings.Current.BrandColors.Select(BrushOf).ToList();
+        BrandList.Visibility = BrandTitle.Visibility = AppSettings.Current.BrandColors.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        RecentList.ItemsSource = AppSettings.Current.RecentColors.Select(BrushOf).ToList();
+        MineList.ItemsSource = AppSettings.Current.Swatches.Select(BrushOf).ToList();
+        NoSwatchesHint.Visibility = AppSettings.Current.Swatches.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnSaveSwatch(object sender, RoutedEventArgs e)
+    {
+        AppSettings.Current.AddSwatch(SelectedColor with { A = 255 });
+        FillColorLists();
+    }
+
+    private void OnSwatchRemove(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: SolidColorBrush brush })
+        {
+            var c = BitmapConverter.FromWpf(brush.Color);
+            AppSettings.Current.RemoveSwatch(AppSettings.ToHex(c));
+            FillColorLists();
+        }
+        e.Handled = true;
+    }
 
     private void SetColor(ColorRgba color)
     {
@@ -156,6 +186,7 @@ public partial class ColorPickerDialog : Window
     {
         // Apply a value still being typed.
         if (Keyboard.FocusedElement is TextBox box) OnTextCommitted(box, e);
+        AppSettings.Current.AddRecentColor(SelectedColor with { A = 255 });
         DialogResult = true;
     }
 }

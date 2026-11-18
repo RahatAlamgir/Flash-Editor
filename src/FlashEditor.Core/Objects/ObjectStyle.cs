@@ -16,7 +16,10 @@ public sealed record ObjectStyle(
     bool GradientBorder = false,
     ColorRgba? Fill = null,
     ColorRgba? Stroke = null,
-    double StrokeWidth = 0)
+    double StrokeWidth = 0,
+    GlowStyle? Glow = null,
+    InnerShadowStyle? InnerShadow = null,
+    OutlineStyle? Outline = null)
 {
     public static string KindOf(LayerObject obj) => obj switch
     {
@@ -29,16 +32,16 @@ public sealed record ObjectStyle(
     /// <summary>The look of an object.</summary>
     public static ObjectStyle From(LayerObject obj) => obj switch
     {
-        ShapeObject s => new ObjectStyle("shape", s.Shadow, s.ThreeD, s.Gradient, s.GradientBorder, s.Fill, s.Stroke, s.StrokeWidth),
-        TextObject t => new ObjectStyle("text", t.Shadow, t.ThreeD, t.Gradient, false, t.Color),
-        ImageObject i => new ObjectStyle("image", i.Shadow, i.ThreeD, i.Gradient),
-        _ => new ObjectStyle("group", obj.Shadow, obj.ThreeD),
+        ShapeObject s => new ObjectStyle("shape", s.Shadow, s.ThreeD, s.Gradient, s.GradientBorder, s.Fill, s.Stroke, s.StrokeWidth, s.Glow, s.InnerShadow, s.Outline),
+        TextObject t => new ObjectStyle("text", t.Shadow, t.ThreeD, t.Gradient, false, t.Color, Glow: t.Glow, InnerShadow: t.InnerShadow, Outline: t.Outline),
+        ImageObject i => new ObjectStyle("image", i.Shadow, i.ThreeD, i.Gradient, Glow: i.Glow, InnerShadow: i.InnerShadow, Outline: i.Outline),
+        _ => new ObjectStyle("group", obj.Shadow, obj.ThreeD, Glow: obj.Glow, InnerShadow: obj.InnerShadow, Outline: obj.Outline),
     };
 
     /// <summary>The object with this look. Shadow and 3D go onto anything; the rest only onto the same kind of object.</summary>
     public LayerObject ApplyTo(LayerObject obj)
     {
-        var result = obj with { Shadow = Shadow, ThreeD = ThreeD };
+        var result = obj with { Shadow = Shadow, ThreeD = ThreeD, Glow = Glow, InnerShadow = InnerShadow, Outline = Outline };   // (brightness / blur are not part of a saved look)
         if (KindOf(obj) != Kind) return result;
 
         switch (result)

@@ -18,11 +18,15 @@ public sealed class AlignCommands
         _main = main;
         // The command parameter is the name of an AlignKind / DistributeKind, e.g. "Left" or "CenterHorizontally".
         AlignCommand = new RelayCommand(p => Align(Enum.Parse<AlignKind>((string)p!)), p => Movable().Count >= 1);
+        AlignBothCommand = new RelayCommand(p => AlignBoth((string)p!), p => Movable().Count >= 1);
         DistributeCommand = new RelayCommand(p => Distribute(Enum.Parse<DistributeKind>((string)p!)), p => Movable().Count >= 3);
     }
 
     /// <summary>Parameter: Left, CenterHorizontally, Right, Top, CenterVertically or Bottom.</summary>
     public RelayCommand AlignCommand { get; }
+
+    /// <summary>Parameter: "Left,Top", "CenterHorizontally,CenterVertically"... (a horizontal and a vertical kind): both directions in one step.</summary>
+    public RelayCommand AlignBothCommand { get; }
 
     /// <summary>Parameter: Horizontally or Vertically. Needs three or more layers.</summary>
     public RelayCommand DistributeCommand { get; }
@@ -36,6 +40,16 @@ public sealed class AlignCommands
         if (layers.Count == 0) return;
         var doc = _main.Document.Model;
         var offsets = Alignment.Align(layers.Select(SnapDrag.BoundsOf).ToList(), doc.Bounds, kind);
+        Apply(layers, offsets, "Align");
+    }
+
+    private void AlignBoth(string kinds)
+    {
+        var parts = kinds.Split(',');
+        var layers = Movable();
+        if (layers.Count == 0 || parts.Length != 2) return;
+        var doc = _main.Document.Model;
+        var offsets = Alignment.AlignBoth(layers.Select(SnapDrag.BoundsOf).ToList(), doc.Bounds, Enum.Parse<AlignKind>(parts[0]), Enum.Parse<AlignKind>(parts[1]));
         Apply(layers, offsets, "Align");
     }
 

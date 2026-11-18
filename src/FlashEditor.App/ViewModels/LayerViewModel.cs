@@ -39,7 +39,9 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
         Model = model;
         _history = history;
         _bitmap = BitmapConverter.CreateWriteable(model.Pixels);
+        if (model.EffectiveMask != null) BitmapConverter.Update(_bitmap, model.Pixels, model.EffectiveMask, model.Pixels.Bounds);
         _iconPixels = Thumbnail.Create(model.Pixels, IconMaxWidth, IconMaxHeight);
+        RefreshMaskIcon();
         _icon = BitmapConverter.CreateWriteable(_iconPixels);
         _iconTimer = new System.Windows.Threading.DispatcherTimer();
         _iconTimer.Tick += (_, _) => RefreshIcon();
@@ -47,8 +49,62 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
         model.PropertyChanged += OnModelPropertyChanged;
         model.PixelsChanged += OnPixelsChanged;
         model.PixelsReplaced += OnPixelsReplaced;
+        model.MaskChanged += OnMaskChanged;
+        model.MaskReplaced += OnMaskReplaced;
         history.Changed += OnHistoryChanged;
+        ToggleMaskCommand = new Infrastructure.RelayCommand(ToggleMask, () => Model.HasMask);
         RebuildChildren();
+    }
+
+    // ------------------------------------------------------------------ layer mask
+
+    private WriteableBitmap? _maskIcon;
+
+    /// <summary>True when the layer has a mask (a small picture of it is shown next to the layer's picture).</summary>
+    public bool HasMask => Model.HasMask;
+
+    /// <summary>False when the mask is switched off (kept, but ignored).</summary>
+    public bool MaskEnabled => Model.MaskEnabled;
+
+    /// <summary>The mask as a small grey picture (white = shows, black = hidden).</summary>
+    public WriteableBitmap? MaskIcon => _maskIcon;
+
+    /// <summary>Switches the mask on or off (one undo step).</summary>
+    public Infrastructure.RelayCommand ToggleMaskCommand { get; }
+
+    private void ToggleMask()
+    {
+        if (!Model.HasMask) return;
+        _history.Push(MaskStateAction.Record(Model.MaskEnabled ? "Switch Mask Off" : "Switch Mask On", Model, () => Model.MaskEnabled = !Model.MaskEnabled));
+    }
+
+    private void RefreshMaskIcon()
+    {
+        if (Model.Mask is not { } mask)
+        {
+            _maskIcon = null;
+            return;
+        }
+        var small = Thumbnail.Create(mask.ToGrayPicture(), IconMaxWidth, IconMaxHeight);
+        if (_maskIcon == null || _maskIcon.PixelWidth != small.Width || _maskIcon.PixelHeight != small.Height) _maskIcon = BitmapConverter.CreateWriteable(small);
+        else BitmapConverter.Update(_maskIcon, small, small.Bounds);
+    }
+
+    private void OnMaskChanged(object? sender, PixelRect region)
+    {
+        BitmapConverter.Update(_bitmap, Model.Pixels, Model.EffectiveMask, region);
+        ScheduleIconRefresh(IconDelayIdle);
+    }
+
+    private void OnMaskReplaced(object? sender, EventArgs e)
+    {
+        BitmapConverter.Update(_bitmap, Model.Pixels, Model.EffectiveMask, Model.Pixels.Bounds);
+        RefreshMaskIcon();
+        OnPropertyChanged(nameof(HasMask));
+        OnPropertyChanged(nameof(MaskEnabled));
+        OnPropertyChanged(nameof(MaskIcon));
+        Infrastructure.RelayCommand.Refresh();
+        ScheduleIconRefresh(IconDelayIdle);
     }
 
     /// <summary>The small picture next to the layer's name. Updated after a change is finished, not while it happens.</summary>
@@ -71,6 +127,7 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
         _iconTimer.Stop();
         if (!_iconDirty) return;
         _iconDirty = false;
+        if (Model.HasMask) { RefreshMaskIcon(); OnPropertyChanged(nameof(MaskIcon)); }
 
         var (w, h) = Thumbnail.FitSize(Model.Width, Model.Height, IconMaxWidth, IconMaxHeight);
         if (w != _iconPixels.Width || h != _iconPixels.Height)
@@ -195,6 +252,75 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
     public double AdjustSaturation { get => Model.Adjustment?.Saturation ?? 0; set => Adjust(a => a with { Saturation = Math.Round(Math.Clamp(value, -100, 100)) }); }
     public double AdjustHue { get => Model.Adjustment?.Hue ?? 0; set => Adjust(a => a with { Hue = Math.Round(Math.Clamp(value, -180, 180)) }); }
 
+    // Levels
+    public bool AdjustIsBasic => Model.Adjustment is { Kind: AdjustmentKind.Basic };
+    public bool AdjustIsLevels => Model.Adjustment is { Kind: AdjustmentKind.Levels };
+    public bool AdjustIsCurves => Model.Adjustment is { Kind: AdjustmentKind.Curves };
+
+    public double LevelsBlack { get => Model.Adjustment?.LevelsBlack ?? 0; set => Adjust(a => a with { LevelsBlack = Math.Round(Math.Clamp(value, 0, Math.Min(254, a.LevelsWhite - 1))) }); }
+    public double LevelsWhite { get => Model.Adjustment?.LevelsWhite ?? 255; set => Adjust(a => a with { LevelsWhite = Math.Round(Math.Clamp(value, Math.Max(1, a.LevelsBlack + 1), 255)) }); }
+    public double LevelsGamma { get => Model.Adjustment?.LevelsGamma ?? 1; set => Adjust(a => a with { LevelsGamma = Math.Round(Math.Clamp(value, 0.1, 5), 2) }); }
+    public double OutputBlack { get => Model.Adjustment?.OutputBlack ?? 0; set => Adjust(a => a with { OutputBlack = Math.Round(Math.Clamp(value, 0, Math.Min(254, a.OutputWhite - 1))) }); }
+    public double OutputWhite { get => Model.Adjustment?.OutputWhite ?? 255; set => Adjust(a => a with { OutputWhite = Math.Round(Math.Clamp(value, Math.Max(1, a.OutputBlack + 1), 255)) }); }
+
+    // Curves: 0 = all colors, 1 = red, 2 = green, 3 = blue
+    private int _curveChannel;
+
+    public IReadOnlyList<string> CurveChannels { get; } = new[] { "RGB (all colors)", "Red", "Green", "Blue" };
+
+    public int CurveChannel
+    {
+        get => _curveChannel;
+        set
+        {
+            if (!SetField(ref _curveChannel, Math.Clamp(value, 0, 3))) return;
+            OnPropertyChanged(nameof(CurvePoints));
+        }
+    }
+
+    /// <summary>The points of the curve of the chosen channel (a straight line when it was not changed).</summary>
+    public IReadOnlyList<CurvePoint> CurvePoints
+    {
+        get
+        {
+            var a = Model.Adjustment;
+            var points = _curveChannel switch { 1 => a?.CurveRed, 2 => a?.CurveGreen, 3 => a?.CurveBlue, _ => a?.Curve };
+            return points == null || points.Count == 0 ? CurveMath.Straight : points;
+        }
+    }
+
+    /// <summary>
+    /// Sets the curve of the chosen channel. While a point is dragged this only shows the change (<paramref name="commit"/> false); when the
+    /// mouse is released it is one undo step back to <paramref name="before"/>.
+    /// </summary>
+    public void SetCurve(IReadOnlyList<CurvePoint> points, bool commit, IReadOnlyList<CurvePoint>? before = null)
+    {
+        if (Model.Adjustment is not { } old) return;
+        var stored = CurveMath.IsStraight(points) ? null : points;
+        var updated = _curveChannel switch
+        {
+            1 => old with { CurveRed = stored },
+            2 => old with { CurveGreen = stored },
+            3 => old with { CurveBlue = stored },
+            _ => old with { Curve = stored },
+        };
+        if (!commit)
+        {
+            if (_curveBefore == null) _curveBefore = old;
+            Model.Adjustment = updated;
+            return;
+        }
+        var original = _curveBefore ?? old;
+        _curveBefore = null;
+        Model.Adjustment = updated;
+        if (!Equals(original, updated)) _history.Push(new LayerPropertyAction(Model, LayerProperty.Adjustment, original, updated));
+    }
+
+    private AdjustmentStyle? _curveBefore;
+
+    /// <summary>Puts the curve of the chosen channel back to a straight line.</summary>
+    public void ResetCurve() => SetCurve(CurveMath.Straight, commit: true);
+
     private void Adjust(Func<AdjustmentStyle, AdjustmentStyle> change)
     {
         if (Model.Adjustment is not { } old) return;
@@ -253,6 +379,15 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
                 OnPropertyChanged(nameof(AdjustContrast));
                 OnPropertyChanged(nameof(AdjustSaturation));
                 OnPropertyChanged(nameof(AdjustHue));
+                OnPropertyChanged(nameof(AdjustIsBasic));
+                OnPropertyChanged(nameof(AdjustIsLevels));
+                OnPropertyChanged(nameof(AdjustIsCurves));
+                OnPropertyChanged(nameof(LevelsBlack));
+                OnPropertyChanged(nameof(LevelsWhite));
+                OnPropertyChanged(nameof(LevelsGamma));
+                OnPropertyChanged(nameof(OutputBlack));
+                OnPropertyChanged(nameof(OutputWhite));
+                OnPropertyChanged(nameof(CurvePoints));
                 break;
             case nameof(Layer.IsVisible): OnPropertyChanged(nameof(IsVisible)); break;
             case nameof(Layer.IsLocked): OnPropertyChanged(nameof(IsLocked)); break;
@@ -272,7 +407,7 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
 
     private void OnPixelsChanged(object? sender, PixelRect region)
     {
-        BitmapConverter.Update(_bitmap, Model.Pixels, region);
+        BitmapConverter.Update(_bitmap, Model.Pixels, Model.EffectiveMask, region);
         ScheduleIconRefresh(IconDelayIdle);
     }
 
@@ -281,10 +416,11 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
         ScheduleIconRefresh(IconDelayIdle);
         if (_bitmap.PixelWidth == Model.Width && _bitmap.PixelHeight == Model.Height)
         {
-            BitmapConverter.Update(_bitmap, Model.Pixels, Model.Pixels.Bounds);
+            BitmapConverter.Update(_bitmap, Model.Pixels, Model.EffectiveMask, Model.Pixels.Bounds);
             return;
         }
         _bitmap = BitmapConverter.CreateWriteable(Model.Pixels);
+        if (Model.EffectiveMask != null) BitmapConverter.Update(_bitmap, Model.Pixels, Model.EffectiveMask, Model.Pixels.Bounds);
         OnPropertyChanged(nameof(Bitmap));
         OnPropertyChanged(nameof(Width));
         OnPropertyChanged(nameof(Height));
@@ -297,5 +433,7 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
         Model.PropertyChanged -= OnModelPropertyChanged;
         Model.PixelsChanged -= OnPixelsChanged;
         Model.PixelsReplaced -= OnPixelsReplaced;
+        Model.MaskChanged -= OnMaskChanged;
+        Model.MaskReplaced -= OnMaskReplaced;
     }
 }

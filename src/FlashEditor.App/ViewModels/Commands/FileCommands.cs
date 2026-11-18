@@ -6,6 +6,7 @@ using FlashEditor.Core.Effects;
 using FlashEditor.Core.History;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.IO;
+using FlashEditor.Core.Transforms;
 using FlashEditor.Core.IO.Project;
 using FlashEditor.Core.Objects;
 using FlashEditor.Core.Painting;
@@ -30,6 +31,10 @@ public sealed class FileCommands
         ProjectManagerCommand = new RelayCommand(() => ShowProjectManager(atStartup: false));
         DuplicatePageCommand = new RelayCommand(DuplicatePage);
         ExportAllPagesCommand = new RelayCommand(ExportAllPages, () => Doc.Project.Pages.Count > 1);
+        ExportForCommand = new RelayCommand(ExportFor);
+        ExportPsdCommand = new RelayCommand(ExportPsd);
+        SaveAsTemplateCommand = new RelayCommand(SaveAsTemplate);
+        ExportSvgCommand = new RelayCommand(ExportSvg);
     }
 
     public RelayCommand NewCommand { get; }
@@ -42,6 +47,10 @@ public sealed class FileCommands
     public RelayCommand ProjectManagerCommand { get; }
     public RelayCommand DuplicatePageCommand { get; }
     public RelayCommand ExportAllPagesCommand { get; }
+    public RelayCommand ExportForCommand { get; }
+    public RelayCommand ExportPsdCommand { get; }
+    public RelayCommand SaveAsTemplateCommand { get; }
+    public RelayCommand ExportSvgCommand { get; }
 
     private DocumentViewModel Doc => _main.Document;
 
@@ -65,18 +74,51 @@ public sealed class FileCommands
     public void CreateProject(NewImageSettings settings)
     {
         string path = ProjectLibrary.Default.NewProjectPath(settings.Name ?? "");
-        var model = Document.CreateBlank(settings.Width, settings.Height, settings.Background);
-        Services.DocumentTemplates.Apply(model, settings.Template);
+        var model = NewDocument(settings);
         _main.LoadDocument(model, path, "New Project");
         if (Save(saveAs: false)) _main.SetStatus($"Created project {Path.GetFileNameWithoutExtension(path)} in {Path.GetDirectoryName(path)}");
+    }
+
+    /// <summary>A new picture: blank with a built-in layout, or a copy of one of the user's saved templates (with its own size).</summary>
+    private Document NewDocument(NewImageSettings settings)
+    {
+        if (Services.UserTemplates.IsUserTemplate(settings.Template))
+        {
+            try { return Services.UserTemplates.Load(settings.Template![Services.UserTemplates.Prefix.Length..]); }
+            catch (Exception ex)
+            {
+                _main.SetStatus("The template could not be opened (" + ex.Message + "); started a blank picture instead.");
+            }
+        }
+        var model = Document.CreateBlank(settings.Width, settings.Height, settings.Background);
+        Services.DocumentTemplates.Apply(model, settings.Template);
+        return model;
+    }
+
+    /// <summary>File > Save as Template: keeps this picture (with everything editable) as a starting point for new pictures.</summary>
+    private void SaveAsTemplate()
+    {
+        string suggested = Path.GetFileNameWithoutExtension(Doc.FilePath ?? Doc.DisplayName);
+        var name = _main.Dialogs.ShowTextInput("Save as Template", "Name of the template:", suggested);
+        if (string.IsNullOrWhiteSpace(name)) return;
+        name = Services.UserTemplates.SafeName(name);
+        if (Services.UserTemplates.Exists(name) && !_main.Dialogs.Confirm("Save as Template", $"A template called \"{name}\" already exists. Replace it?")) return;
+        try
+        {
+            Services.UserTemplates.Save(Doc.Model, name);
+            _main.SetStatus($"Saved the template \"{name}\". Find it in File > New, under Start from (marked with a star).");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _main.Dialogs.ShowInfo("Save as Template", "The template could not be saved: " + ex.Message);
+        }
     }
 
     private void New()
     {
         var settings = _main.Dialogs.ShowNewImage(_main.Colors.Background);
         if (settings == null) return;
-        var blank = Document.CreateBlank(settings.Width, settings.Height, settings.Background);
-        Services.DocumentTemplates.Apply(blank, settings.Template);
+        var blank = NewDocument(settings);
         _main.LoadDocument(blank, null, "New Image");
         _main.SetStatus($"New image {settings.Width} x {settings.Height}");
     }
@@ -94,6 +136,28 @@ public sealed class FileCommands
         if (ProjectFile.IsProject(path))
         {
             OpenProject(path);
+            return;
+        }
+        if (Core.IO.Svg.SvgFile.IsSvg(path))
+        {
+            _main.RunAsync("Opening the SVG file", async () =>
+            {
+                var model = await Task.Run(() => Core.IO.Svg.SvgFile.Open(path));
+                _main.LoadDocument(model, null, "Open");
+                _main.Document.CustomName = Path.GetFileNameWithoutExtension(path);
+                _main.SetStatus($"Opened {Path.GetFileName(path)} ({model.Width} x {model.Height}, {model.Layers.Count - 1} objects). Shapes and text stay editable.");
+            });
+            return;
+        }
+        if (Core.IO.Psd.PsdFile.IsPsd(path))
+        {
+            _main.RunAsync("Opening the Photoshop file", async () =>
+            {
+                var model = await Task.Run(() => Core.IO.Psd.PsdFile.Open(path));
+                _main.LoadDocument(model, null, "Open");            // no file path: saving asks for a name (a project is saved as .flash)
+                _main.Document.CustomName = Path.GetFileNameWithoutExtension(path);
+                _main.SetStatus($"Opened {Path.GetFileName(path)} ({model.Width} x {model.Height}, {model.Layers.Count} layers). Save it as a project (Ctrl+S) to keep editing.");
+            });
             return;
         }
         _main.RunAsync("Opening the image", async () =>
@@ -242,6 +306,72 @@ public sealed class FileCommands
             await Task.Run(() => ImageExporter.Save(flat, target.Path, settings));
             long bytes = new FileInfo(target.Path).Length;
             _main.SetStatus($"Exported {Path.GetFileName(target.Path)}: {settings.Width} x {settings.Height} px, {ImageExporter.FormatFileSize(bytes)}");
+        });
+    }
+
+    /// <summary>
+    /// Export For: makes a picture of a ready-made size (a social post, a thumbnail, a print...) from this page, or from every page of the project
+    /// at once. The picture is fitted, filled or stretched to the size; the project itself is not changed.
+    /// </summary>
+    private void ExportFor()
+    {
+        var pages = Doc.Project.Pages.ToList();
+        var flat = Compositor.Flatten(Doc.Model);
+        var choice = _main.Dialogs.ShowExportFor(flat, pages.Count, Doc.FileFormat ?? ImageFileFormat.Png, Doc.SaveQuality);
+        if (choice == null) return;
+
+        var suggested = Path.GetFileNameWithoutExtension(Doc.FilePath ?? Doc.DisplayName) + " - " + choice.Preset.Name;
+        var target = _main.Dialogs.ShowSaveImage(suggested, choice.Format);
+        if (target == null) return;
+
+        var format = target.Format;
+        bool keepsAlpha = format is ImageFileFormat.Png or ImageFileFormat.Webp or ImageFileFormat.Ico or ImageFileFormat.Tiff or ImageFileFormat.Gif;
+        ColorRgba? background = choice.Transparent && keepsAlpha ? null : ColorRgba.White;
+        var settings = new ExportSettings(format, choice.Quality, choice.Preset.Width, choice.Preset.Height, ResampleMode.Lanczos, ColorRgba.White);
+        var sources = choice.AllPages ? pages.Select(p => Compositor.Flatten(p.Model)).ToList() : new List<PixelBuffer> { flat };
+
+        _main.RunAsync("Exporting", async () =>
+        {
+            string folder = Path.GetDirectoryName(target.Path) ?? "";
+            string name = Path.GetFileNameWithoutExtension(target.Path), extension = Path.GetExtension(target.Path);
+            await Task.Run(() =>
+            {
+                for (int i = 0; i < sources.Count; i++)
+                {
+                    var picture = ExportPresets.Compose(sources[i], choice.Preset, choice.Fit, background);
+                    string path = sources.Count == 1 ? target.Path : Path.Combine(folder, $"{name}-{i + 1}{extension}");
+                    ImageExporter.Save(picture, path, settings);
+                }
+            });
+            _main.SetStatus(sources.Count == 1
+                ? $"Exported {Path.GetFileName(target.Path)} for {choice.Preset.Name}: {choice.Preset.Width} x {choice.Preset.Height} px"
+                : $"Exported {sources.Count} pages for {choice.Preset.Name} to {folder}");
+        });
+    }
+
+    /// <summary>Saves this page as an SVG: shapes and text stay vector, everything else becomes embedded pictures.</summary>
+    private void ExportSvg()
+    {
+        var path = _main.Dialogs.ShowSaveSvg(Path.GetFileNameWithoutExtension(Doc.FilePath ?? Doc.DisplayName));
+        if (path == null) return;
+        var model = Doc.Model;
+        _main.RunAsync("Saving the SVG file", async () =>
+        {
+            await Task.Run(() => Core.IO.Svg.SvgFile.Save(model, path));
+            _main.SetStatus($"Saved {Path.GetFileName(path)}. Plain shapes and text are vector; effects and pictures are embedded.");
+        });
+    }
+
+    /// <summary>Saves this page as a Photoshop file with all its layers (adjustment layers are left out, masks are applied).</summary>
+    private void ExportPsd()
+    {
+        var path = _main.Dialogs.ShowSavePsd(Path.GetFileNameWithoutExtension(Doc.FilePath ?? Doc.DisplayName));
+        if (path == null) return;
+        var model = Doc.Model;
+        _main.RunAsync("Saving the Photoshop file", async () =>
+        {
+            await Task.Run(() => Core.IO.Psd.PsdFile.Save(model, path));
+            _main.SetStatus($"Saved {Path.GetFileName(path)} with {model.Layers.Count(l => !l.IsAdjustment)} layers. Photoshop shows objects, text and effects as pictures.");
         });
     }
 

@@ -50,12 +50,43 @@ public partial class NewImageDialog : Window
         _backgroundColor = backgroundColor;
         PresetBox.ItemsSource = Presets.Select(p => p.Name).ToList();
         PresetBox.SelectedIndex = 2;
-        TemplateBox.ItemsSource = DocumentTemplates.Names;
+        FillTemplates();
         TemplateBox.SelectedIndex = 0;
         if (!askName) Loaded += (_, _) => WidthBox.Focus();
     }
 
     public NewImageSettings? Result { get; private set; }
+
+    /// <summary>The built-in layouts, then the templates the user saved (marked with a star).</summary>
+    private void FillTemplates()
+        => TemplateBox.ItemsSource = DocumentTemplates.Names.Concat(UserTemplates.Names().Select(n => UserTemplates.Prefix + n)).ToList();
+
+    /// <summary>A saved template has its own size: the size boxes show it and cannot be changed.</summary>
+    private void OnTemplateChanged(object sender, SelectionChangedEventArgs e)
+    {
+        string? template = TemplateBox.SelectedItem as string;
+        bool own = UserTemplates.IsUserTemplate(template);
+        DeleteTemplateButton.Visibility = own ? Visibility.Visible : Visibility.Collapsed;
+        WidthBox.IsEnabled = HeightBox.IsEnabled = PresetBox.IsEnabled = !own;
+        if (!own || template == null) return;
+        try
+        {
+            var model = UserTemplates.Load(template[UserTemplates.Prefix.Length..]);
+            WidthBox.Text = model.Width.ToString();
+            HeightBox.Text = model.Height.ToString();
+        }
+        catch (Exception) { /* a damaged template is reported when it is used */ }
+    }
+
+    private void OnDeleteTemplate(object sender, RoutedEventArgs e)
+    {
+        if (TemplateBox.SelectedItem is not string template || !UserTemplates.IsUserTemplate(template)) return;
+        string name = template[UserTemplates.Prefix.Length..];
+        if (MessageDialog.Show(this, $"Delete the saved template \"{name}\"? This cannot be undone.", "Delete template", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+        UserTemplates.Delete(name);
+        FillTemplates();
+        TemplateBox.SelectedIndex = 0;
+    }
 
     private void OnPresetChanged(object sender, SelectionChangedEventArgs e)
     {
