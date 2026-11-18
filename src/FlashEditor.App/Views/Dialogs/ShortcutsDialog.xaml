@@ -1,0 +1,25 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.ShortcutsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Keyboard Shortcuts" Width="560" Height="640" MinHeight="380" MinWidth="460"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}">
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Reset all" Click="OnResetAll" Style="{StaticResource DialogButton}"
+                        ToolTip="Back to the shortcuts the program started with" />
+                <TextBlock x:Name="Hint" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="11.5" Margin="0,0,12,0"
+                           Text="Click a shortcut, then press the new keys. Backspace removes it, Esc cancels." />
+            </DockPanel>
+        </Border>
+        <StackPanel DockPanel.Dock="Top" Margin="24,18,24,8">
+            <TextBlock Text="Keyboard Shortcuts" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}"
+                       Text="Commands use Ctrl or Alt with a key. Tools use one key. Changes work at once and are saved. The tips on the ribbon buttons show the new keys after the program is restarted." />
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10,0,10,0">
+            <StackPanel x:Name="List" Margin="14,0,14,12" />
+        </ScrollViewer>
+    </DockPanel>
+</Window>

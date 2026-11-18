@@ -141,20 +141,6 @@ begin
   Result := (PageID = ModelsPage.ID) and WizardSilent;
 end;
 
-{ Takes the two model files out of the Real-ESRGAN zip (the program expects them side by side, without folders). }
-procedure UnpackEsrgan(const Zip, DestDir: String);
-var
-  Cmd: String;
-  Code: Integer;
-begin
-  ForceDirectories(DestDir);
-  Cmd := '-NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; ' +
-    '$z=[IO.Compression.ZipFile]::OpenRead(''' + Zip + '''); ' +
-    'foreach($e in $z.Entries){ if($e.Name -eq ''real_esrgan_x4plus.onnx'' -or $e.Name -eq ''real_esrgan_x4plus.data''){ ' +
-    '[IO.Compression.ZipFileExtensions]::ExtractToFile($e, ''' + DestDir + '\'' + $e.Name, $true) } }; $z.Dispose()"';
-  Exec('powershell.exe', Cmd, '', SW_HIDE, ewWaitUntilTerminated, Code);
-end;
-
 procedure DownloadModels;
 var
   Models, Tmp: String;
@@ -198,7 +184,8 @@ begin
 
   if ModelsPage.Values[0] then FileCopy(Tmp + '\isnet-general-use.onnx', Models + '\isnet-general-use.onnx', False);
   if ModelsPage.Values[1] then FileCopy(Tmp + '\lama_fp32.onnx', Models + '\lama_fp32.onnx', False);
-  if ModelsPage.Values[2] then UnpackEsrgan(Tmp + '\real_esrgan_x4plus.zip', Models + '\real_esrgan_x4plus');
+  // The upscaling model is a zip: it is only copied here (already checked with SHA-256); the program unpacks it the first time it is used.
+  if ModelsPage.Values[2] then FileCopy(Tmp + '\real_esrgan_x4plus.zip', Models + '\real_esrgan_x4plus.zip', False);
   if ModelsPage.Values[3] then
   begin
     FileCopy(Tmp + '\mobile_sam_image_encoder.onnx', Models + '\mobile_sam_image_encoder.onnx', False);

@@ -43,6 +43,7 @@ public enum ShapeKind
     Tag,
     Shield,
     OvalBubble,
+    Path,
 }
 
 /// <summary>
@@ -83,7 +84,12 @@ public sealed record ShapeObject(
     bool ArrowStart = false,
     bool ArrowEnd = false,
     double DashLength = 0,
-    double DashGap = 0) : LayerObject(Box, FlipX, FlipY)
+    double DashGap = 0,
+    IReadOnlyList<CurveNode>? Nodes = null,
+    bool Closed = false,
+    double Bend = 0,
+    LineBendStyle BendStyle = LineBendStyle.Arc,
+    PictureFill? Picture = null) : LayerObject(Box, FlipX, FlipY)
 {
     public override string KindName => "Shape";
 
@@ -136,6 +142,7 @@ public static class ShapeNames
         ShapeKind.DoubleArrow => "Double arrow",
         ShapeKind.XMark => "X mark",
         ShapeKind.OvalBubble => "Oval bubble",
+        ShapeKind.Path => "Curve",
         _ => kind.ToString(),
     };
 

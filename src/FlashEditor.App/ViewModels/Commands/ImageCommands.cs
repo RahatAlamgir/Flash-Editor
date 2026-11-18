@@ -3,6 +3,7 @@ using FlashEditor.Core.Documents;
 using FlashEditor.Core.Effects;
 using FlashEditor.Core.History;
 using FlashEditor.Core.Imaging;
+using FlashEditor.Core.Layout;
 using FlashEditor.Core.Objects;
 using FlashEditor.Core.IO;
 using FlashEditor.Core.Painting;
@@ -30,6 +31,7 @@ public sealed class ImageCommands
         Rotate180Command = new RelayCommand(() => Transform("Rotate 180°", ImageTransforms.Rotate180, RotateObjects(180)));
         RotateCustomCommand = new RelayCommand(RotateCustom);
         StraightenCommand = new RelayCommand(Straighten);
+        MagicResizeCommand = new RelayCommand(MagicResizeDocument);
         PerspectiveCropCommand = new RelayCommand(() => _main.Tools.ActiveTool = _main.Tools.Get<Tools.Transform.PerspectiveCropTool>());
         FlipHorizontalCommand = new RelayCommand(() => Transform("Flip Horizontal", ImageTransforms.FlipHorizontal,
             (o, w, h) => ObjectTransforms.FlipHorizontal(o, w)));
@@ -49,6 +51,7 @@ public sealed class ImageCommands
     public RelayCommand Rotate180Command { get; }
     public RelayCommand RotateCustomCommand { get; }
     public RelayCommand StraightenCommand { get; }
+    public RelayCommand MagicResizeCommand { get; }
     public RelayCommand PerspectiveCropCommand { get; }
     public RelayCommand FlipHorizontalCommand { get; }
     public RelayCommand FlipVerticalCommand { get; }
@@ -227,6 +230,39 @@ public sealed class ImageCommands
         if (values == null || values["angle"] == 0) return;
         double angle = values["angle"];
         Transform($"Rotate {angle:0.#}°", p => ImageTransforms.Rotate(p, angle), RotateObjects(angle));
+    }
+
+    /// <summary>
+    /// Magic Resize: the design becomes another size and keeps its layout. Objects stay editable (they keep their proportions and relative
+    /// place; text scales), layers of plain pixels are resampled.
+    /// </summary>
+    private void MagicResizeDocument()
+    {
+        var pages = _main.Document.Project.Pages;
+        var settings = _main.Dialogs.ShowMagicResize(Doc.Width, Doc.Height, pages.Count);
+        if (settings == null) return;
+
+        _main.Tools.ResetActiveTool();
+        var targets = settings.AllPages ? pages.ToList() : new List<DocumentViewModel> { _main.Document };
+        int changed = 0;
+        _main.Run("Magic Resize", () =>
+        {
+            foreach (var page in targets)
+            {
+                var model = page.Model;
+                if (model.Width == settings.Width && model.Height == settings.Height) continue;
+                int oldW = model.Width, oldH = model.Height, newW = settings.Width, newH = settings.Height;
+                var action = CanvasChangeAction.Apply("Magic Resize", model,
+                    p => MagicResize.MapPixels(p, newW, newH),
+                    (o, _, _) => MagicResize.MapObject(o, oldW, oldH, newW, newH));
+                model.History.Push(action);
+                changed++;
+            }
+            _main.Canvas?.FitToWindow();
+            _main.SetStatus(changed == 0
+                ? "The picture already has that size."
+                : $"Magic Resize: {changed} page{(changed == 1 ? "" : "s")} now {settings.Width} x {settings.Height} px. Ctrl+Z undoes it.");
+        });
     }
 
     /// <summary>Straighten: turn the picture a little (a tilted horizon) and, if wanted, cut off the empty corners that the turn leaves.</summary>

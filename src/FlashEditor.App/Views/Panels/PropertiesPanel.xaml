@@ -350,7 +350,19 @@
                                     <TextBlock Text="Gap" Style="{StaticResource Label}" ToolTip="Space between the dashes or dots" />
                                     <ctl:NumberSlider Minimum="1" Maximum="200" Value="{Binding DashGapPx}" SliderWidth="96" BoxWidth="52" Unit="px" />
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0" Visibility="{Binding IsLine, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding IsLine, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Bend" Style="{StaticResource Label}" ToolTip="Bow the line to one side (negative: the other side)" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding LineBendPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding IsLine, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Curve" Style="{StaticResource Label}" />
+                                    <ComboBox Width="130" ItemsSource="{Binding Source={x:Static vm:ObjectPropertiesViewModel.LineBendStyleNames}}" SelectedIndex="{Binding LineBendStyleIndex}"
+                                              ToolTip="An arc bows once, a wave goes up and down" />
+                                </StackPanel>
+                                <Button Content="Edit as curve (many points)" Command="{Binding LineToCurveCommand}" HorizontalAlignment="Left" Margin="0,2,0,4" Padding="10,3"
+                                        Visibility="{Binding IsLine, Converter={StaticResource BoolToVisibility}}"
+                                        ToolTip="Turns the line into a curve with points that you can drag, add and remove with the Curve tool" />
+                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0" Visibility="{Binding HasArrows, Converter={StaticResource BoolToVisibility}}">
                                     <CheckBox Content="Arrow at start" IsChecked="{Binding ArrowStart}" Margin="0,0,12,0" />
                                     <CheckBox Content="Arrow at end" IsChecked="{Binding ArrowEnd}" />
                                 </StackPanel>
@@ -466,6 +478,203 @@
                                 <StackPanel Style="{StaticResource Row}">
                                     <TextBlock Text="Thickness" Style="{StaticResource Label}" />
                                     <ctl:NumberSlider Minimum="0" Maximum="60" Value="{Binding OutlineWidth}" SliderWidth="96" BoxWidth="52" Unit="px" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- QR code -->
+                        <Expander Header="QR code" IsExpanded="True" Visibility="{Binding IsQr, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBox IsEnabled="{Binding IsSingle}" Text="{Binding QrContent, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap" FontSize="12"
+                                         MinHeight="44" MaxHeight="110" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6" HorizontalContentAlignment="Left"
+                                         ToolTip="What the code says (a web address, a phone number, any text). Click elsewhere to apply." />
+                                <TextBlock Text="Too much text for this level: shorten it or lower the repair level." Foreground="#FFFF8080" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"
+                                           Visibility="{Binding QrTooLong, Converter={StaticResource BoolToVisibility}}" />
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Repair" Style="{StaticResource Label}" ToolTip="How much damage or dirt the code survives. More repair = a denser code." />
+                                    <ComboBox Width="130" ItemsSource="{Binding Source={x:Static vm:ObjectPropertiesViewModel.QrLevelNames}}" SelectedIndex="{Binding QrLevelIndex}" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Style" Style="{StaticResource Label}" />
+                                    <ComboBox Width="130" ItemsSource="{Binding Source={x:Static vm:ObjectPropertiesViewModel.QrStyleNames}}" SelectedIndex="{Binding QrStyleIndex}" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Color" Style="{StaticResource Label}" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding QrForeBrush}" Command="{Binding PickQrForeCommand}" ToolTip="Color of the squares (keep it much darker than the background)" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <CheckBox Content="Background" IsChecked="{Binding QrTransparent, Converter={StaticResource InverseBool}}" Width="72" VerticalAlignment="Center" ToolTip="Untick for a see-through background" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding QrBackBrush}" Command="{Binding PickQrBackCommand}" ToolTip="Background color" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Border" Style="{StaticResource Label}" ToolTip="Empty space around the code, in squares (scanners need 2 or more)" />
+                                    <ctl:NumberSlider Minimum="0" Maximum="8" Value="{Binding QrQuiet}" SliderWidth="96" BoxWidth="52" Unit="" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Picture in a frame -->
+                        <Expander Header="Picture in frame" IsExpanded="True" Visibility="{Binding HasPicture, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBlock Text="The picture is part of the frame: moving or resizing the frame takes it along." FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,6" />
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Zoom" Style="{StaticResource Label}" ToolTip="Zoom in on the picture inside the frame" />
+                                    <ctl:NumberSlider Minimum="100" Maximum="500" Value="{Binding PictureZoomPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Left / right" Style="{StaticResource Label}" ToolTip="Which part of the picture shows (needs zoom above 100% to see a change in the other direction)" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding PicturePanXPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Up / down" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding PicturePanYPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                    <Button Content="Center and fit" Command="{Binding ResetPictureCommand}" Padding="10,3" Margin="0,0,6,0" />
+                                    <Button Content="Remove picture" Command="{Binding RemovePictureCommand}" Padding="10,3" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Barcode -->
+                        <Expander Header="Barcode" IsExpanded="True" Visibility="{Binding IsBarcode, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBlock Text="TYPE" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,4" />
+                                <ComboBox ItemsSource="{Binding Source={x:Static vm:ObjectPropertiesViewModel.BarcodeKindNames}}" SelectedIndex="{Binding BarcodeKindIndex}" />
+                                <TextBlock Text="TEXT" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,4" />
+                                <TextBox IsEnabled="{Binding IsSingle}" Text="{Binding BarcodeContent, UpdateSourceTrigger=LostFocus}" HorizontalContentAlignment="Left"
+                                         ToolTip="What the barcode says. Click elsewhere to apply." />
+                                <TextBlock Text="{Binding BarcodeHint}" FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,4,0,0" />
+                                <TextBlock Text="{Binding BarcodeError}" FontSize="11" TextWrapping="Wrap" Foreground="#FFFF8080" Margin="0,4,0,0"
+                                           Visibility="{Binding HasBarcodeError, Converter={StaticResource BoolToVisibility}}" />
+                                <CheckBox Content="Show the numbers under the bars" IsChecked="{Binding BarcodeShowText}" Margin="0,10,0,0" />
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Bars" Style="{StaticResource Label}" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding BarcodeForeBrush}" Command="{Binding PickBarcodeForeCommand}" ToolTip="Color of the bars (keep it much darker than the background)" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <CheckBox Content="Background" IsChecked="{Binding BarcodeTransparent, Converter={StaticResource InverseBool}}" Margin="0,0,10,0" VerticalAlignment="Center" ToolTip="Untick for a see-through background" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding BarcodeBackBrush}" Command="{Binding PickBarcodeBackCommand}" ToolTip="Background color" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Chart -->
+                        <Expander Header="Chart" IsExpanded="True" Visibility="{Binding IsChart, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel>
+                                <TextBlock Text="TYPE" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,4" />
+                                <ItemsControl ItemsSource="{Binding ChartKinds}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Rows="1" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <ToggleButton IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Name}" Margin="0,0,3,0" Padding="0,5" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                          Command="{Binding DataContext.SetChartKindCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding Kind}">
+                                                <StackPanel>
+                                                    <Viewbox Width="18" Height="18" HorizontalAlignment="Center">
+                                                        <Path Style="{StaticResource IconPath}" Data="{Binding IconKey, Converter={StaticResource IconGeometry}}" />
+                                                    </Viewbox>
+                                                    <TextBlock Text="{Binding Name}" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </ToggleButton>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="TITLE" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,4" />
+                                <TextBox Text="{Binding ChartTitle, UpdateSourceTrigger=LostFocus}" HorizontalContentAlignment="Left" />
+
+                                <DockPanel Margin="0,12,0,4">
+                                    <Button DockPanel.Dock="Right" Content="Paste list..." Command="{Binding PasteChartNumbersCommand}" Padding="8,2" FontSize="11"
+                                            ToolTip="Paste or type a whole list at once: one line per number, like Jan, 12" />
+                                    <Button DockPanel.Dock="Right" Content="+ Add" Command="{Binding AddChartRowCommand}" Padding="8,2" FontSize="11" Margin="0,0,6,0" ToolTip="Add a number" />
+                                    <TextBlock Text="NUMBERS" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
+                                </DockPanel>
+                                <Border Background="{StaticResource WindowBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1" CornerRadius="4" Padding="6,4">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="190">
+                                        <ItemsControl ItemsSource="{Binding ChartRows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="58" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Button Style="{StaticResource ColorSwatchButton}" Margin="0,0,6,0" Width="20" Height="20" Background="{Binding ColorBrush}"
+                                                                Command="{Binding PickColorCommand}" ToolTip="Color of this bar or slice" />
+                                                        <TextBox Grid.Column="1" Text="{Binding Label, UpdateSourceTrigger=LostFocus}" HorizontalContentAlignment="Left" Margin="0,0,4,0" ToolTip="Name" />
+                                                        <TextBox Grid.Column="2" Text="{Binding ValueText, UpdateSourceTrigger=LostFocus}" ToolTip="Number" />
+                                                        <Button Grid.Column="3" Content="&#x2715;" Command="{Binding RemoveCommand}" Margin="4,0,0,0" Padding="5,0" MinWidth="0" FontSize="10"
+                                                                ToolTip="Remove this row" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <TextBlock Text="COLORS" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,4" />
+                                <ItemsControl ItemsSource="{Binding ChartPalettesList}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Margin="0,0,5,5" Padding="5,4" ToolTip="{Binding Name}"
+                                                    Command="{Binding DataContext.ApplyChartPaletteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                                <ItemsControl ItemsSource="{Binding Swatches}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Rectangle Width="11" Height="16" Fill="{Binding}" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="SHOW" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,4" />
+                                <WrapPanel>
+                                    <CheckBox Content="Numbers" IsChecked="{Binding ChartShowValues}" Margin="0,0,12,0" />
+                                    <CheckBox Content="Names" IsChecked="{Binding ChartShowLabels}" Margin="0,0,12,0" />
+                                    <CheckBox Content="Grid lines" IsChecked="{Binding ChartShowGrid}" />
+                                </WrapPanel>
+                                <StackPanel Style="{StaticResource Row}" Margin="0,6,0,0">
+                                    <TextBlock Text="Unit" Style="{StaticResource Label}" ToolTip="Written before and after every number, for example $ before or % after" />
+                                    <TextBox Width="46" Text="{Binding ChartPrefix, UpdateSourceTrigger=LostFocus}" ToolTip="Before the number (for example $)" />
+                                    <TextBlock Text="12" Foreground="{StaticResource SubtleTextBrush}" Margin="6,0" VerticalAlignment="Center" />
+                                    <TextBox Width="46" Text="{Binding ChartSuffix, UpdateSourceTrigger=LostFocus}" ToolTip="After the number (for example %)" />
+                                </StackPanel>
+
+                                <TextBlock Text="STYLE" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" Margin="0,10,0,4" />
+                                <StackPanel Style="{StaticResource Row}" Visibility="{Binding ChartHasBars, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Bar width" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="15" Maximum="100" Value="{Binding ChartBarWidth}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Text size" Style="{StaticResource Label}" />
+                                    <ctl:NumberSlider Minimum="50" Maximum="250" Value="{Binding ChartTextScale}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Text color" Style="{StaticResource Label}" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding ChartTextBrush}" Command="{Binding PickChartTextCommand}" ToolTip="Text color" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <CheckBox Content="Background" IsChecked="{Binding ChartHasBackground}" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                    <Button Style="{StaticResource ColorSwatchButton}" Margin="0" Background="{Binding ChartBackBrush}" Command="{Binding PickChartBackCommand}" ToolTip="Background color" />
                                 </StackPanel>
                             </StackPanel>
                         </Expander>

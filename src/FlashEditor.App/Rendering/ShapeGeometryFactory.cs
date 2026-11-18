@@ -21,7 +21,7 @@ public static class ShapeGeometryFactory
             ShapeKind.Ellipse => new EllipseGeometry(new Rect(0, 0, w, h)),
             ShapeKind.Heart => Heart(w, h),
             ShapeKind.SpeechBubble => SpeechBubble(w, h, Radius(shape, w, h * 0.78)),
-            ShapeKind.Line => new LineGeometry(new Point(0, h / 2), new Point(w, h / 2)),
+            ShapeKind.Line => LineGeometryOf(shape, w, h),
             ShapeKind.Ring => Ring(w, h, Inner(shape)),
             ShapeKind.HalfRing => Arc(w / 2, h, w / 2, h, 180, 180, Inner(shape)),
             ShapeKind.HalfCircle => Arc(w / 2, h, w / 2, h, 180, 180, 0),
@@ -33,10 +33,38 @@ public static class ShapeGeometryFactory
             ShapeKind.Teardrop => Teardrop(w, h),
             ShapeKind.Shield => Shield(w, h),
             ShapeKind.OvalBubble => OvalBubble(w, h),
+            ShapeKind.Path => CurveGeometry(shape, w, h),
             _ => new RectangleGeometry(new Rect(0, 0, w, h)),
         };
         geometry.Freeze();
         return geometry;
+    }
+
+    /// <summary>A straight line, or a bent one (an arc or a wave) when the shape has a bend.</summary>
+    private static Geometry LineGeometryOf(ShapeObject shape, double w, double h)
+    {
+        if (Math.Abs(shape.Bend) < 1e-6) return new LineGeometry(new Point(0, h / 2), new Point(w, h / 2));
+        var (a, c1, c2, b) = Core.Objects.LineCurves.Controls(w, h, shape.Bend, shape.BendStyle);
+        var figure = new PathFigure { StartPoint = new Point(a.X, a.Y), IsClosed = false, IsFilled = false };
+        figure.Segments.Add(new BezierSegment(new Point(c1.X, c1.Y), new Point(c2.X, c2.Y), new Point(b.X, b.Y), true));
+        return new PathGeometry(new[] { figure });
+    }
+
+    /// <summary>A curve made of Bezier segments (the points are given as fractions of the box).</summary>
+    private static Geometry CurveGeometry(ShapeObject shape, double w, double h)
+    {
+        var nodes = shape.Nodes;
+        if (nodes == null || nodes.Count < 2) return new LineGeometry(new Point(0, h / 2), new Point(w, h / 2));
+        Point P(Core.Imaging.PointD p) => new(p.X * w, p.Y * h);
+        var figure = new PathFigure { StartPoint = P(nodes[0].Point), IsClosed = shape.Closed, IsFilled = true };
+        int count = Core.Objects.CurvePath.SegmentCount(nodes.Count, shape.Closed);
+        for (int s = 0; s < count; s++)
+        {
+            var a = nodes[s]; var b = nodes[(s + 1) % nodes.Count];
+            if (!a.HasHandleOut && !b.HasHandleIn) figure.Segments.Add(new LineSegment(P(b.Point), true));
+            else figure.Segments.Add(new BezierSegment(P(a.HandleOut), P(b.HandleIn), P(b.Point), true));
+        }
+        return new PathGeometry(new[] { figure }) { FillRule = FillRule.Nonzero };
     }
 
     private static double Radius(ShapeObject s, double w, double h) => Math.Clamp(s.CornerRadius, 0, Math.Min(w, h) / 2);

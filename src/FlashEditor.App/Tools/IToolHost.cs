@@ -44,6 +44,9 @@ public interface IToolHost
 
     void SelectOnly(Layer? layer);
 
+    /// <summary>Nothing is shown as selected any more (a click outside the canvas).</summary>
+    void ClearSelection();
+
     /// <summary>Selects several layers at once (the last one becomes the active layer).</summary>
     void SetSelection(IEnumerable<Layer> layers, Layer? active);
     void ToggleSelected(Layer layer);
@@ -65,4 +68,7 @@ public interface IToolHost
 
     /// <summary>The AI subject finder, when the model is installed (null otherwise).</summary>
     Func<PixelBuffer, CancellationToken, float[]>? SubjectMask { get; }
+
+    /// <summary>The "keep proportions" switch of the Properties panel: resizing with the handles keeps the width / height ratio (Shift does the opposite).</summary>
+    bool KeepProportions { get; }
 }

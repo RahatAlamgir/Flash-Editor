@@ -101,6 +101,12 @@ public sealed class MoveTool : ToolBase
         var hit = Host.FindLayerAt(e.Position, 3 / Zoom);
         if (hit == null)
         {
+            // Outside the canvas: deselect everything (also after Select All).
+            if (e.X < 0 || e.Y < 0 || e.X >= Document.Width || e.Y >= Document.Height)
+            {
+                Host.ClearSelection();
+                return;
+            }
             Host.SelectOnly(Document.ActiveLayer);
             Host.SetStatus(Host.FindLayerAt(e.Position, 3 / Zoom, includeLocked: true) is { } locked
                 ? $"\"{locked.Name}\" is locked, so it cannot be picked on the canvas. Select it in the Layers panel to unlock it."
@@ -164,6 +170,11 @@ public sealed class MoveTool : ToolBase
         if (e.ClickCount == 2 && hit.Object is TextObject)
         {
             EditText(hit);
+            return;
+        }
+        if (e.ClickCount == 2 && hit.Object is ShapeObject { Shape: ShapeKind.Path })
+        {
+            Host.SelectTool<FlashEditor.App.Tools.Shapes.CurveTool>();          // double-click a curve: edit its points
             return;
         }
         if (hit.Object != null) BeginObjectDrag(hit, HandleKind.Move, makeObject: false, part: null);
@@ -463,7 +474,7 @@ public sealed class MoveTool : ToolBase
             }
             default:
             {
-                bool keepRatio = start.KeepsAspectByDefault != e.Shift;
+                bool keepRatio = (start is TextObject || Host.KeepProportions) != e.Shift;     // the switch in Properties decides; Shift does the opposite
                 var at = _partIndex == null && _objectLayer != null ? _snap.Point(new[] { _objectLayer }, e.Position, Zoom, !e.Alt) : e.Position;
                 var box = TransformHandles.Resize(start.Box, _handle, at, keepRatio);
                 if (start.IsLineLike) box = ObjectBox.FromCenter(box.Center, box.Width, start.Box.Height, box.Rotation);

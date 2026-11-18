@@ -22,7 +22,7 @@ public sealed class ViewCommands
         SettingsCommand = new RelayCommand(() => _main.Dialogs.ShowSettings());
         BrandKitCommand = new RelayCommand(() => _main.Dialogs.ShowBrandKit(_main.Document.Model.Layers.Count == 0 ? null : Core.Painting.Compositor.Flatten(_main.Document.Model)));
         TourCommand = new RelayCommand(ShowTour);
-        ShortcutsCommand = new RelayCommand(() => _main.Dialogs.ShowInfo("Keyboard Shortcuts", ShortcutsText));
+        ShortcutsCommand = new RelayCommand(() => _main.Dialogs.ShowShortcuts());
         AboutCommand = new RelayCommand(() => _main.Dialogs.ShowInfo("About Flash Editor",
             "Flash Editor 1.0\nA small layer-based image editor built with C#, WPF and SkiaSharp."));
     }
@@ -65,38 +65,4 @@ public sealed class ViewCommands
     }
     public RelayCommand AboutCommand { get; }
 
-    public const string ShortcutsText =
-        "TOOLS\n" +
-        "V Move   M Rectangle select   L Lasso   C Crop\n" +
-        "B Brush   E Eraser   G Paint bucket   I Eyedropper\n" +
-        "U Rectangle   O Ellipse   N Line   T Text   H Hand   Z Zoom\n" +
-        "[ / ]  Brush size smaller / bigger\n" +
-        "X Swap colors   D Default colors (black / white)\n\n" +
-        "EDIT\n" +
-        "Ctrl+Z Undo   Ctrl+Y or Ctrl+Shift+Z Redo\n" +
-        "Ctrl+C Copy   Ctrl+X Cut   Ctrl+V Paste   Delete Clear selection\n" +
-        "Ctrl+A Select all layers (Select / Move tool) or all pixels (other tools)   Ctrl+Shift+D Deselect   Ctrl+Shift+I Invert selection\n" +
-        "Ctrl+D Duplicate the selected layer or object\n\n" +
-        "FILE\n" +
-        "Ctrl+N New   Ctrl+O Open (picture or project)\n" +
-        "Ctrl+S Save project (.flash, everything stays editable)   Ctrl+Shift+S Save project as\n" +
-        "Ctrl+Alt+S Export as a picture (PNG, JPG... choose quality and size)\n" +
-        "Ctrl+Alt+N Add a page (pages are listed at the bottom, projects along the top)   Ctrl+W Close project   Ctrl+Tab next page\n\n" +
-        "SELECT / MOVE (V)\n" +
-        "Click to select   Drag to move   Handles resize / rotate (Shift = free / 15°)\n" +
-        "Double-click text to edit   Right-click for quick actions   Delete removes a selected object\n" +
-        "Ctrl+] / Ctrl+[ forward / backward   Ctrl+Shift+] / [ front / back\n\n" +
-        "REFINE BRUSH (R)\n" +
-        "Restore = paint back what Remove Background took   Remove = paint away leftovers   Alt = other mode   X = switch\n\n" +
-        "SELECTIONS\n" +
-        "M rectangle / ellipse   L lasso / polygon lasso   P pen (curves)   W magic wand   Shift = add, Alt = subtract\n\n" +
-        "IMAGE\n" +
-        "Ctrl+Alt+I Image size / resolution   Ctrl+Alt+C Canvas size   Ctrl+Alt+B Remove background\n\n" +
-        "VIEW\n" +
-        "Mouse wheel Zoom   Space+drag or middle mouse Pan\n" +
-        "Ctrl+Plus Zoom in   Ctrl+Minus Zoom out   Ctrl+0 Fit   Ctrl+1 100%\n" +
-        "Shift+F5 Remove / fill the selection with AI (select the area first)\n" +
-        "Ctrl+R Rulers   Ctrl+' Grid   Ctrl+; Guides   Ctrl+Shift+; Snapping (buttons above the canvas)\n\n" +
-        "CROP TOOL\n" +
-        "Enter Apply   Esc Cancel";
 }

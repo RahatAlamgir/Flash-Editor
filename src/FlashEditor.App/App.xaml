@@ -12,6 +12,7 @@
                 <ResourceDictionary Source="Themes/TextBoxes.xaml" />
                 <ResourceDictionary Source="Themes/Styles.xaml" />
                 <ResourceDictionary Source="Themes/Panels.xaml" />
+                <ResourceDictionary Source="Themes/Ribbon.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

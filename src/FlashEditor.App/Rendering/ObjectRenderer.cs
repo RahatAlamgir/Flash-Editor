@@ -102,7 +102,8 @@ public sealed class ObjectRenderer : IObjectRenderer
     /// </summary>
     private static double MarginFor(LayerObject obj) => obj switch
     {
-        ShapeObject { IsLineLike: true } l when l.ArrowStart || l.ArrowEnd => ArrowLength(l) / 2 + 2,
+        ShapeObject { IsLineLike: true } l => LineCurves.Reach(l.Box.Width, l.Bend, l.BendStyle) + (l.ArrowStart || l.ArrowEnd ? ArrowLength(l) / 2 : l.StrokeWidth / 2) + 2,
+        ShapeObject { Shape: ShapeKind.Path, Closed: false } p when p.ArrowStart || p.ArrowEnd => ArrowLength(p) + 2 + p.StrokeWidth / 2,
         ShapeObject { Stroke: not null } s => s.StrokeWidth / 2 + 2,
         TextObject { OutlineWidth: > 0, OutlineColor: not null } t => t.OutlineWidth + 2,
         GroupObject g => 2 + g.Members.Max(m => MarginFor(m.Object) + EffectReach(m.Object)) * Math.Max(g.Scale.Sx, g.Scale.Sy),
@@ -126,24 +127,42 @@ public sealed class ObjectRenderer : IObjectRenderer
     /// <summary>How long an arrow head is: it grows with the line width.</summary>
     private static double ArrowLength(ShapeObject line) => Math.Max(10, line.StrokeWidth * 4);
 
-    /// <summary>Filled triangles at the ends of a line (drawn in the same space as the line: from the left end to the right end of the box).</summary>
-    private static void DrawArrowHeads(DrawingContext dc, ShapeObject line, ObjectBox box, Brush brush)
+    /// <summary>Filled triangles at the ends of a line or an open curve (drawn in the shape's own space), turned to follow the line at its ends.</summary>
+    private static void DrawArrowHeads(DrawingContext dc, ShapeObject shape, ObjectBox box, Brush brush)
     {
-        double len = ArrowLength(line), half = len * 0.5, y = box.Height / 2;
-        StreamGeometry Head(double tipX, double dir)
+        double w = Math.Max(1, box.Width), h = Math.Max(1, box.Height);
+        PointD a, b, outA, outB;
+        if (shape.Shape == ShapeKind.Path && shape.Nodes is { Count: >= 2 } nodes)
         {
+            a = new PointD(nodes[0].Point.X * w, nodes[0].Point.Y * h);
+            b = new PointD(nodes[^1].Point.X * w, nodes[^1].Point.Y * h);
+            (outA, outB) = CurvePath.EndDirections(nodes.Select(n => n.Mapped(p => new PointD(p.X * w, p.Y * h))).ToList());
+        }
+        else
+        {
+            var (s0, c1, c2, e0) = LineCurves.Controls(w, h, shape.Bend, shape.BendStyle);
+            a = s0; b = e0;
+            (outA, outB) = LineCurves.TipDirections(s0, c1, c2, e0);
+        }
+
+        double len = ArrowLength(shape), half = len * 0.5, reach = shape.StrokeWidth / 2;
+        StreamGeometry Head(PointD tip, PointD outward)
+        {
+            // The tip sits a little beyond the end of the line; the base is back along the line, with the wings to both sides.
+            var tipPoint = new Point(tip.X + outward.X * reach, tip.Y + outward.Y * reach);
+            var back = new Point(tipPoint.X - outward.X * len, tipPoint.Y - outward.Y * len);
             var g = new StreamGeometry();
             using (var ctx = g.Open())
             {
-                ctx.BeginFigure(new Point(tipX, y), true, true);
-                ctx.LineTo(new Point(tipX - dir * len, y - half), true, false);
-                ctx.LineTo(new Point(tipX - dir * len, y + half), true, false);
+                ctx.BeginFigure(tipPoint, true, true);
+                ctx.LineTo(new Point(back.X - outward.Y * half, back.Y + outward.X * half), true, false);
+                ctx.LineTo(new Point(back.X + outward.Y * half, back.Y - outward.X * half), true, false);
             }
             g.Freeze();
             return g;
         }
-        if (line.ArrowEnd) dc.DrawGeometry(brush, null, Head(box.Width + line.StrokeWidth / 2, 1));
-        if (line.ArrowStart) dc.DrawGeometry(brush, null, Head(-line.StrokeWidth / 2, -1));
+        if (shape.ArrowEnd) dc.DrawGeometry(brush, null, Head(b, outB));
+        if (shape.ArrowStart) dc.DrawGeometry(brush, null, Head(a, outA));
     }
 
     private static void Draw(DrawingContext dc, LayerObject obj, Matrix toCanvas, double shadowScale)
@@ -171,7 +190,7 @@ public sealed class ObjectRenderer : IObjectRenderer
                         ? GradientBrushFor(borderGradient, b.Width, b.Height)
                         : Frozen(new SolidColorBrush(BitmapConverter.ToWpf(sc)));
                     // Dashes are counted in line widths: a dash is 3 wide with 2 of gap; a dot is round with a gap of 1.6.
-                    var cap = shape.Dash == StrokeStyle.Dotted ? PenLineCap.Round : shape.IsLineLike ? PenLineCap.Round : PenLineCap.Flat;
+                    var cap = shape.Dash == StrokeStyle.Dotted || shape.IsLineLike || shape.Shape == ShapeKind.Path ? PenLineCap.Round : PenLineCap.Flat;
                     pen = new Pen(strokeBrush, shape.StrokeWidth)
                     {
                         LineJoin = PenLineJoin.Round,
@@ -188,11 +207,30 @@ public sealed class ObjectRenderer : IObjectRenderer
                         pen.DashStyle = new DashStyle(new double[] { 0.01, (shape.DashGap > 0 ? shape.DashGap / lineWidth : 1.2) + 1 }, 0);
                     pen.Freeze();
                 }
-                dc.DrawGeometry(fill, pen, geometry);
-                if (shape.IsLineLike && (shape.ArrowStart || shape.ArrowEnd) && strokeColor is { } arrowColor)
+                if (shape.Picture is { } picture && !shape.IsLineLike)
+                {
+                    // A picture in the frame: the fill underneath, the picture clipped to the outline, then the border on top.
+                    dc.DrawGeometry(fill, null, geometry);
+                    var (px, py, pw, ph) = picture.Place(b.Width, b.Height);
+                    dc.PushClip(geometry);
+                    dc.DrawImage(ToBitmap(picture.Image), new Rect(px, py, pw, ph));
+                    dc.Pop();
+                    if (pen != null) dc.DrawGeometry(null, pen, geometry);
+                }
+                else dc.DrawGeometry(fill, pen, geometry);
+                if ((shape.IsLineLike || shape is { Shape: ShapeKind.Path, Closed: false }) && (shape.ArrowStart || shape.ArrowEnd) && strokeColor is { } arrowColor)
                     DrawArrowHeads(dc, shape, b, Frozen(new SolidColorBrush(BitmapConverter.ToWpf(arrowColor))));
                 break;
             }
+            case QrCodeObject qr:
+                QrRenderer.Draw(dc, qr, b.Width, b.Height);
+                break;
+            case ChartObject chart:
+                ChartRenderer.Draw(dc, chart, b.Width, b.Height);
+                break;
+            case BarcodeObject barcode:
+                BarcodeRenderer.Draw(dc, barcode, b.Width, b.Height);
+                break;
             case TextObject { Arc: not 0 } curved when Math.Abs(curved.Arc) >= 0.5:
             {
                 // Text on a curve: every letter is placed along a circle (one line; the line breaks become spaces).

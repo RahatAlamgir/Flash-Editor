@@ -37,6 +37,9 @@ internal static class ProjectJson
                     new JsonDerivedType(typeof(TextObject), "text"),
                     new JsonDerivedType(typeof(ImageObject), "image"),
                     new JsonDerivedType(typeof(GroupObject), "group"),
+                    new JsonDerivedType(typeof(QrCodeObject), "qr"),
+                    new JsonDerivedType(typeof(ChartObject), "chart"),
+                    new JsonDerivedType(typeof(BarcodeObject), "barcode"),
                 },
             };
         }

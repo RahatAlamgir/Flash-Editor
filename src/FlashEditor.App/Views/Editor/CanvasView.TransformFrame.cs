@@ -23,7 +23,7 @@ public partial class CanvasView
     /// <summary>Recomputes the box (call after the selected layer's content changed).</summary>
     public void RefreshTransformFrame()
     {
-        bool show = ActiveTool?.ShowsTransformFrame == true && _panLast == null;
+        bool show = ActiveTool?.ShowsTransformFrame == true && _panLast == null && _main?.SelectionCleared != true;
         var layer = _document?.Model.ActiveLayer;
         if (!ReferenceEquals(layer, _framedLayer))
         {

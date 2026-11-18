@@ -64,6 +64,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         File = new FileCommands(this);
         Edit = new EditCommands(this);
         Image = new ImageCommands(this);
+        Insert = new InsertCommands(this);
         PagesExport = new PagesExportCommands(this);
         Layers = new LayerCommands(this);
         Align = new AlignCommands(this);
@@ -198,8 +199,21 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     }
 
     /// <summary>Selects just this layer.</summary>
+    /// <summary>True after a click outside the canvas: nothing is shown as selected (the last layer stays the one Properties show).</summary>
+    public bool SelectionCleared { get; private set; }
+
+    /// <summary>Clicking outside the canvas: no selection frame is shown any more, whatever was selected (also after Select All).</summary>
+    public void ClearSelection()
+    {
+        SelectOnly(Document.Model.ActiveLayer);
+        SelectionCleared = true;
+        SelectedLayersChanged?.Invoke(this, EventArgs.Empty);
+        SetStatus("Nothing selected. Click a shape, text, image or painted area to select it.");
+    }
+
     public void SelectOnly(Layer? layer)
     {
+        SelectionCleared = false;
         SetPart(null, -1);
         _changingSelection = true;
         _selected.Clear();
@@ -213,6 +227,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     /// <summary>Adds the layer to the selection, or removes it if it was selected (Shift+click).</summary>
     public void ToggleSelected(Layer layer)
     {
+        SelectionCleared = false;
         SetPart(null, -1);
         _changingSelection = true;
         var doc = Document.Model;
@@ -235,6 +250,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     /// <summary>Sets the selection from the Layers panel (Ctrl / Shift + click there).</summary>
     public void SetSelection(IEnumerable<Layer> layers, Layer? active)
     {
+        SelectionCleared = false;
         SetPart(null, -1);
         _changingSelection = true;
         _selected.Clear();
@@ -284,6 +300,8 @@ public sealed class MainViewModel : ObservableObject, IToolHost
 
     public Func<PixelBuffer, CancellationToken, float[]>? SubjectMask => Effects.SubjectMaskIfInstalled;
 
+    public bool KeepProportions => Properties.KeepRatio;
+
     /// <summary>History panel open or minimized (minimized by default).</summary>
     public bool IsHistoryExpanded
     {
@@ -306,6 +324,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     public FileCommands File { get; }
     public EditCommands Edit { get; }
     public ImageCommands Image { get; }
+    public InsertCommands Insert { get; }
     public PagesExportCommands PagesExport { get; }
     public LayerCommands Layers { get; }
     public AlignCommands Align { get; }
@@ -717,6 +736,10 @@ public sealed class MainViewModel : ObservableObject, IToolHost
                 bool hit = obj.HasCustomOutline ? PixelHit(layer, point, margin) // a reshaped object: where its pixels are
                     : obj is ImageObject picture ? picture.HasContentAt(point, margin)
                     : obj.Box.Contains(point, margin + (obj.IsLineLike ? 4 : 0));
+                // A layer with a mask (a picture in a frame) can be clicked only where the mask lets it show, so the hidden rest of
+                // the picture does not block the frame, its neighbors or anything underneath.
+                if (hit && layer.MaskEnabled && layer.EffectiveMask is { } mask
+                    && (!doc.Bounds.Contains(x, y) || mask.Coverage(x, y) <= 0.05)) hit = false;
                 if (hit) return layer;
             }
             else if (doc.Bounds.Contains(x, y) && layer.Pixels.GetPixel(x, y).A * (layer.EffectiveMask?.Coverage(x, y) ?? 1.0) > 16)

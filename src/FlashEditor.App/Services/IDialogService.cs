@@ -47,8 +47,20 @@ public interface IDialogService
     /// <summary>File > Export as SVG: where to save the .svg. Null when cancelled.</summary>
     string? ShowSaveSvg(string suggestedName);
 
+    /// <summary>Image > Magic Resize: the new size. Null when cancelled.</summary>
+    FlashEditor.App.Views.Dialogs.MagicResizeSettings? ShowMagicResize(int width, int height, int pageCount);
+
+    /// <summary>Insert > Photo Grid: the layout, gap, border and corners. Null when cancelled.</summary>
+    FlashEditor.App.Views.Dialogs.PhotoGridSettings? ShowPhotoGrid(int canvasWidth, int canvasHeight);
+
+    /// <summary>Choose one or several pictures. Empty when cancelled.</summary>
+    IReadOnlyList<string> ShowOpenPictures(string title);
+
     /// <summary>Settings > Brand Kit. <paramref name="picture"/> is the picture being edited (colors can be taken from it), or null.</summary>
     void ShowBrandKit(PixelBuffer? picture);
+
+    /// <summary>Settings > Keyboard Shortcuts: see and change the shortcuts of commands and tools.</summary>
+    void ShowShortcuts();
 
     /// <summary>File > Batch Convert: which folder, format and size. Null when cancelled.</summary>
     FlashEditor.Core.IO.BatchOptions? ShowBatch();

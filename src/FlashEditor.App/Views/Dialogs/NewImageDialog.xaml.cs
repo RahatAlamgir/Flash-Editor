@@ -9,7 +9,7 @@ namespace FlashEditor.App.Views.Dialogs;
 /// <summary>Size and background for a new blank image.</summary>
 public partial class NewImageDialog : Window
 {
-    private static readonly (string Name, int W, int H)[] Presets =
+    internal static readonly (string Name, int W, int H)[] Presets =
     {
         ("Custom", 0, 0),
         ("Full HD / presentation (1920 x 1080)", 1920, 1080),

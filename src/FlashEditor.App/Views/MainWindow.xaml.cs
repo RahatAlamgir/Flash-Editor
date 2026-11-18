@@ -33,6 +33,11 @@ public partial class MainWindow : Window
         ProjectDragger = new Controls.TabDragger(ProjectTabs, (item, index) => _viewModel.MoveProject((ProjectGroup)item, index));
         PageDragger = new Controls.TabDragger(PageTabs, (item, index) => _viewModel.MovePage((DocumentViewModel)item, index));
 
+        BuildShapeMenu();
+        Services.Shortcuts.Register(viewModel);
+        Services.Shortcuts.Apply(this);
+        Services.Shortcuts.Changed += (_, _) => Services.Shortcuts.Apply(this);
+        Ribbon.FileRequested += (_, _) => FileDrawer.Open();
         PreviewKeyDown += OnPreviewKeyDown;
         PreviewKeyUp += OnPreviewKeyUp;
         Drop += OnDrop;
@@ -59,6 +64,7 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (FileDrawer.IsOpen) return; // the drawer handles Esc itself; no tool shortcuts while it is open
         if (IsTyping) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var modifiers = Keyboard.Modifiers;
@@ -145,7 +151,6 @@ public partial class MainWindow : Window
         Services.WindowPlacement.Save(this); // here, while the window still knows its size (RestoreBounds is empty after Closed)
     }
 
-    private void OnExit(object sender, RoutedEventArgs e) => Close();
 
     // ------------------------------------------------------------------ renaming a tab
 

@@ -39,6 +39,22 @@ public sealed class AppSettings
 
     public const int MaxBrandColors = 12, MaxBrandFonts = 3;
 
+    /// <summary>Shortcuts the user changed (Settings > Keyboard Shortcuts): id -> new shortcut, "" = none. Missing = the default.</summary>
+    public Dictionary<string, string> Shortcuts { get; private set; } = new();
+
+    /// <summary>Remembers a changed shortcut (null = back to the default).</summary>
+    public void SetShortcut(string id, string? text)
+    {
+        if (text == null) Shortcuts.Remove(id); else Shortcuts[id] = text;
+        Save();
+    }
+
+    public void ClearShortcuts()
+    {
+        Shortcuts.Clear();
+        Save();
+    }
+
     /// <summary>True once the quick tour was shown (it opens by itself only the first time).</summary>
     public bool TourSeen { get; set; }
 
@@ -110,7 +126,7 @@ public sealed class AppSettings
             if (File.Exists(FilePath))
             {
                 var data = JsonSerializer.Deserialize<Stored>(File.ReadAllText(FilePath));
-                if (data != null) return new AppSettings { UndoSteps = data.UndoSteps, RecentColors = data.RecentColors ?? new(), Swatches = data.Swatches ?? new(), BrandColors = data.BrandColors ?? new(), BrandFonts = data.BrandFonts ?? new(), TourSeen = data.TourSeen };
+                if (data != null) return new AppSettings { UndoSteps = data.UndoSteps, RecentColors = data.RecentColors ?? new(), Swatches = data.Swatches ?? new(), BrandColors = data.BrandColors ?? new(), BrandFonts = data.BrandFonts ?? new(), TourSeen = data.TourSeen, Shortcuts = data.Shortcuts ?? new() };
             }
         }
         catch (Exception) { /* a damaged file: use the defaults */ }
@@ -122,10 +138,10 @@ public sealed class AppSettings
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(new Stored(UndoSteps, RecentColors, Swatches, BrandColors, BrandFonts, TourSeen), new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(new Stored(UndoSteps, RecentColors, Swatches, BrandColors, BrandFonts, TourSeen, Shortcuts), new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception) { /* the folder cannot be written: the choice only lasts until the program is closed */ }
     }
 
-    private sealed record Stored(int UndoSteps, List<string>? RecentColors = null, List<string>? Swatches = null, List<string>? BrandColors = null, List<string>? BrandFonts = null, bool TourSeen = false);
+    private sealed record Stored(int UndoSteps, List<string>? RecentColors = null, List<string>? Swatches = null, List<string>? BrandColors = null, List<string>? BrandFonts = null, bool TourSeen = false, Dictionary<string, string>? Shortcuts = null);
 }

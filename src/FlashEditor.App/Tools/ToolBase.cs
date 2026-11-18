@@ -26,7 +26,22 @@ public abstract class ToolBase : ObservableObject
     /// <summary>Single-key shortcut that selects this tool.</summary>
     public abstract Key Shortcut { get; }
 
-    public string ToolTip => $"{Name} ({Shortcut})";
+    /// <summary>The shortcut the user chose in Settings > Keyboard Shortcuts (Key.None = no shortcut), or null for the normal one.</summary>
+    public Key? CustomShortcut
+    {
+        get => _customShortcut;
+        set
+        {
+            if (!SetField(ref _customShortcut, value)) return;
+            OnPropertyChanged(nameof(ToolTip));
+        }
+    }
+    private Key? _customShortcut;
+
+    /// <summary>The shortcut in use now.</summary>
+    public Key EffectiveShortcut => CustomShortcut ?? Shortcut;
+
+    public string ToolTip => EffectiveShortcut == Key.None ? Name : $"{Name} ({EffectiveShortcut})";
 
     /// <summary>Settings shown in the options bar (a settings object, or a hint string).</summary>
     public virtual object? Options => null;

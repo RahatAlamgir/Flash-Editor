@@ -23,6 +23,51 @@ public class ModelStoreTests : IDisposable
         File.WriteAllBytes(path, new byte[bytes]);
     }
 
+    // A model that comes as a zip, and the zip itself as the installer leaves it ("zmodel.zip" in the models folder).
+    private (ModelInfo Model, byte[] Zip) ZipModel(string? wrongHash = null)
+    {
+        using var stream = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var (name, size) in new[] { ("sub/z.onnx", 10), ("sub/z.data", 20) })
+            {
+                using var entry = zip.CreateEntry(name).Open();
+                entry.Write(new byte[size]);
+            }
+        }
+        var bytes = stream.ToArray();
+        string hash = wrongHash ?? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+        var model = new ModelInfo("Zip model", "z.onnx", "https://example.invalid/z.zip", bytes.Length, hash, 8, new[] { 0f }, new[] { 1f },
+            new Dictionary<string, long> { ["z.onnx"] = 10, ["z.data"] = 20 }, "zmodel");
+        return (model, bytes);
+    }
+
+    [Fact]
+    public void A_zip_left_by_the_installer_is_unpacked_by_the_program_and_removed()
+    {
+        var (model, zip) = ZipModel();
+        Directory.CreateDirectory(_folder);
+        File.WriteAllBytes(Path.Combine(_folder, "zmodel.zip"), zip);
+        var store = new ModelStore(_folder);
+
+        Assert.True(store.IsInstalled(model));
+        Assert.True(File.Exists(Path.Combine(_folder, "zmodel", "z.onnx")));
+        Assert.True(File.Exists(Path.Combine(_folder, "zmodel", "z.data")));
+        Assert.False(File.Exists(Path.Combine(_folder, "zmodel.zip")));
+    }
+
+    [Fact]
+    public void A_zip_with_the_wrong_checksum_is_thrown_away_and_the_model_counts_as_missing()
+    {
+        var (model, zip) = ZipModel(wrongHash: new string('0', 64));
+        Directory.CreateDirectory(_folder);
+        File.WriteAllBytes(Path.Combine(_folder, "zmodel.zip"), zip);
+        var store = new ModelStore(_folder);
+
+        Assert.False(store.IsInstalled(model));
+        Assert.False(File.Exists(Path.Combine(_folder, "zmodel.zip")));
+    }
+
     [Fact]
     public void A_model_that_is_not_there_uses_no_space_and_deleting_it_does_nothing()
     {

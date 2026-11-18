@@ -86,6 +86,29 @@ public sealed class DialogService : IDialogService
         new BrandKitDialog(picture, (initial, title) => PickColor(initial, title)) { Owner = Owner }.ShowDialog();
     }
 
+    public void ShowShortcuts()
+    {
+        new ShortcutsDialog { Owner = Owner }.ShowDialog();
+    }
+
+    public FlashEditor.App.Views.Dialogs.PhotoGridSettings? ShowPhotoGrid(int canvasWidth, int canvasHeight)
+    {
+        var dialog = new PhotoGridDialog(canvasWidth, canvasHeight) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Result : null;
+    }
+
+    public IReadOnlyList<string> ShowOpenPictures(string title)
+    {
+        var dialog = new OpenFileDialog { Title = title, Filter = ImageFileFormats.OpenAnyFilter, Multiselect = true };
+        return ShowFile(dialog) == true ? dialog.FileNames : Array.Empty<string>();
+    }
+
+    public FlashEditor.App.Views.Dialogs.MagicResizeSettings? ShowMagicResize(int width, int height, int pageCount)
+    {
+        var dialog = new MagicResizeDialog(width, height, pageCount) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Result : null;
+    }
+
     public string? ShowSaveSvg(string suggestedName)
     {
         var dialog = new SaveFileDialog

@@ -34,8 +34,31 @@ public sealed class ModelStore
     /// <summary>True when the model file is present (in any searched folder) and has the expected size.</summary>
     public bool IsInstalled(ModelInfo model) => FindInstalled(model) != null;
 
+    /// <summary>
+    /// Where the installer leaves a model that comes as a zip ("real_esrgan_x4plus.zip" in the models folder). The program unpacks it itself
+    /// the first time it looks for the model, so the installer needs no helper program for that.
+    /// </summary>
+    private string PendingArchiveOf(ModelInfo model) => Path.Combine(Folder, (model.Folder ?? Path.GetFileNameWithoutExtension(model.FileName)) + ".zip");
+
+    private void UnpackPendingArchive(ModelInfo model)
+    {
+        string zip = PendingArchiveOf(model);
+        if (model.ArchiveFiles == null || !File.Exists(zip)) return;
+        try
+        {
+            Verify(model, zip);                    // a zip that is not the expected one is deleted by Verify (it throws)
+            Unpack(model, zip);
+            TryDelete(zip);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+        {
+            TryDelete(zip);                        // damaged or unreadable: the program offers to download the model again
+        }
+    }
+
     private string? FindInstalled(ModelInfo model)
     {
+        if (model.ArchiveFiles != null) UnpackPendingArchive(model);
         foreach (var folder in _searchFolders)
         {
             if (model.ArchiveFiles is { } files)
@@ -99,7 +122,9 @@ public sealed class ModelStore
     }
 
     private IEnumerable<string> PartialFilesOf(ModelInfo model)
-        => new[] { model.ArchiveFiles != null ? Path.Combine(Folder, model.Folder + ".zip.part") : Path.Combine(Folder, model.FileName) + ".part" };
+        => model.ArchiveFiles != null
+            ? new[] { Path.Combine(Folder, model.Folder + ".zip.part"), PendingArchiveOf(model) }
+            : new[] { Path.Combine(Folder, model.FileName) + ".part" };
 
     /// <summary>Downloads the model into <see cref="Folder"/>. <paramref name="progress"/> receives 0..1.</summary>
     public async Task DownloadAsync(ModelInfo model, IProgress<double>? progress = null, CancellationToken cancellation = default)

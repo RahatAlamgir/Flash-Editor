@@ -41,7 +41,6 @@ public sealed class ToolsViewModel : ObservableObject
             new BlurSharpenTool(host),
             new BucketTool(host),
             new EyedropperTool(host),
-            new ShapeTool(host, new ShapeOptions(host.Dialogs)),
             new TextTool(host),
             new HandTool(host),
             new ZoomTool(host),
@@ -50,6 +49,7 @@ public sealed class ToolsViewModel : ObservableObject
             new LiquifyTool(host),
             new RemoveBrushTool(host),
             new ClickSelectTool(host),
+            new CurveTool(host),
         };
         _activeTool = Get<MoveTool>(); // the program starts on Select / Move
         _activeTool.IsActive = true;
@@ -57,9 +57,9 @@ public sealed class ToolsViewModel : ObservableObject
         // Similar tools share one button in the toolbox (indexes into the list above).
         int[][] layout =
         {
-            new[] { 0 }, new[] { 1, 2 }, new[] { 3, 4 }, new[] { 5 }, new[] { 6, 7, 28 }, new[] { 8, 25 },
-            new[] { 9, 10, 11, 24 }, new[] { 13, 14, 15, 27 }, new[] { 12 }, new[] { 16 }, new[] { 17, 26 },
-            new[] { 18 }, new[] { 19 }, new[] { 20 }, new[] { 21 }, new[] { 22 }, new[] { 23 },
+            new[] { 0 }, new[] { 1, 2 }, new[] { 3, 4 }, new[] { 5, 28 }, new[] { 6, 7, 27 }, new[] { 8, 24 },
+            new[] { 9, 10, 11, 23 }, new[] { 13, 14, 15, 26 }, new[] { 12 }, new[] { 16 }, new[] { 17, 25 },
+            new[] { 18 }, new[] { 19 }, new[] { 20 }, new[] { 21 }, new[] { 22 },
         };
         Groups = layout.Select(ix => new ToolGroup(ix.Select(i => Tools[i]).ToList(), t => ActiveTool = t)).ToList();
         foreach (var group in Groups) group.OnActiveToolChanged(_activeTool);
@@ -94,7 +94,7 @@ public sealed class ToolsViewModel : ObservableObject
     /// </summary>
     public bool TrySelectByShortcut(Key key)
     {
-        var matches = Tools.Where(t => t.Shortcut == key).ToList();
+        var matches = Tools.Where(t => t.EffectiveShortcut == key).ToList();
         if (matches.Count == 0) return false;
         int current = matches.IndexOf(_activeTool);
         ActiveTool = matches[(current + 1) % matches.Count];

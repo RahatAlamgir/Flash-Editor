@@ -9,6 +9,8 @@ using FlashEditor.Core.Documents;
 using FlashEditor.Core.History;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Objects;
+using FlashEditor.Core.Barcodes;
+using FlashEditor.Core.Qr;
 
 namespace FlashEditor.App.ViewModels;
 
@@ -165,6 +167,9 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public bool HasPoints => Shape?.HasPoints == true;
     public bool IsLine => Shape?.IsLineLike == true;
 
+    /// <summary>A straight line or an open curve: arrow heads make sense.</summary>
+    public bool HasArrows => Shape is { IsLineLike: true } or { Shape: ShapeKind.Path, Closed: false };
+
     public string Title => IsMulti ? $"{Targets.Count} layers selected" + (IsMixed ? " (different kinds)" : "") : (IsPart ? "Part: " : "") + Object switch
     {
         ShapeObject s => $"{s.SuggestedLayerName} shape",
@@ -203,7 +208,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     }
 
     /// <summary>When on, changing width also changes height (and the other way round).</summary>
-    public bool KeepRatio { get => _keepRatio; set => SetField(ref _keepRatio, value); }
+    public bool KeepRatio { get => _keepRatio; set { if (SetField(ref _keepRatio, value)) _main.Canvas?.RefreshTransformFrame(); } }
 
     // ------------------------------------------------------------------ shape
 
@@ -238,6 +243,247 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     }
 
     public Brush StrokeBrush => ToBrush(Shape?.Stroke);
+
+    // ------------------------------------------------------------------ QR code
+
+    private QrCodeObject? Qr => Object as QrCodeObject;
+    public bool IsQr => Qr != null && !IsMixed;
+
+    private void ChangeQr(string name, Func<QrCodeObject, QrCodeObject> change)
+        => Change(name, o => o is QrCodeObject q ? change(q) : o);
+
+    public string QrContent { get => Qr?.Content ?? ""; set => ChangeQr("QR Text", q => q with { Content = value ?? "" }); }
+    public int QrLevelIndex { get => (int)(Qr?.Level ?? QrLevel.Medium); set => ChangeQr("QR Error Correction", q => q with { Level = (QrLevel)Math.Clamp(value, 0, 3) }); }
+    public int QrStyleIndex { get => (int)(Qr?.Style ?? QrStyle.Square); set => ChangeQr("QR Style", q => q with { Style = (QrStyle)Math.Clamp(value, 0, 2) }); }
+    public double QrQuiet { get => Qr?.Quiet ?? 2; set => ChangeQr("QR Border", q => q with { Quiet = (int)Math.Clamp(Math.Round(value), 0, 12) }); }
+    public bool QrTransparent { get => Qr?.TransparentBackground == true; set => ChangeQr("QR Background", q => q with { TransparentBackground = value }); }
+    public Brush QrForeBrush => ToBrush(Qr?.Foreground);
+    public Brush QrBackBrush => ToBrush(Qr?.Background);
+    public static IReadOnlyList<string> QrLevelNames { get; } = new[] { "Low (7 % repair)", "Medium (15 %)", "Quartile (25 %)", "High (30 %)" };
+    public static IReadOnlyList<string> QrStyleNames { get; } = new[] { "Squares", "Rounded", "Dots (harder to scan)" };
+
+    /// <summary>True when the text is too long for the chosen level (nothing can be drawn then).</summary>
+    public bool QrTooLong => Qr is { } q && System.Text.Encoding.UTF8.GetByteCount(q.Content) > QrEncoder.MaxBytes(q.Level);
+
+    public RelayCommand PickQrForeCommand => _pickQrFore ??= new RelayCommand(() => PickColor("QR code color", Qr?.Foreground ?? ColorRgba.Black,
+        c => ChangeQr("QR Color", q => q with { Foreground = c with { A = 255 } })), () => IsQr);
+    private RelayCommand? _pickQrFore;
+    public RelayCommand PickQrBackCommand => _pickQrBack ??= new RelayCommand(() => PickColor("QR code background", Qr?.Background ?? ColorRgba.White,
+        c => ChangeQr("QR Background Color", q => q with { Background = c with { A = 255 } })), () => IsQr);
+    private RelayCommand? _pickQrBack;
+
+    // ------------------------------------------------------------------ picture in a frame
+
+    private PictureFill? Pic => (Object as ShapeObject)?.Picture;
+    public bool HasPicture => Pic != null && !IsMixed;
+
+    private void ChangePic(string name, Func<PictureFill, PictureFill> change)
+        => Change(name, o => o is ShapeObject { Picture: { } p } s ? s with { Picture = change(p) } : o);
+
+    /// <summary>How far the picture is zoomed in inside the frame (100 % = it just covers the frame).</summary>
+    public double PictureZoomPercent
+    {
+        get => Math.Round((Pic?.Zoom ?? 1) * 100);
+        set => ChangePic("Picture Zoom", p => p with { Zoom = Math.Clamp(value, 100, 500) / 100.0 });
+    }
+
+    /// <summary>Which part of the picture shows: -100 = its left edge, 0 = the middle, 100 = its right edge.</summary>
+    public double PicturePanXPercent
+    {
+        get => Math.Round((Pic?.PanX ?? 0) * 100);
+        set => ChangePic("Picture Position", p => p with { PanX = Math.Clamp(value, -100, 100) / 100.0 });
+    }
+
+    public double PicturePanYPercent
+    {
+        get => Math.Round((Pic?.PanY ?? 0) * 100);
+        set => ChangePic("Picture Position", p => p with { PanY = Math.Clamp(value, -100, 100) / 100.0 });
+    }
+
+    public RelayCommand RemovePictureCommand => _removePicture ??= new RelayCommand(
+        () => Change("Remove Picture from Frame", o => o is ShapeObject s ? s with { Picture = null } : o), () => HasPicture && CanEdit);
+    private RelayCommand? _removePicture;
+
+    public RelayCommand ResetPictureCommand => _resetPicture ??= new RelayCommand(
+        () => ChangePic("Reset Picture", p => p with { Zoom = 1, PanX = 0, PanY = 0 }), () => HasPicture && CanEdit);
+    private RelayCommand? _resetPicture;
+
+    // ------------------------------------------------------------------ barcode
+
+    private BarcodeObject? Bar => Object as BarcodeObject;
+    public bool IsBarcode => Bar != null && !IsMixed;
+
+    private void ChangeBar(string name, Func<BarcodeObject, BarcodeObject> change)
+        => Change(name, o => o is BarcodeObject b ? change(b) : o);
+
+    public string BarcodeContent { get => Bar?.Content ?? ""; set => ChangeBar("Barcode Text", b => b with { Content = value ?? "" }); }
+    public int BarcodeKindIndex { get => (int)(Bar?.Kind ?? BarcodeKind.Code128); set => ChangeBar("Barcode Kind", b => b with { Kind = (BarcodeKind)Math.Clamp(value, 0, 4) }); }
+    public static IReadOnlyList<string> BarcodeKindNames { get; } = new[]
+    {
+        "Code 128 (any text)", "EAN-13 (shop products)", "UPC-A (US shop products)", "EAN-8 (small products)", "Code 39 (capitals, digits)",
+    };
+    public bool BarcodeShowText { get => Bar?.ShowText == true; set => ChangeBar("Barcode Numbers", b => b with { ShowText = value }); }
+    public bool BarcodeTransparent { get => Bar?.TransparentBackground == true; set => ChangeBar("Barcode Background", b => b with { TransparentBackground = value }); }
+    public Brush BarcodeForeBrush => ToBrush(Bar?.Foreground);
+    public Brush BarcodeBackBrush => ToBrush(Bar?.Background);
+
+    /// <summary>What this kind of barcode accepts.</summary>
+    public string BarcodeHint => Bar == null ? "" : BarcodeEncoder.Describe(Bar.Kind);
+
+    /// <summary>What is wrong with the text for this kind of barcode (empty when it is fine).</summary>
+    public string BarcodeError => Bar == null ? "" : BarcodeEncoder.Validate(Bar.Content, Bar.Kind) ?? "";
+    public bool HasBarcodeError => BarcodeError.Length > 0;
+
+    public RelayCommand PickBarcodeForeCommand => _pickBarFore ??= new RelayCommand(() => PickColor("Barcode color", Bar?.Foreground ?? ColorRgba.Black,
+        c => ChangeBar("Barcode Color", b => b with { Foreground = c with { A = 255 } })), () => IsBarcode);
+    private RelayCommand? _pickBarFore;
+    public RelayCommand PickBarcodeBackCommand => _pickBarBack ??= new RelayCommand(() => PickColor("Barcode background", Bar?.Background ?? ColorRgba.White,
+        c => ChangeBar("Barcode Background Color", b => b with { Background = c with { A = 255 } })), () => IsBarcode);
+    private RelayCommand? _pickBarBack;
+
+    // ------------------------------------------------------------------ chart
+
+    private ChartObject? Chart => Object as ChartObject;
+    public bool IsChart => Chart != null && !IsMixed;
+
+    private void ChangeChart(string name, Func<ChartObject, ChartObject> change)
+        => Change(name, o => o is ChartObject c ? change(c) : o);
+
+    public int ChartKindIndex { get => (int)(Chart?.Kind ?? ChartKind.Columns); set => ChangeChart("Chart Kind", c => c with { Kind = (ChartKind)Math.Clamp(value, 0, 4) }); }
+    public static IReadOnlyList<string> ChartKindNames { get; } = new[] { "Columns", "Bars", "Line", "Pie", "Donut" };
+    public string ChartTitle { get => Chart?.Title ?? ""; set => ChangeChart("Chart Title", c => c with { Title = value ?? "" }); }
+
+    /// <summary>The chart types as buttons (the one in use is marked).</summary>
+    public IReadOnlyList<ChartKindItem> ChartKinds => new[]
+    {
+        new ChartKindItem(ChartKind.Columns, "Columns", "ChartColumns", Chart?.Kind == ChartKind.Columns),
+        new ChartKindItem(ChartKind.Bars, "Bars", "ChartBars", Chart?.Kind == ChartKind.Bars),
+        new ChartKindItem(ChartKind.Line, "Line", "ChartLine", Chart?.Kind == ChartKind.Line),
+        new ChartKindItem(ChartKind.Pie, "Pie", "ChartPie", Chart?.Kind == ChartKind.Pie),
+        new ChartKindItem(ChartKind.Donut, "Donut", "ChartDonut", Chart?.Kind == ChartKind.Donut),
+    };
+
+    public RelayCommand SetChartKindCommand => _setChartKind ??= new RelayCommand(p =>
+    {
+        if (p is ChartKind kind) ChangeChart("Chart Kind", c => c with { Kind = kind });
+    }, _ => IsChart);
+    private RelayCommand? _setChartKind;
+
+    /// <summary>Bars take room for the bar width; lines and pies do not have bars.</summary>
+    public bool ChartHasBars => Chart?.Kind is ChartKind.Columns or ChartKind.Bars;
+
+    // ---- the number table
+
+    private readonly ObservableCollection<ChartRowViewModel> _chartRows = new();
+
+    /// <summary>One row per number. The same list is kept while typing (so the cursor stays put) and rebuilt when the numbers changed some other way (undo, pasting).</summary>
+    public ObservableCollection<ChartRowViewModel> ChartRows
+    {
+        get
+        {
+            var items = Chart?.Items;
+            bool same = items != null && items.Count == _chartRows.Count
+                && Enumerable.Range(0, items.Count).All(i => _chartRows[i].Label == items[i].Label && _chartRows[i].Value == items[i].Value);
+            if (items == null) { if (_chartRows.Count > 0) _chartRows.Clear(); }
+            else if (!same)
+            {
+                _chartRows.Clear();
+                for (int i = 0; i < items.Count; i++) _chartRows.Add(new ChartRowViewModel(this, i, items[i], Chart!.ColorOf(i)));
+            }
+            else
+                for (int i = 0; i < items!.Count; i++) _chartRows[i].SetColor(Chart!.ColorOf(i));
+            return _chartRows;
+        }
+    }
+
+    /// <summary>Called by a row when its name or number was edited.</summary>
+    public void SetChartRow(int index, string? label, double? value)
+        => ChangeChart("Chart Numbers", c =>
+        {
+            if (index < 0 || index >= c.Items.Count) return c;
+            var items = c.Items.ToList();
+            items[index] = new ChartItem(label ?? items[index].Label, value ?? items[index].Value);
+            return c with { Items = items };
+        });
+
+    public void RemoveChartRow(int index)
+        => ChangeChart("Remove Chart Row", c => index < 0 || index >= c.Items.Count ? c : c with { Items = c.Items.Where((_, i) => i != index).ToList() });
+
+    public RelayCommand AddChartRowCommand => _addChartRow ??= new RelayCommand(() => ChangeChart("Add Chart Row", c =>
+    {
+        double next = c.Items.Count > 0 ? c.Items[^1].Value : 10;
+        return c with { Items = c.Items.Append(new ChartItem($"Item {c.Items.Count + 1}", next)).ToList() };
+    }), () => IsChart && (Chart?.Items.Count ?? 0) < 60);
+    private RelayCommand? _addChartRow;
+
+    /// <summary>Opens a box to paste a whole list of numbers at once (one per line: name, number).</summary>
+    public RelayCommand PasteChartNumbersCommand => _pasteChart ??= new RelayCommand(() =>
+    {
+        var text = _main.Dialogs.ShowTextInput("Chart numbers", "One per line: a name and a number, like \"Jan, 12\". You can paste from a spreadsheet.",
+            Chart == null ? "" : ChartData.Format(Chart.Items));
+        if (text != null) ChangeChart("Chart Numbers", c => c with { Items = ChartData.Parse(text) });
+    }, () => IsChart && IsSingle);
+    private RelayCommand? _pasteChart;
+
+    /// <summary>The color of one bar or slice (the chart gets its own list of colors if it only used a ready-made set before).</summary>
+    public void PickChartRowColor(int index)
+    {
+        if (Chart == null || index < 0 || index >= Chart.Items.Count) return;
+        PickColor("Color of " + Chart.Items[index].Label, Chart.ColorOf(index), picked => ChangeChart("Chart Color", c =>
+        {
+            var colors = Enumerable.Range(0, Math.Max(c.Items.Count, c.Colors.Count)).Select(i => c.ColorOf(i)).ToList();
+            if (index < colors.Count) colors[index] = picked with { A = 255 };
+            return c with { Colors = colors };
+        }));
+    }
+
+    // ---- colors
+
+    /// <summary>The ready-made color sets, and the Brand Kit colors when there are at least two.</summary>
+    public IReadOnlyList<ChartPaletteItem> ChartPalettesList
+    {
+        get
+        {
+            var list = ChartPalettes.All.Select(p => new ChartPaletteItem(p.Name, p.Colors)).ToList();
+            var brand = AppSettings.Current.BrandColors.Select(hex =>
+            {
+                var c = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+                return new ColorRgba(c.R, c.G, c.B);
+            }).ToList();
+            if (brand.Count >= 2) list.Insert(0, new ChartPaletteItem("My brand colors", brand));
+            return list;
+        }
+    }
+
+    public RelayCommand ApplyChartPaletteCommand => _applyChartPalette ??= new RelayCommand(p =>
+    {
+        if (p is ChartPaletteItem item) ChangeChart("Chart Colors", c => c with { Colors = item.Colors });
+    }, _ => IsChart);
+    private RelayCommand? _applyChartPalette;
+
+    // ---- what is shown
+
+    public bool ChartShowValues { get => Chart?.ShowValues == true; set => ChangeChart("Chart Values", c => c with { ShowValues = value }); }
+    public bool ChartShowLabels { get => Chart?.ShowLabels == true; set => ChangeChart("Chart Names", c => c with { ShowLabels = value }); }
+    public bool ChartShowGrid { get => Chart?.ShowGrid == true; set => ChangeChart("Chart Grid", c => c with { ShowGrid = value }); }
+    public double ChartBarWidth { get => Math.Round((Chart?.BarWidth ?? 0.62) * 100); set => ChangeChart("Bar Width", c => c with { BarWidth = Math.Clamp(value, 15, 100) / 100.0 }); }
+    public double ChartTextScale { get => Math.Round((Chart?.TextScale ?? 1) * 100); set => ChangeChart("Chart Text Size", c => c with { TextScale = Math.Clamp(value, 50, 250) / 100.0 }); }
+    public string ChartPrefix { get => Chart?.ValuePrefix ?? ""; set => ChangeChart("Chart Unit", c => c with { ValuePrefix = value ?? "" }); }
+    public string ChartSuffix { get => Chart?.ValueSuffix ?? ""; set => ChangeChart("Chart Unit", c => c with { ValueSuffix = value ?? "" }); }
+
+    public bool ChartHasBackground
+    {
+        get => Chart?.Background != null;
+        set => ChangeChart("Chart Background", c => c with { Background = value ? new ColorRgba(255, 255, 255) : null });
+    }
+    public Brush ChartBackBrush => ToBrush(Chart?.Background);
+    public Brush ChartTextBrush => ToBrush(Chart?.Ink);
+    public RelayCommand PickChartBackCommand => _pickChartBack ??= new RelayCommand(() => PickColor("Chart background", Chart?.Background ?? ColorRgba.White,
+        c => ChangeChart("Chart Background Color", ch => ch with { Background = c with { A = 255 } })), () => IsChart && Chart?.Background != null);
+    private RelayCommand? _pickChartBack;
+    public RelayCommand PickChartTextCommand => _pickChartText ??= new RelayCommand(() => PickColor("Chart text color", Chart?.Ink ?? ColorRgba.Black,
+        c => ChangeChart("Chart Text Color", ch => ch with { TextColor = c with { A = 255 } })), () => IsChart);
+    private RelayCommand? _pickChartText;
 
     // ------------------------------------------------------------------ adjust (brightness, contrast, saturation, hue, blur)
 
@@ -291,6 +537,41 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     }
 
     public static IReadOnlyList<string> StrokeStyleNames { get; } = new[] { "Solid", "Dashed", "Dotted" };
+
+    /// <summary>How much a line bows, -100 .. 100 % of its length (0 = straight).</summary>
+    public double LineBendPercent
+    {
+        get => Math.Round((Shape?.Bend ?? 0) * 100);
+        set => Change("Bend Line", o => o is ShapeObject s ? s with { Bend = Math.Clamp(value, -100, 100) / 100.0 } : o);
+    }
+
+    /// <summary>0 = arc (one bow), 1 = wave (up and down).</summary>
+    public int LineBendStyleIndex
+    {
+        get => (int)(Shape?.BendStyle ?? LineBendStyle.Arc);
+        set => Change("Bend Style", o => o is ShapeObject s ? s with { BendStyle = (LineBendStyle)Math.Clamp(value, 0, 1) } : o);
+    }
+
+    public static IReadOnlyList<string> LineBendStyleNames { get; } = new[] { "Arc (one bow)", "Wave (S-shape)" };
+
+    /// <summary>Turns a (bent) line into an editable curve with points, so it can be bent in many places with the Curve tool.</summary>
+    public RelayCommand LineToCurveCommand => _lineToCurve ??= new RelayCommand(() =>
+    {
+        if (Shape is not { IsLineLike: true } line || _layer == null) return;
+        var (a, c1, c2, b) = LineCurves.Controls(line.Box.Width, line.Box.Height, line.Bend, line.BendStyle);
+        var matrix = ObjectRenderer.LocalToCanvas(line);
+        PointD Map(PointD p) { var q = matrix.Transform(new System.Windows.Point(p.X, p.Y)); return new PointD(q.X, q.Y); }
+        var canvasNodes = new[] { new CurveNode(Map(a), Map(a), Map(c1)), new CurveNode(Map(b), Map(c2), Map(b)) };
+        var (box, unit) = CurvePath.Fit(canvasNodes, false);
+        Change("Line to Curve", o => ((ShapeObject)o) with
+        {
+            Shape = ShapeKind.Path, Box = box, Nodes = unit, Closed = false, Bend = 0, FlipX = false, FlipY = false, Warp = null,
+            Stroke = line.Stroke ?? line.Fill, Fill = null,
+        });
+        _main.SelectTool<FlashEditor.App.Tools.Shapes.CurveTool>();
+        _main.SetStatus("The line is now a curve. Drag its points, double-click the line to add points, double-click a point to make it smooth or sharp.");
+    }, () => IsLine && CanEdit);
+    private RelayCommand? _lineToCurve;
 
     public bool ArrowStart
     {
@@ -928,6 +1209,8 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         if (_layer != null) _layer.PropertyChanged -= OnLayerChanged;
         _layer = layer;
         if (_layer != null) _layer.PropertyChanged += OnLayerChanged;
+        // A picture or text starts with "keep proportions" on, a shape with it off (you can switch it for the layer you are working on).
+        _keepRatio = true;
         OnPropertyChanged(string.Empty); // refresh everything
     }
 
