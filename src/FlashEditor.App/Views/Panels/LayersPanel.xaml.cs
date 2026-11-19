@@ -90,6 +90,7 @@ public partial class LayersPanel : UserControl
         _syncing = true;
         try
         {
+            if (_main.SelectionCleared) { LayerList.SelectedItems.Clear(); return; } // a click outside the canvas: no row is highlighted
             if (wanted.Count <= 1) return; // single selection follows the SelectedItem binding
             LayerList.SelectedItems.Clear();
             foreach (var vm in _main.Document.LayersTopDown)

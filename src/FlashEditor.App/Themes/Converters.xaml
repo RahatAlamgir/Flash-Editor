@@ -4,6 +4,7 @@
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <conv:ResourceKeyToGeometryConverter x:Key="IconGeometry" />
     <conv:ColorToBrushConverter x:Key="ColorToBrush" />
+    <conv:ToolIconBrushConverter x:Key="ToolIconBrush" />
     <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
     <conv:EqualsConverter x:Key="EqualsConverter" />
     <conv:InverseBoolConverter x:Key="InverseBool" />

@@ -1,7 +1,25 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:svc="clr-namespace:FlashEditor.App.Services"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    mc:Ignorable="po">
 
     <!-- The ribbon at the top (tabs, and under them groups of buttons). Icons come from the Windows icon font. -->
+
+
+    <!-- The icon palette. IconTheme gives them their colors (or the plain gray when colorful icons are switched off). -->
+    <SolidColorBrush x:Key="Icon.Blue" Color="#5B9BFF" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Sky" Color="#38BDF8" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Teal" Color="#2DD4BF" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Green" Color="#4ADE80" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Lime" Color="#A3E635" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Amber" Color="#FBBF24" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Orange" Color="#FB923C" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Red" Color="#F87171" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Pink" Color="#F472B6" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Purple" Color="#A78BFA" po:Freeze="False" />
+    <SolidColorBrush x:Key="Icon.Slate" Color="#94A3B8" po:Freeze="False" />
 
     <FontFamily x:Key="RibbonIconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
@@ -94,7 +112,7 @@
                     <Border x:Name="Bg" Background="Transparent" CornerRadius="4" Padding="3,2,3,2" MinWidth="46" Width="Auto">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource RibbonIconFont}" FontSize="20" HorizontalAlignment="Center"
-                                       Foreground="{StaticResource IconBrush}" Margin="0,0,0,2" />
+                                       Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource TemplatedParent}, FallbackValue={StaticResource IconBrush}, TargetNullValue={StaticResource IconBrush}}" Margin="0,0,0,2" />
                             <TextBlock Text="{TemplateBinding Content}" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="74" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
@@ -125,7 +143,7 @@
                     <Border x:Name="Bg" Background="Transparent" CornerRadius="4" Padding="3,2,3,2" MinWidth="46">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource RibbonIconFont}" FontSize="20" HorizontalAlignment="Center"
-                                       Foreground="{StaticResource IconBrush}" Margin="0,0,0,2" />
+                                       Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource TemplatedParent}, FallbackValue={StaticResource IconBrush}, TargetNullValue={StaticResource IconBrush}}" Margin="0,0,0,2" />
                             <TextBlock Text="{TemplateBinding Content}" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="74" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
@@ -157,7 +175,7 @@
                     <Border x:Name="Bg" Background="Transparent" CornerRadius="3" Padding="5,0,7,0" Height="19">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource RibbonIconFont}" FontSize="13" Width="19" TextAlignment="Left"
-                                       Foreground="{StaticResource IconBrush}" VerticalAlignment="Center" />
+                                       Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource TemplatedParent}, FallbackValue={StaticResource IconBrush}, TargetNullValue={StaticResource IconBrush}}" VerticalAlignment="Center" />
                             <TextBlock Text="{TemplateBinding Content}" FontSize="11" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
@@ -188,7 +206,7 @@
                     <Border x:Name="Bg" Background="Transparent" CornerRadius="3" Padding="5,0,7,0" Height="19">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource RibbonIconFont}" FontSize="13" Width="19" TextAlignment="Left"
-                                       Foreground="{StaticResource IconBrush}" VerticalAlignment="Center" />
+                                       Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource TemplatedParent}, FallbackValue={StaticResource IconBrush}, TargetNullValue={StaticResource IconBrush}}" VerticalAlignment="Center" />
                             <TextBlock Text="{TemplateBinding Content}" FontSize="11" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>

@@ -69,8 +69,18 @@ public partial class MainWindow
     };
 
     /// <summary>A small drawing of the shape (the real outline, in the text color).</summary>
+    private static readonly string[] GroupColors = { "Blue", "Amber", "Green", "Purple", "Sky" };
+
+    private static string ColorOf(ShapeKind kind)
+    {
+        for (int g = 0; g < ShapeGroups.Length; g++)
+            if (ShapeGroups[g].Kinds.Contains(kind)) return GroupColors[g % GroupColors.Length];
+        return "Blue";
+    }
+
     private object IconFor(ShapeKind kind)
     {
+        string colorKey = "Icon." + ColorOf(kind);
         var sample = new ShapeObject(new ObjectBox(0, 0, 100, 100), kind, ColorRgbaWhite, null, 0, Points: 5, Inner: kind == ShapeKind.Pie ? 0 : 0.5, Sweep: 270);
         var path = new Path
         {
@@ -78,10 +88,9 @@ public partial class MainWindow
             Stretch = Stretch.Uniform,
             Width = 18,
             Height = 18,
-            Fill = kind == ShapeKind.Line ? null : (Brush)FindResource("IconBrush"),
-            Stroke = kind == ShapeKind.Line ? (Brush)FindResource("IconBrush") : null,
             StrokeThickness = kind == ShapeKind.Line ? 6 : 0,
         };
+        path.SetResourceReference(kind == ShapeKind.Line ? Shape.StrokeProperty : Shape.FillProperty, colorKey);
         return path;
     }
 

@@ -22,6 +22,7 @@ public sealed class ViewCommands
         SettingsCommand = new RelayCommand(() => _main.Dialogs.ShowSettings());
         BrandKitCommand = new RelayCommand(() => _main.Dialogs.ShowBrandKit(_main.Document.Model.Layers.Count == 0 ? null : Core.Painting.Compositor.Flatten(_main.Document.Model)));
         TourCommand = new RelayCommand(ShowTour);
+        OpenTutorialCommand = new RelayCommand(OpenTutorial);
         ShortcutsCommand = new RelayCommand(() => _main.Dialogs.ShowShortcuts());
         AboutCommand = new RelayCommand(() => _main.Dialogs.ShowInfo("About Flash Editor",
             "Flash Editor 1.0\nA small layer-based image editor built with C#, WPF and SkiaSharp."));
@@ -40,6 +41,22 @@ public sealed class ViewCommands
     public RelayCommand BrandKitCommand { get; }
     public RelayCommand ShortcutsCommand { get; }
     public RelayCommand TourCommand { get; }
+
+    /// <summary>View > Tutorial: opens the tutorial project (made again when it is not there any more).</summary>
+    public RelayCommand OpenTutorialCommand { get; }
+
+    private void OpenTutorial()
+    {
+        try
+        {
+            string path = Services.DemoProject.Create();
+            _main.File.OpenPath(path);
+        }
+        catch (Exception ex)
+        {
+            _main.Dialogs.ShowInfo("Tutorial", "The tutorial could not be opened: " + ex.Message);
+        }
+    }
 
     public const string TourText =
         "A few things worth knowing:\n\n" +

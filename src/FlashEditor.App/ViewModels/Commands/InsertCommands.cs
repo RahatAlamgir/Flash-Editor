@@ -22,7 +22,8 @@ public sealed class InsertCommands
         AddQrCommand = new RelayCommand(AddQr);
         AddBarcodeCommand = new RelayCommand(p => AddBarcode(Enum.Parse<BarcodeKind>((string)(p ?? "Code128"))));
         AddTextCommand = new RelayCommand(p => AddText((string)(p ?? "Heading")));
-        AddIconCommand = new RelayCommand(p => AddIcon((string)(p ?? "Icons") == "Badges"));
+        AddIconCommand = new RelayCommand(p => AddIcon((string)(p ?? "Icons")));
+        AddSmartArtCommand = new RelayCommand(AddSmartArt);
         AddChartCommand = new RelayCommand(p => AddChart(Enum.Parse<ChartKind>((string)(p ?? "Columns"))));
         AddShapeCommand = new RelayCommand(p => AddShape(Enum.Parse<ShapeKind>((string)p!)));
         AddFrameCommand = new RelayCommand(p => AddFrame((string)(p ?? "Rectangle")));
@@ -31,6 +32,8 @@ public sealed class InsertCommands
     }
 
     public RelayCommand AddQrCommand { get; }
+
+    public RelayCommand AddSmartArtCommand { get; }
 
     /// <summary>Parameter: Icons or Badges (which page of the picker opens first).</summary>
     public RelayCommand AddIconCommand { get; }
@@ -121,11 +124,19 @@ public sealed class InsertCommands
     }
 
     /// <summary>Opens the icon / badge picker and puts the choice in the middle of the picture.</summary>
-    private void AddIcon(bool badges)
+    private void AddIcon(string start)
     {
-        var choice = _main.Dialogs.ShowIconPicker(badges);
+        var choice = _main.Dialogs.ShowIconPicker(start);
         if (choice == null) return;
         double side = Math.Min(Doc.Width, Doc.Height);
+        if (choice.IsGraphic)
+        {
+            var graphic = Rendering.Graphics.Build(choice.Id, Doc.Width, Doc.Height, Math.Max(120, Math.Min(Doc.Width * 0.6, side * 0.8)));
+            var graphicLayer = _main.AddObjectLayer(graphic, "Insert Graphic");
+            graphicLayer.Name = choice.Name;
+            _main.SetStatus($"Added \"{choice.Name}\". It is a group of shapes: ungroup it (Ctrl+Shift+G) to recolor or change its parts.");
+            return;
+        }
         if (choice.IsBadge)
         {
             var badge = Rendering.Badges.Build(choice.Id, Doc.Width, Doc.Height, Math.Max(80, side * 0.3));
@@ -142,6 +153,18 @@ public sealed class InsertCommands
         _main.SetStatus($"Added the {choice.Name.ToLowerInvariant()} icon. It is text: change its color, size, outline and shadow in Properties.");
     }
 
+    /// <summary>Opens the SmartArt picker and puts the diagram in the middle of the picture.</summary>
+    private void AddSmartArt()
+    {
+        var choice = _main.Dialogs.ShowSmartArt();
+        if (choice == null) return;
+        double side = Math.Min(Doc.Width, Doc.Height);
+        var diagram = Rendering.SmartArt.Build(choice.LayoutId, choice.Items, choice.Scheme, Doc.Width, Doc.Height, Math.Max(160, Math.Min(Doc.Width * 0.8, side * 1.2)));
+        var layer = _main.AddObjectLayer(diagram, "Insert SmartArt");
+        layer.Name = choice.Name;
+        _main.SetStatus($"Added the \"{choice.Name}\" diagram. Ungroup it (Ctrl+Shift+G) to move, recolor or retype single parts.");
+    }
+
     /// <summary>A chart with sample numbers in the middle of the picture; change the numbers in Properties.</summary>
     private void AddChart(ChartKind kind)
     {
@@ -149,6 +172,22 @@ public sealed class InsertCommands
         var box = new ObjectBox((Doc.Width - w) / 2, (Doc.Height - h) / 2, w, h);
         var brand = AppSettings.Current.BrandColors.Select(hex => ParseHex(hex)).ToList();
         var chart = ChartObject.Sample(box, kind) with { Colors = brand.Count >= 2 ? brand : ChartPalettes.Ocean };
+        // Some kinds look best with their own kind of numbers.
+        chart = kind switch
+        {
+            ChartKind.Progress => chart with
+            {
+                Title = "Skills", ValueSuffix = "%", ShowGrid = false,
+                Items = new[] { new ChartItem("Design", 85), new ChartItem("Development", 64), new ChartItem("Marketing", 48), new ChartItem("Support", 72) },
+            },
+            ChartKind.Funnel => chart with
+            {
+                Title = "Sales funnel",
+                Items = new[] { new ChartItem("Visitors", 1200), new ChartItem("Leads", 640), new ChartItem("Trials", 320), new ChartItem("Customers", 140) },
+            },
+            ChartKind.HalfDonut or ChartKind.RadialBars => chart with { Title = "Share", Items = new[] { new ChartItem("Mobile", 46), new ChartItem("Desktop", 34), new ChartItem("Tablet", 20) } },
+            _ => chart,
+        };
         _main.AddObjectLayer(chart, "Insert Chart");
         _main.SetStatus("Added a chart with sample numbers. Type your own numbers (one per line, like \"Jan, 12\") in Properties.");
     }

@@ -14,6 +14,8 @@ public enum AdjustmentKind { Basic, Levels, Curves }
 /// <param name="Contrast">-100 (flatter) .. 100 (stronger).</param>
 /// <param name="Saturation">-100 (grey) .. 100 (more vivid).</param>
 /// <param name="Hue">-180 .. 180 degrees around the color wheel.</param>
+/// <param name="Temperature">-100 (cooler, bluer) .. 100 (warmer, more orange).</param>
+/// <param name="Tint">-100 (greener) .. 100 (more magenta).</param>
 /// <param name="Kind">Which controls the layer shows. All settings work whatever the kind is.</param>
 /// <param name="LevelsBlack">Levels: this brightness (0..254) and everything darker becomes black.</param>
 /// <param name="LevelsWhite">Levels: this brightness (1..255) and everything lighter becomes white.</param>
@@ -29,7 +31,8 @@ public sealed record AdjustmentStyle(
     AdjustmentKind Kind = AdjustmentKind.Basic,
     double LevelsBlack = 0, double LevelsWhite = 255, double LevelsGamma = 1, double OutputBlack = 0, double OutputWhite = 255,
     IReadOnlyList<CurvePoint>? Curve = null, IReadOnlyList<CurvePoint>? CurveRed = null,
-    IReadOnlyList<CurvePoint>? CurveGreen = null, IReadOnlyList<CurvePoint>? CurveBlue = null)
+    IReadOnlyList<CurvePoint>? CurveGreen = null, IReadOnlyList<CurvePoint>? CurveBlue = null,
+    double Temperature = 0, double Tint = 0)
 {
     public static AdjustmentStyle Neutral { get; } = new();
 
@@ -43,7 +46,7 @@ public sealed record AdjustmentStyle(
     private bool CurvesAreNeutral => CurveMath.IsStraight(Curve) && CurveMath.IsStraight(CurveRed) && CurveMath.IsStraight(CurveGreen) && CurveMath.IsStraight(CurveBlue);
 
     /// <summary>True when applying it would change nothing.</summary>
-    public bool IsNeutral => Brightness == 0 && Contrast == 0 && Saturation == 0 && Hue == 0 && LevelsAreNeutral && CurvesAreNeutral;
+    public bool IsNeutral => Brightness == 0 && Contrast == 0 && Saturation == 0 && Hue == 0 && Temperature == 0 && Tint == 0 && LevelsAreNeutral && CurvesAreNeutral;
 
     /// <summary>The tables for Levels and Curves, worked out once per style (null when there are none).</summary>
     private sealed class ToneTables
@@ -85,6 +88,15 @@ public sealed record AdjustmentStyle(
     {
         double rr = r / 255.0, gg = g / 255.0, bb = b / 255.0;
         double or = rr, og = gg, ob = bb;
+
+        if (Temperature != 0 || Tint != 0)
+        {
+            // White balance: warmer pushes red up and blue down, tint moves green against magenta (the same amounts as Adjust > Temperature / Tint).
+            double t = Temperature / 100.0 * 40 / 255.0, tint = Tint / 100.0 * 30 / 255.0;
+            rr = Math.Clamp(rr + t + tint * 0.5, 0, 1);
+            gg = Math.Clamp(gg - tint, 0, 1);
+            bb = Math.Clamp(bb - t + tint * 0.5, 0, 1);
+        }
 
         if (Hue != 0 || Saturation != 0)
         {

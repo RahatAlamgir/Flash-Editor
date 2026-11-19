@@ -13,7 +13,9 @@
             <StackPanel Orientation="Horizontal">
                 <RadioButton x:Name="IconsTab" Content="Icons" GroupName="Kind" IsChecked="True" Checked="OnKindChanged" Padding="14,4" Margin="0,0,6,0"
                              Style="{StaticResource {x:Type ToggleButton}}" />
-                <RadioButton x:Name="BadgesTab" Content="Badges" GroupName="Kind" Checked="OnKindChanged" Padding="14,4"
+                <RadioButton x:Name="BadgesTab" Content="Badges" GroupName="Kind" Checked="OnKindChanged" Padding="14,4" Margin="0,0,6,0"
+                             Style="{StaticResource {x:Type ToggleButton}}" />
+                <RadioButton x:Name="GraphicsTab" Content="Graphics" GroupName="Kind" Checked="OnKindChanged" Padding="14,4"
                              Style="{StaticResource {x:Type ToggleButton}}" />
             </StackPanel>
             <TextBox x:Name="Search" Grid.Column="1" Margin="16,0,0,0" TextChanged="OnSearchChanged" MaxWidth="320" HorizontalAlignment="Right" Width="260"

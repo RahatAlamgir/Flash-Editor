@@ -86,9 +86,15 @@ public sealed class DialogService : IDialogService
         new BrandKitDialog(picture, (initial, title) => PickColor(initial, title)) { Owner = Owner }.ShowDialog();
     }
 
-    public FlashEditor.App.Views.Dialogs.IconChoice? ShowIconPicker(bool badges)
+    public FlashEditor.App.Views.Dialogs.SmartArtChoice? ShowSmartArt()
     {
-        var dialog = new IconPickerDialog(badges) { Owner = Owner };
+        var dialog = new SmartArtDialog { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Result : null;
+    }
+
+    public FlashEditor.App.Views.Dialogs.IconChoice? ShowIconPicker(string start)
+    {
+        var dialog = new IconPickerDialog(start) { Owner = Owner };
         return dialog.ShowDialog() == true ? dialog.Result : null;
     }
 

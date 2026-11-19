@@ -66,6 +66,7 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         Image = new ImageCommands(this);
         Insert = new InsertCommands(this);
         PagesExport = new PagesExportCommands(this);
+        Pages = new PageCommands(this);
         Layers = new LayerCommands(this);
         Align = new AlignCommands(this);
         Effects = new EffectCommands(this);
@@ -302,6 +303,29 @@ public sealed class MainViewModel : ObservableObject, IToolHost
 
     public bool KeepProportions => Properties.KeepRatio;
 
+    /// <summary>Settings > Icon Style: Plain (gray, the default) or Colorful.</summary>
+    public string IconStyle => Services.AppSettings.Current.IconStyle;
+
+    public Infrastructure.RelayCommand SetIconStyleCommand => _setIconStyle ??= new Infrastructure.RelayCommand(p =>
+    {
+        string style = p as string == "Colorful" ? "Colorful" : "Plain";
+        Services.AppSettings.Current.IconStyle = style;
+        Services.AppSettings.Current.Apply();
+        Services.IconTheme.Style = style;
+        OnPropertyChanged(nameof(IconStyle));
+        SetStatus($"Icon style: {style}.");
+    });
+    private Infrastructure.RelayCommand? _setIconStyle;
+
+    private bool _showPageGrid;
+
+    /// <summary>True while the grid view of all pages covers the canvas.</summary>
+    public bool ShowPageGrid
+    {
+        get => _showPageGrid;
+        set => SetField(ref _showPageGrid, value);
+    }
+
     /// <summary>History panel open or minimized (minimized by default).</summary>
     public bool IsHistoryExpanded
     {
@@ -326,6 +350,9 @@ public sealed class MainViewModel : ObservableObject, IToolHost
     public ImageCommands Image { get; }
     public InsertCommands Insert { get; }
     public PagesExportCommands PagesExport { get; }
+
+    /// <summary>Picking, copying, pasting, duplicating and deleting several pages at once.</summary>
+    public PageCommands Pages { get; }
     public LayerCommands Layers { get; }
     public AlignCommands Align { get; }
     public EffectCommands Effects { get; }
@@ -593,6 +620,22 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         return document;
     }
 
+    /// <summary>Puts a page into a project at a place (0 = first). The page is not shown unless <paramref name="show"/> is true. No undo step.</summary>
+    public DocumentViewModel InsertPage(ProjectGroup group, int index, Document model, string name, bool show = true)
+    {
+        var page = CreateDocumentViewModel(model, null, "New Page");
+        page.Project.Pages.Remove(page);
+        page.Project = group;
+        page.FilePath = group.Pages.FirstOrDefault()?.FilePath;
+        page.CustomName = name;
+        group.Pages.Insert(Math.Clamp(index, 0, group.Pages.Count), page);
+        Documents.Add(page);
+        SyncDocumentOrder();
+        group.StructureDirty = true;
+        if (show) Document = page;
+        return page;
+    }
+
     /// <summary>A new page after the current one, in the same project.</summary>
     public DocumentViewModel AddPage(Document model, string name)
     {
@@ -708,6 +751,9 @@ public sealed class MainViewModel : ObservableObject, IToolHost
         }));
         return layer;
     }
+
+    /// <summary>A layer name that no other layer of the current picture has ("Heart", "Heart 2"...).</summary>
+    public string UniqueLayerName(string name) => UniqueName(name);
 
     private string UniqueName(string name)
     {

@@ -28,6 +28,15 @@ public partial class App : Application
         var window = new MainWindow(viewModel);
         MainWindow = window;
 
+        // The very first start: make the tutorial project (it shows in the Project Manager; the user opens it when ready).
+        if (e.Args.Length == 0 && !AppSettings.Current.DemoCreated)
+        {
+            try { DemoProject.Create(); }
+            catch (Exception) { /* the folder cannot be written: the program just starts normally */ }
+            AppSettings.Current.DemoCreated = true;
+            AppSettings.Current.Apply();
+        }
+
         // The Project Manager comes first (unless the program was started with a file to open).
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         if (e.Args.Length == 0 && !viewModel.File.ShowProjectManager(atStartup: true))

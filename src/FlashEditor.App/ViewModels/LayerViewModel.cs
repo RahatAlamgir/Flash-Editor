@@ -250,6 +250,8 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
     public double AdjustBrightness { get => Model.Adjustment?.Brightness ?? 0; set => Adjust(a => a with { Brightness = Math.Round(Math.Clamp(value, -100, 100)) }); }
     public double AdjustContrast { get => Model.Adjustment?.Contrast ?? 0; set => Adjust(a => a with { Contrast = Math.Round(Math.Clamp(value, -100, 100)) }); }
     public double AdjustSaturation { get => Model.Adjustment?.Saturation ?? 0; set => Adjust(a => a with { Saturation = Math.Round(Math.Clamp(value, -100, 100)) }); }
+    public double AdjustTemperature { get => Model.Adjustment?.Temperature ?? 0; set => Adjust(a => a with { Temperature = Math.Round(Math.Clamp(value, -100, 100)) }); }
+    public double AdjustTint { get => Model.Adjustment?.Tint ?? 0; set => Adjust(a => a with { Tint = Math.Round(Math.Clamp(value, -100, 100)) }); }
     public double AdjustHue { get => Model.Adjustment?.Hue ?? 0; set => Adjust(a => a with { Hue = Math.Round(Math.Clamp(value, -180, 180)) }); }
 
     // Levels
@@ -379,6 +381,8 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
                 OnPropertyChanged(nameof(AdjustContrast));
                 OnPropertyChanged(nameof(AdjustSaturation));
                 OnPropertyChanged(nameof(AdjustHue));
+                OnPropertyChanged(nameof(AdjustTemperature));
+                OnPropertyChanged(nameof(AdjustTint));
                 OnPropertyChanged(nameof(AdjustIsBasic));
                 OnPropertyChanged(nameof(AdjustIsLevels));
                 OnPropertyChanged(nameof(AdjustIsCurves));

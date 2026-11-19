@@ -1,0 +1,81 @@
+<UserControl x:Class="FlashEditor.App.Views.Panels.PageGridView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- The grid view: every page of the project as a big picture. Covers the canvas; the page strip below stays. -->
+    <Grid Background="{StaticResource CanvasAreaBrush}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="24,18,24,24">
+                <TextBlock FontSize="16" FontWeight="SemiBold">
+                    <Run Text="{Binding Document.Project.Name, Mode=OneWay}" /><Run Text="  " /><Run Foreground="{StaticResource SubtleTextBrush}" FontSize="12" FontWeight="Normal" Text="{Binding Document.Project.Pages.Count, Mode=OneWay}" /><Run Foreground="{StaticResource SubtleTextBrush}" FontSize="12" FontWeight="Normal" Text=" pages" />
+                </TextBlock>
+                <TextBlock Margin="0,4,0,14" FontSize="12" Foreground="{StaticResource SubtleTextBrush}"
+                           Text="Click a page to pick it, Ctrl+click or Shift+click to pick several. Drag to change the order, double-click to open. Ctrl+C / V / D copy, paste and duplicate the picked pages, Delete removes them. Right-click for more." />
+                <ItemsControl x:Name="Pages" ItemsSource="{Binding Document.Project.Pages}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="Card" Width="236" Margin="0,0,16,16" Background="Transparent" Cursor="Hand" AllowDrop="True" Focusable="True" FocusVisualStyle="{x:Null}"
+                                    PreviewMouseLeftButtonDown="OnCardDown" PreviewMouseMove="OnCardMove" PreviewMouseLeftButtonUp="OnCardUp" Drop="OnCardDrop" DragOver="OnCardDragOver">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Open" Tag="open" Click="OnCardMenu" />
+                                        <MenuItem Header="Rename" Tag="rename" Click="OnCardMenu" />
+                                        <Separator />
+                                        <MenuItem Header="Copy page(s)" Tag="copy" Click="OnCardMenu" />
+                                        <MenuItem Header="Paste after this" Tag="paste-after" Click="OnCardMenu" />
+                                        <MenuItem Header="Paste before this" Tag="paste-before" Click="OnCardMenu" />
+                                        <Separator />
+                                        <MenuItem Header="Add new page after" Tag="add-after" Click="OnCardMenu" />
+                                        <MenuItem Header="Add new page before" Tag="add-before" Click="OnCardMenu" />
+                                        <MenuItem Header="Duplicate page(s)" Tag="duplicate" Click="OnCardMenu" />
+                                        <Separator />
+                                        <MenuItem Header="Move left" Tag="left" Click="OnCardMenu" />
+                                        <MenuItem Header="Move right" Tag="right" Click="OnCardMenu" />
+                                        <Separator />
+                                        <MenuItem Header="Delete page(s)" Tag="delete" Click="OnCardMenu" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <StackPanel>
+                                    <Border Height="160" CornerRadius="6" Background="{StaticResource PanelBrush}" BorderThickness="2">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPageSelected}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{StaticResource SelectionAccentBrush}" />
+                                                        <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsMouseOver, ElementName=Card}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{StaticResource SubtleTextBrush}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource EqualsConverter}">
+                                                                <Binding />
+                                                                <Binding Path="DataContext.Document" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Image Source="{Binding PageThumbnail}" Stretch="Uniform" Margin="6" RenderOptions.BitmapScalingMode="HighQuality" />
+                                    </Border>
+                                    <TextBlock Text="{Binding TabTitle}" FontSize="12.5" HorizontalAlignment="Center" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" MaxWidth="220" />
+                                    <TextBlock Text="{Binding SizeText}" FontSize="11" HorizontalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Command="{Binding File.AddPageCommand}" Width="236" Height="40" HorizontalAlignment="Left" Cursor="Hand" Content="+  Add page"
+                        ToolTip="Add a page to this project (Ctrl+Alt+N)" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -69,7 +69,7 @@ public partial class RibbonBar : UserControl
     // ------------------------------------------------------------------ search ("tell me what you want to do")
 
     /// <summary>A command the search can find.</summary>
-    public sealed record SearchItem(string Title, string Where, string Glyph, string Extra, Action Run, Func<bool> CanRun)
+    public sealed record SearchItem(string Title, string Where, string Glyph, string Extra, Action Run, Func<bool> CanRun, System.Windows.Media.Brush? GlyphBrush = null)
     {
         public double Opacity => CanRun() ? 1 : 0.4;
     }
@@ -94,7 +94,7 @@ public partial class RibbonBar : UserControl
         if (d is HeaderedContentControl { Header: string groupName }) group = groupName;
         if (d is ToggleButton toggle && LabelOf(toggle) is { Length: > 0 } toggleLabel)
         {
-            items.Add(new SearchItem(toggleLabel, tab, toggle.Tag as string ?? "", (toggle.ToolTip as string ?? "") + " " + group, () => toggle.IsChecked = toggle.IsChecked != true, () => true));
+            items.Add(new SearchItem(toggleLabel, tab, toggle.Tag as string ?? "", (toggle.ToolTip as string ?? "") + " " + group, () => toggle.IsChecked = toggle.IsChecked != true, () => true, Services.RibbonIcon.GetBrush(toggle)));
         }
         else if (d is Button button && LabelOf(button) is { Length: > 0 } label)
         {
@@ -104,27 +104,27 @@ public partial class RibbonBar : UserControl
             if (button.Command is { } command)
             {
                 var parameter = button.CommandParameter;
-                items.Add(new SearchItem(clean, tab, glyph, tip, () => command.Execute(parameter), () => command.CanExecute(parameter)));
+                items.Add(new SearchItem(clean, tab, glyph, tip, () => command.Execute(parameter), () => command.CanExecute(parameter), Services.RibbonIcon.GetBrush(button)));
             }
             else if (button.ContextMenu is { } menu)
             {
                 menu.DataContext ??= context;
-                foreach (var item in menu.Items.OfType<MenuItem>()) AddMenuItem(item, clean + " " + group, tab, glyph, items);
+                foreach (var item in menu.Items.OfType<MenuItem>()) AddMenuItem(item, clean + " " + group, tab, glyph, Services.RibbonIcon.GetBrush(button), items);
             }
         }
         foreach (var child in LogicalTreeHelper.GetChildren(d).OfType<DependencyObject>()) Walk(child, tab, group, context, items);
     }
 
-    private static void AddMenuItem(MenuItem item, string parent, string tab, string glyph, List<SearchItem> items)
+    private static void AddMenuItem(MenuItem item, string parent, string tab, string glyph, System.Windows.Media.Brush? brush, List<SearchItem> items)
     {
         if (item.Header is not string header) return;
         header = header.Replace("...", "").Trim();
         if (item.Command is { } command)
         {
             var parameter = item.CommandParameter;
-            items.Add(new SearchItem($"{header} ({parent.Split(' ')[0]})", tab, glyph, item.ToolTip as string ?? "", () => command.Execute(parameter), () => command.CanExecute(parameter)));
+            items.Add(new SearchItem($"{header} ({parent.Split(' ')[0]})", tab, glyph, item.ToolTip as string ?? "", () => command.Execute(parameter), () => command.CanExecute(parameter), brush));
         }
-        foreach (var sub in item.Items.OfType<MenuItem>()) AddMenuItem(sub, parent, tab, glyph, items);
+        foreach (var sub in item.Items.OfType<MenuItem>()) AddMenuItem(sub, parent, tab, glyph, brush, items);
     }
 
     /// <summary>The commands that match what was typed (every word has to appear in the name, the tab or the tip), best first.</summary>

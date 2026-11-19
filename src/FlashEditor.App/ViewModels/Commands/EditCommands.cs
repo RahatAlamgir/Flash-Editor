@@ -72,6 +72,7 @@ public sealed class EditCommands
     /// <summary>Copies the selected pixels (or the whole layer) of the active layer.</summary>
     private void Copy(bool cut)
     {
+        if (TryCopyObjects(cut)) return;
         // Copying only reads pixels: it works on locked layers and keeps objects editable.
         var layer = Doc.ActiveLayer;
         if (layer == null || (cut ? !_main.TryGetEditableLayer(out layer) : !_main.TryGetVisibleLayer(out layer))) return;
@@ -89,9 +90,75 @@ public sealed class EditCommands
         _main.SetStatus(cut ? "Cut to clipboard" : $"Copied {pixels.Width} x {pixels.Height} px");
     }
 
+    /// <summary>
+    /// With the Select / Move tool and no pixel selection, Copy / Cut take the selected objects as they are (still editable), so they can be
+    /// pasted into any picture or project. Returns false when this does not apply (the normal pixel copy then runs).
+    /// </summary>
+    private bool TryCopyObjects(bool cut)
+    {
+        if (_main.Tools.ActiveTool is not MoveTool || Doc.Selection != null || _main.ActivePartIndex != null) return false;
+        var layers = _main.SelectedLayers;
+        if (layers.Count == 0 || layers.Any(l => l.Object == null || l.IsAdjustment)) return false;
+
+        var bounds = PixelRect.Empty;
+        foreach (var layer in layers) bounds = bounds.Union(layer.VisibleBounds());
+        if (bounds.IsEmpty) return false;
+        var picture = SelectionPixels.Extract(layers[^1].Pixels, Selection.FromRectangle(bounds, Doc.Width, Doc.Height) ?? Selection.All(Doc.Width, Doc.Height));
+        _main.Clipboard.CopyObjects(layers.Select(l => new Services.CopiedObject(l.Object!, l.Name, l.Opacity)), picture, bounds.X, bounds.Y);
+
+        if (cut)
+        {
+            if (layers.Count >= Doc.Layers.Count) { _main.SetStatus("Copied. The picture needs at least one layer, so they were not cut."); return true; }
+            if (layers.Any(l => l.IsLocked)) { _main.SetStatus("Copied. A locked layer cannot be cut."); return true; }
+            var doc = Doc;
+            var cutLayers = layers.ToHashSet();
+            _main.Push(LayerStructureAction.Record("Cut", doc, () =>
+            {
+                var rest = doc.Layers.Where(l => !cutLayers.Contains(l)).ToList();
+                doc.SetLayers(rest, rest[^1]);
+            }));
+            _main.SetStatus(layers.Count == 1 ? "Cut. Paste it here or into another picture or project." : $"Cut {layers.Count} objects. Paste them here or into another picture or project.");
+            return true;
+        }
+        _main.SetStatus(layers.Count == 1 ? "Copied. Paste it here or into another picture or project." : $"Copied {layers.Count} objects. Paste them here or into another picture or project.");
+        return true;
+    }
+
+    /// <summary>Pastes objects that were copied as objects: the same shapes, text and pictures, in the same places, on new layers.</summary>
+    private void PasteObjects(IReadOnlyList<Services.CopiedObject> items)
+    {
+        var doc = Doc;
+        // Pasted into the picture they came from: slightly shifted, so they are not hidden behind the originals.
+        bool sameSpot = items.Any(i => doc.Layers.Any(l => Equals(l.Object, i.Object)));
+        var created = new List<Layer>();
+        foreach (var item in items)
+        {
+            var obj = sameSpot ? ObjectTransforms.Offset(item.Object, 24, 24) : item.Object;
+            var layer = new Layer(_main.UniqueLayerName(item.Name), doc.Width, doc.Height);
+            layer.SetObject(obj);
+            layer.Opacity = item.Opacity;
+            created.Add(layer);
+        }
+        _main.Push(LayerStructureAction.Record("Paste", doc, () =>
+        {
+            var list = doc.Layers.ToList();
+            list.AddRange(created);
+            doc.SetLayers(list, created[^1]);
+        }));
+        doc.Selection = null;
+        _main.SetSelection(created, created[^1]);
+        _main.SelectTool<MoveTool>();
+        _main.SetStatus(created.Count == 1 ? "Pasted. It is still fully editable." : $"Pasted {created.Count} objects. They are still fully editable.");
+    }
+
     /// <summary>Pastes as a new, resizable image layer, selects it, and switches to the Move tool.</summary>
     private void Paste()
     {
+        if (_main.Clipboard.GetObjects() is { Count: > 0 } objects)
+        {
+            PasteObjects(objects);
+            return;
+        }
         var content = _main.Clipboard.Get();
         if (content == null) return;
         var pixels = content.Pixels;

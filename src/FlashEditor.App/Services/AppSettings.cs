@@ -55,6 +55,12 @@ public sealed class AppSettings
         Save();
     }
 
+    /// <summary>True once the tutorial project was made (it is made and opened the first time the program starts).</summary>
+    public bool DemoCreated { get; set; }
+
+    /// <summary>The look of the icons: Plain (gray) or Colorful.</summary>
+    public string IconStyle { get; set; } = "Plain";
+
     /// <summary>True once the quick tour was shown (it opens by itself only the first time).</summary>
     public bool TourSeen { get; set; }
 
@@ -126,7 +132,7 @@ public sealed class AppSettings
             if (File.Exists(FilePath))
             {
                 var data = JsonSerializer.Deserialize<Stored>(File.ReadAllText(FilePath));
-                if (data != null) return new AppSettings { UndoSteps = data.UndoSteps, RecentColors = data.RecentColors ?? new(), Swatches = data.Swatches ?? new(), BrandColors = data.BrandColors ?? new(), BrandFonts = data.BrandFonts ?? new(), TourSeen = data.TourSeen, Shortcuts = data.Shortcuts ?? new() };
+                if (data != null) return new AppSettings { UndoSteps = data.UndoSteps, RecentColors = data.RecentColors ?? new(), Swatches = data.Swatches ?? new(), BrandColors = data.BrandColors ?? new(), BrandFonts = data.BrandFonts ?? new(), TourSeen = data.TourSeen, Shortcuts = data.Shortcuts ?? new(), IconStyle = data.IconStyle == "Colorful" ? "Colorful" : "Plain", DemoCreated = data.DemoCreated };
             }
         }
         catch (Exception) { /* a damaged file: use the defaults */ }
@@ -138,10 +144,10 @@ public sealed class AppSettings
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(new Stored(UndoSteps, RecentColors, Swatches, BrandColors, BrandFonts, TourSeen, Shortcuts), new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(new Stored(UndoSteps, RecentColors, Swatches, BrandColors, BrandFonts, TourSeen, Shortcuts, IconStyle, DemoCreated), new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception) { /* the folder cannot be written: the choice only lasts until the program is closed */ }
     }
 
-    private sealed record Stored(int UndoSteps, List<string>? RecentColors = null, List<string>? Swatches = null, List<string>? BrandColors = null, List<string>? BrandFonts = null, bool TourSeen = false, Dictionary<string, string>? Shortcuts = null);
+    private sealed record Stored(int UndoSteps, List<string>? RecentColors = null, List<string>? Swatches = null, List<string>? BrandColors = null, List<string>? BrandFonts = null, bool TourSeen = false, Dictionary<string, string>? Shortcuts = null, string? IconStyle = null, bool DemoCreated = false);
 }

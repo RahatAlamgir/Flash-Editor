@@ -63,7 +63,10 @@ public interface IDialogService
     void ShowShortcuts();
 
     /// <summary>Insert > Icons / Badges: the grid to pick from. Null when closed without a choice.</summary>
-    FlashEditor.App.Views.Dialogs.IconChoice? ShowIconPicker(bool badges);
+    FlashEditor.App.Views.Dialogs.IconChoice? ShowIconPicker(string start);
+
+    /// <summary>Insert > SmartArt: the diagram, words and colors. Null when closed without a choice.</summary>
+    FlashEditor.App.Views.Dialogs.SmartArtChoice? ShowSmartArt();
 
     /// <summary>File > Batch Convert: which folder, format and size. Null when cancelled.</summary>
     FlashEditor.Core.IO.BatchOptions? ShowBatch();

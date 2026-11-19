@@ -143,81 +143,152 @@
             </Border>
 
             <!-- Pages of the selected project -->
-            <Border DockPanel.Dock="Bottom" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0">
+            <Border x:Name="PagesBar" DockPanel.Dock="Bottom" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Height="128" ClipToBounds="True">
                 <DockPanel>
-                    <Button DockPanel.Dock="Left" Command="{Binding File.AddPageCommand}" Margin="8,4,8,4" Padding="10,2" MinWidth="0" MinHeight="0" FontSize="12"
-                            ToolTip="Add a page to this project (Ctrl+Alt+N)" Content="+ Page" />
-                    <TextBlock DockPanel.Dock="Left" Text="PAGES" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{StaticResource SubtleTextBrush}" />
+                    <StackPanel DockPanel.Dock="Left" Width="92" VerticalAlignment="Center" Margin="10,0,4,0">
+                        <TextBlock Text="PAGES" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SubtleTextBrush}" />
+                        <TextBlock FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2,0,8">
+                            <Run Text="{Binding Document.Project.Pages.Count, Mode=OneWay}" /><Run Text=" in this project" />
+                        </TextBlock>
+                        <ToggleButton Content="Grid view" IsChecked="{Binding ShowPageGrid}" Padding="8,3" MinWidth="0" MinHeight="0" FontSize="12" HorizontalAlignment="Left"
+                                      ToolTip="See all pages as big pictures; drag them to change the order, double-click one to open it" />
+                    </StackPanel>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                        <ItemsControl x:Name="PageTabs" ItemsSource="{Binding Document.Project.Pages}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Padding="12,0,6,0" Height="30" Cursor="Hand" ToolTip="{Binding TabToolTip}"
-                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
-                                        <Border.InputBindings>
-                                            <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.SelectDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-                                            <MouseBinding Gesture="LeftDoubleClick" Command="{Binding DataContext.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-                                            <MouseBinding Gesture="MiddleClick" Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-                                        </Border.InputBindings>
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Background" Value="Transparent" />
-                                                <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
-                                                <Setter Property="BorderThickness" Value="1,0,0,0" />
-                                                <Setter Property="TextElement.Foreground" Value="{StaticResource SubtleTextBrush}" />
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource HoverBrush}" />
-                                                        <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
-                                                    </Trigger>
-                                                    <DataTrigger Value="True">
-                                                        <DataTrigger.Binding>
-                                                            <MultiBinding Converter="{StaticResource EqualsConverter}">
-                                                                <Binding />
-                                                                <Binding Path="DataContext.Document" RelativeSource="{RelativeSource AncestorType=Window}" />
-                                                            </MultiBinding>
-                                                        </DataTrigger.Binding>
-                                                        <Setter Property="Background" Value="{StaticResource CanvasAreaBrush}" />
-                                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                                                        <Setter Property="BorderThickness" Value="0,0,0,2" />
-                                                        <Setter Property="TextElement.Foreground" Value="{StaticResource TextBrush}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <Border.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem Header="Rename page" Command="{Binding PlacementTarget.Tag.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                <MenuItem Header="Add page after this" Command="{Binding PlacementTarget.Tag.File.AddPageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="Duplicate page" Command="{Binding PlacementTarget.Tag.File.DuplicatePageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="Delete page" Command="{Binding PlacementTarget.Tag.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                            </ContextMenu>
-                                        </Border.ContextMenu>
+                        <StackPanel Orientation="Horizontal">
+                            <ItemsControl x:Name="PageTabs" ItemsSource="{Binding Document.Project.Pages}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding TabTitle}" VerticalAlignment="Center" MaxWidth="200" TextTrimming="CharacterEllipsis"
-                                                       Visibility="{Binding IsRenaming, Converter={StaticResource InverseBoolToVisibility}}" />
-                                            <TextBox Text="{Binding EditableName, UpdateSourceTrigger=Explicit}" Width="140" Padding="4,1" VerticalAlignment="Center"
-                                                     Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisibility}}"
-                                                     IsVisibleChanged="OnTabRenameVisible" KeyDown="OnTabRenameKeyDown" LostKeyboardFocus="OnTabRenameLostFocus" />
-                                            <Button Content="&#x2715;" FontSize="10" Width="18" Height="18" Padding="0" Margin="8,0,0,0" MinWidth="0" MinHeight="0"
-                                                    Background="Transparent" BorderThickness="0" ToolTip="Delete this page"
-                                                    Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding}" />
+                                        <Button Width="20" Height="84" Margin="0,8,0,0" VerticalAlignment="Top" Padding="0" MinWidth="0" MinHeight="0" Cursor="Hand" Click="OnInsertPageBefore"
+                                                Background="Transparent" BorderThickness="0" ToolTip="Add a new page here"
+                                                Content="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                    <Setter Property="Opacity" Value="0" />
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Opacity" Value="1" />
+                                                            <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Border x:Name="Card" Width="140" Margin="0,8,0,6" Background="Transparent" Cursor="Hand" ToolTip="{Binding TabToolTip}" Focusable="True" FocusVisualStyle="{x:Null}" PreviewMouseLeftButtonDown="OnPageCardDown"
+                                                Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                                            <Border.InputBindings>
+                                                <MouseBinding Gesture="LeftDoubleClick" Command="{Binding DataContext.RenameDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                                <MouseBinding Gesture="MiddleClick" Command="{Binding DataContext.CloseDocumentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                            </Border.InputBindings>
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Rename" Tag="rename" Click="OnPageMenuClick" />
+                                                    <Separator />
+                                                    <MenuItem Header="Copy page(s)" Tag="copy" Click="OnPageMenuClick" />
+                                                    <MenuItem Header="Paste after this" Tag="paste-after" Click="OnPageMenuClick" />
+                                                    <MenuItem Header="Paste before this" Tag="paste-before" Click="OnPageMenuClick" />
+                                                    <Separator />
+                                                    <MenuItem Header="Add new page after" Tag="add-after" Click="OnPageMenuClick" />
+                                                    <MenuItem Header="Add new page before" Tag="add-before" Click="OnPageMenuClick" />
+                                                    <MenuItem Header="Duplicate page(s)" Tag="duplicate" Click="OnPageMenuClick" />
+                                                    <Separator />
+                                                    <MenuItem Header="Move left" Tag="left" Click="OnPageMenuClick" />
+                                                    <MenuItem Header="Move right" Tag="right" Click="OnPageMenuClick" />
+                                                    <Separator />
+                                                    <MenuItem Header="Delete page(s)" Tag="delete" Click="OnPageMenuClick" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <StackPanel>
+                                                <Border Height="84" CornerRadius="4" Background="{StaticResource CanvasAreaBrush}" BorderThickness="2">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPageSelected}" Value="True">
+                                                                    <Setter Property="BorderBrush" Value="{StaticResource SelectionAccentBrush}" />
+                                                                    <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=Card}" Value="True">
+                                                                    <Setter Property="BorderBrush" Value="{StaticResource SubtleTextBrush}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Value="True">
+                                                                    <DataTrigger.Binding>
+                                                                        <MultiBinding Converter="{StaticResource EqualsConverter}">
+                                                                            <Binding />
+                                                                            <Binding Path="DataContext.Document" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                                        </MultiBinding>
+                                                                    </DataTrigger.Binding>
+                                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <Grid>
+                                                        <Image Source="{Binding PageThumbnail}" Stretch="Uniform" Margin="3" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                        <Button Tag="{Binding ElementName=Card}" Click="OnPageMenuButton" Content="&#xE712;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                                                                Width="24" Height="22" Padding="0" MinWidth="0" MinHeight="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,3,0"
+                                                                Background="#CC262626" BorderThickness="0" ToolTip="Page menu: rename, duplicate, move, delete">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                                    <Setter Property="Opacity" Value="0" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsMouseOver, ElementName=Card}" Value="True">
+                                                                            <Setter Property="Opacity" Value="1" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
+                                                <Grid Margin="2,4,2,0">
+                                                    <TextBlock Text="{Binding TabTitle}" FontSize="12" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="130"
+                                                               Foreground="{StaticResource TextBrush}"
+                                                               Visibility="{Binding IsRenaming, Converter={StaticResource InverseBoolToVisibility}}" />
+                                                    <TextBox Text="{Binding EditableName, UpdateSourceTrigger=Explicit}" Padding="4,1" HorizontalContentAlignment="Center" MinHeight="0"
+                                                             Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisibility}}"
+                                                             IsVisibleChanged="OnTabRenameVisible" KeyDown="OnTabRenameKeyDown" LostKeyboardFocus="OnTabRenameLostFocus" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
                                         </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Command="{Binding File.AddPageCommand}" Width="84" Height="84" Margin="4,8,6,0" VerticalAlignment="Top" Cursor="Hand" Padding="0"
+                                    ToolTip="Add a page to this project (Ctrl+Alt+N)" Background="Transparent" BorderBrush="{StaticResource DividerBrush}" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Add page" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0" Foreground="{StaticResource SubtleTextBrush}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Click="OnPastePages" Width="84" Height="84" Margin="0,8,10,0" VerticalAlignment="Top" Cursor="Hand" Padding="0"
+                                    ToolTip="Paste the copied pages here, after the page you are on (Ctrl+V)" Background="Transparent" BorderBrush="{StaticResource DividerBrush}" BorderThickness="2"
+                                    Visibility="{Binding Pages.HasClipboard, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel>
+                                    <TextBlock Text="&#xE77F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Paste pages" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0" Foreground="{StaticResource SubtleTextBrush}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                     </ScrollViewer>
                 </DockPanel>
             </Border>
+            <!-- The arrow in the middle folds the page strip away (and brings it back) -->
+            <Border x:Name="PagesToggleBar" DockPanel.Dock="Bottom" Height="16" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0">
+                <Button x:Name="PagesToggle" Click="OnTogglePages" Width="44" Height="16" Padding="0" MinWidth="0" MinHeight="0" HorizontalAlignment="Center" Background="Transparent" BorderThickness="0" Cursor="Hand"
+                        Content="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" ToolTip="Hide the pages" />
+            </Border>
 
-            <editor:CanvasView x:Name="CanvasArea" />
+            <Grid>
+                <editor:CanvasView x:Name="CanvasArea" />
+                <panels:PageGridView x:Name="PageGrid" Visibility="{Binding ShowPageGrid, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
         </DockPanel>
     </DockPanel>
 

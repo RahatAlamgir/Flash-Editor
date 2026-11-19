@@ -4,7 +4,7 @@ using FlashEditor.Core.Imaging;
 namespace FlashEditor.Core.Objects;
 
 /// <summary>What kind of chart is drawn.</summary>
-public enum ChartKind { Columns, Bars, Line, Pie, Donut }
+public enum ChartKind { Columns, Bars, Line, Pie, Donut, Area, Lollipop, HalfDonut, RadialBars, Progress, Funnel }
 
 /// <summary>One value of a chart with its name.</summary>
 public sealed record ChartItem(string Label, double Value);

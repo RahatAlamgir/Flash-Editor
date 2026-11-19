@@ -42,13 +42,19 @@ internal static class ChartRenderer
             case ChartKind.Donut: DrawPie(dc, chart, area, font, ink, hole: 0.55); break;
             case ChartKind.Bars: DrawBars(dc, chart, area, font, ink, faint); break;
             case ChartKind.Line: DrawColumnsOrLine(dc, chart, area, font, ink, faint, line: true); break;
+            case ChartKind.Area: DrawColumnsOrLine(dc, chart, area, font, ink, faint, line: true, areaFill: true); break;
+            case ChartKind.Lollipop: DrawColumnsOrLine(dc, chart, area, font, ink, faint, line: false, lollipop: true); break;
+            case ChartKind.HalfDonut: DrawHalfDonut(dc, chart, area, font, ink); break;
+            case ChartKind.RadialBars: DrawRadialBars(dc, chart, area, font, ink, faint); break;
+            case ChartKind.Progress: DrawProgress(dc, chart, area, font, ink, faint); break;
+            case ChartKind.Funnel: DrawFunnel(dc, chart, area, font); break;
             default: DrawColumnsOrLine(dc, chart, area, font, ink, faint, line: false); break;
         }
     }
 
     // ---------------------------------------------------------------- columns and line
 
-    private static void DrawColumnsOrLine(DrawingContext dc, ChartObject chart, Rect area, double font, Brush ink, Brush faint, bool line)
+    private static void DrawColumnsOrLine(DrawingContext dc, ChartObject chart, Rect area, double font, Brush ink, Brush faint, bool line, bool areaFill = false, bool lollipop = false)
     {
         var items = chart.Items;
         var (min, max, step) = Scale(items);
@@ -75,8 +81,17 @@ internal static class ChartRenderer
             else
             {
                 double barW = slot * Math.Clamp(chart.BarWidth, 0.1, 1);
-                var rect = new Rect(cx - barW / 2, Math.Min(y, zero), barW, Math.Max(0.5, Math.Abs(zero - y)));
-                dc.DrawRoundedRectangle(Brush(chart.ColorOf(i)), null, rect, Math.Min(barW * 0.12, 6), Math.Min(barW * 0.12, 6));
+                if (lollipop)
+                {
+                    var stem = new Pen(Brush(chart.ColorOf(i)), Math.Max(1.5, Math.Min(barW * 0.12, font * 0.28))); stem.Freeze();
+                    dc.DrawLine(stem, new Point(cx, zero), new Point(cx, y));
+                    dc.DrawEllipse(Brush(chart.ColorOf(i)), null, new Point(cx, y), Math.Min(barW * 0.26, font * 0.9), Math.Min(barW * 0.26, font * 0.9));
+                }
+                else
+                {
+                    var rect = new Rect(cx - barW / 2, Math.Min(y, zero), barW, Math.Max(0.5, Math.Abs(zero - y)));
+                    dc.DrawRoundedRectangle(Brush(chart.ColorOf(i)), null, rect, Math.Min(barW * 0.12, 6), Math.Min(barW * 0.12, 6));
+                }
             }
             if (chart.ShowLabels)
             {
@@ -86,7 +101,7 @@ internal static class ChartRenderer
             if (chart.ShowValues && !line)
             {
                 var value = Text(chart.Format(items[i].Value), font * 0.85, ink);
-                dc.DrawText(value, new Point(cx - value.Width / 2, items[i].Value >= 0 ? y - value.Height - 1 : y + 1));
+                dc.DrawText(value, new Point(cx - value.Width / 2, items[i].Value >= 0 ? y - value.Height - (lollipop ? font * 0.9 : 1) : y + 1 + (lollipop ? font * 0.9 : 0)));
             }
         }
 
@@ -95,6 +110,18 @@ internal static class ChartRenderer
             var color = chart.ColorOf(0);
             var pen = new Pen(Brush(color), Math.Max(1.5, font * 0.22)) { LineJoin = PenLineJoin.Round, StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
             pen.Freeze();
+            if (areaFill && points.Count > 1)
+            {
+                var fill = new StreamGeometry();
+                using (var ctx = fill.Open())
+                {
+                    ctx.BeginFigure(new Point(points[0].X, zero), true, true);
+                    foreach (var p in points) ctx.LineTo(p, false, false);
+                    ctx.LineTo(new Point(points[^1].X, zero), false, false);
+                }
+                fill.Freeze();
+                dc.DrawGeometry(Brush(color with { A = 85 }), null, fill);
+            }
             for (int i = 1; i < points.Count; i++) dc.DrawLine(pen, points[i - 1], points[i]);
             for (int i = 0; i < points.Count; i++)
             {
@@ -215,6 +242,165 @@ internal static class ChartRenderer
     }
 
     private static Point Point(Point c, double r, double angle) => new(c.X + Math.Cos(angle) * r, c.Y + Math.Sin(angle) * r);
+
+
+    // ---------------------------------------------------------------- half donut (gauge style)
+
+    private static void DrawHalfDonut(DrawingContext dc, ChartObject chart, Rect area, double font, Brush ink)
+    {
+        var items = chart.Items.Where(i => i.Value > 0).ToList();
+        double total = items.Sum(i => i.Value);
+        if (total <= 0) { var t = Text("Needs positive numbers", font, ink); dc.DrawText(t, new Point(area.X + (area.Width - t.Width) / 2, area.Y + area.Height / 2)); return; }
+
+        double legendWidth = chart.ShowLabels ? Math.Min(area.Width * 0.38, items.Max(i => MeasureWidth(i.Label, font * 0.95)) + font * 2.4) : 0;
+        double gap = legendWidth > 0 ? font : 0;
+        double r = Math.Max(10, Math.Min((area.Width - legendWidth - gap) / 2, area.Height * 0.86));
+        var center = new Point(area.X + (area.Width - legendWidth - gap) / 2, area.Y + area.Height / 2 + r / 2);
+        double inner = r * 0.58;
+        double angle = Math.PI;
+        var separator = new Pen(chart.Background is { } bgc ? Brush(bgc) : Brushes.White, Math.Max(1, r * 0.012)); separator.Freeze();
+        for (int i = 0; i < items.Count; i++)
+        {
+            double sweep = items[i].Value / total * Math.PI;
+            var geometry = new StreamGeometry();
+            using (var ctx = geometry.Open())
+            {
+                ctx.BeginFigure(Point(center, r, angle), true, true);
+                ctx.ArcTo(Point(center, r, angle + sweep), new Size(r, r), 0, false, SweepDirection.Clockwise, true, false);
+                ctx.LineTo(Point(center, inner, angle + sweep), true, false);
+                ctx.ArcTo(Point(center, inner, angle), new Size(inner, inner), 0, false, SweepDirection.Counterclockwise, true, false);
+            }
+            geometry.Freeze();
+            dc.DrawGeometry(Brush(chart.ColorOf(chart.Items.ToList().IndexOf(items[i]))), separator, geometry);
+            if (chart.ShowValues && sweep > 0.22)
+            {
+                double mid = angle + sweep / 2, rr = (r + inner) / 2;
+                var label = Text($"{items[i].Value / total * 100:0}%", font * 0.95, Brushes.White, bold: true);
+                dc.DrawText(label, new Point(center.X + Math.Cos(mid) * rr - label.Width / 2, center.Y + Math.Sin(mid) * rr - label.Height / 2));
+            }
+            angle += sweep;
+        }
+        DrawLegend(dc, chart, area, font, ink, legendWidth);
+    }
+
+    private static void DrawLegend(DrawingContext dc, ChartObject chart, Rect area, double font, Brush ink, double legendWidth)
+    {
+        if (legendWidth <= 0) return;
+        double x = area.Right - legendWidth, rowH = font * 1.6, y = area.Y + (area.Height - rowH * chart.Items.Count) / 2;
+        for (int i = 0; i < chart.Items.Count; i++)
+        {
+            dc.DrawRoundedRectangle(Brush(chart.ColorOf(i)), null, new Rect(x, y + rowH * i + rowH * 0.18, font * 0.9, font * 0.9), 2, 2);
+            var label = Text(chart.Items[i].Label, font * 0.95, ink, maxWidth: legendWidth - font * 1.4);
+            dc.DrawText(label, new Point(x + font * 1.3, y + rowH * i + (rowH - label.Height) / 2));
+        }
+    }
+
+    // ---------------------------------------------------------------- radial bars
+
+    private static void DrawRadialBars(DrawingContext dc, ChartObject chart, Rect area, double font, Brush ink, Brush faint)
+    {
+        var items = chart.Items;
+        double max = Math.Max(1e-9, items.Max(i => Math.Max(0, i.Value)));
+        double legendWidth = chart.ShowLabels ? Math.Min(area.Width * 0.42, items.Max(i => MeasureWidth(i.Label + "  " + chart.Format(i.Value), font * 0.95)) + font * 2.4) : 0;
+        double gap = legendWidth > 0 ? font : 0;
+        double outer = Math.Max(10, Math.Min(area.Width - legendWidth - gap, area.Height) / 2);
+        var center = new Point(area.X + (area.Width - legendWidth - gap) / 2, area.Y + area.Height / 2);
+        double thick = Math.Min(outer / (items.Count * 1.55 + 0.6), font * 1.6);
+        double step = Math.Min(thick * 1.45, (outer * 0.9) / items.Count);
+        const double Span = Math.PI * 1.5;                              // three quarters of a circle
+
+        var track = new Pen(faint, thick) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }; track.Freeze();
+        for (int i = 0; i < items.Count; i++)
+        {
+            double r = outer - thick / 2 - step * i;
+            if (r <= thick / 2) break;
+            double start = -Math.PI / 2, sweepTrack = Span, sweep = Span * Math.Clamp(Math.Max(0, items[i].Value) / max, 0.001, 1);
+            dc.DrawGeometry(null, track, Arc(center, r, start, sweepTrack));
+            var pen = new Pen(Brush(chart.ColorOf(i)), thick) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }; pen.Freeze();
+            dc.DrawGeometry(null, pen, Arc(center, r, start, sweep));
+        }
+        if (legendWidth > 0)
+        {
+            double x = area.Right - legendWidth, rowH = font * 1.6, y = area.Y + (area.Height - rowH * items.Count) / 2;
+            for (int i = 0; i < items.Count; i++)
+            {
+                dc.DrawEllipse(Brush(chart.ColorOf(i)), null, new Point(x + font * 0.45, y + rowH * i + rowH / 2), font * 0.45, font * 0.45);
+                string text = chart.ShowValues ? $"{items[i].Label}  {chart.Format(items[i].Value)}" : items[i].Label;
+                var label = Text(text, font * 0.95, ink, maxWidth: legendWidth - font * 1.4);
+                dc.DrawText(label, new Point(x + font * 1.3, y + rowH * i + (rowH - label.Height) / 2));
+            }
+        }
+    }
+
+    private static Geometry Arc(Point c, double r, double start, double sweep)
+    {
+        var g = new StreamGeometry();
+        using (var ctx = g.Open())
+        {
+            ctx.BeginFigure(Point(c, r, start), false, false);
+            ctx.ArcTo(Point(c, r, start + sweep), new Size(r, r), 0, sweep > Math.PI, SweepDirection.Clockwise, true, false);
+        }
+        g.Freeze();
+        return g;
+    }
+
+    // ---------------------------------------------------------------- progress bars
+
+    private static void DrawProgress(DrawingContext dc, ChartObject chart, Rect area, double font, Brush ink, Brush faint)
+    {
+        var items = chart.Items;
+        double max = items.Max(i => Math.Max(0, i.Value));
+        double scale = max <= 100 ? 100 : max;                          // percentages fill the track up to 100
+        double rowH = area.Height / items.Count, barH = Math.Min(rowH * Math.Clamp(chart.BarWidth, 0.2, 1) * 0.5, font * 1.6);
+        for (int i = 0; i < items.Count; i++)
+        {
+            double top = area.Y + rowH * i, fraction = Math.Clamp(Math.Max(0, items[i].Value) / scale, 0, 1);
+            double textH = font * 1.3, barY = top + (rowH - (chart.ShowLabels ? textH + barH + font * 0.2 : barH)) / 2 + (chart.ShowLabels ? textH + font * 0.2 : 0);
+            if (chart.ShowLabels)
+            {
+                var label = Text(items[i].Label, font, ink, maxWidth: area.Width * 0.7);
+                dc.DrawText(label, new Point(area.X, barY - label.Height - font * 0.15));
+            }
+            if (chart.ShowValues)
+            {
+                var value = Text(chart.Format(items[i].Value), font * 0.95, ink, bold: true);
+                dc.DrawText(value, new Point(area.Right - value.Width, barY - value.Height - font * 0.15));
+            }
+            dc.DrawRoundedRectangle(faint, null, new Rect(area.X, barY, area.Width, barH), barH / 2, barH / 2);
+            if (fraction > 0) dc.DrawRoundedRectangle(Brush(chart.ColorOf(i)), null, new Rect(area.X, barY, Math.Max(barH, area.Width * fraction), barH), barH / 2, barH / 2);
+        }
+    }
+
+    // ---------------------------------------------------------------- funnel
+
+    private static void DrawFunnel(DrawingContext dc, ChartObject chart, Rect area, double font)
+    {
+        var items = chart.Items.Where(i => i.Value > 0).ToList();
+        if (items.Count == 0) { var t = Text("Needs positive numbers", font, Brushes.Gray); dc.DrawText(t, new Point(area.X + (area.Width - t.Width) / 2, area.Y + area.Height / 2)); return; }
+        double max = items.Max(i => i.Value), rowH = area.Height / items.Count, cx = area.X + area.Width / 2;
+        var separator = new Pen(chart.Background is { } bgc ? Brush(bgc) : Brushes.White, Math.Max(1, font * 0.12)); separator.Freeze();
+        for (int i = 0; i < items.Count; i++)
+        {
+            double wTop = area.Width * items[i].Value / max, wBottom = i + 1 < items.Count ? area.Width * items[i + 1].Value / max : wTop * 0.78;
+            double y0 = area.Y + rowH * i, y1 = y0 + rowH;
+            var g = new StreamGeometry();
+            using (var ctx = g.Open())
+            {
+                ctx.BeginFigure(new Point(cx - wTop / 2, y0), true, true);
+                ctx.LineTo(new Point(cx + wTop / 2, y0), false, false);
+                ctx.LineTo(new Point(cx + wBottom / 2, y1), false, false);
+                ctx.LineTo(new Point(cx - wBottom / 2, y1), false, false);
+            }
+            g.Freeze();
+            dc.DrawGeometry(Brush(chart.ColorOf(chart.Items.ToList().IndexOf(items[i]))), separator, g);
+            string text = chart.ShowLabels && chart.ShowValues ? $"{items[i].Label}  {chart.Format(items[i].Value)}" : chart.ShowLabels ? items[i].Label : chart.ShowValues ? chart.Format(items[i].Value) : "";
+            if (text.Length > 0)
+            {
+                var label = Text(text, font, Brushes.White, bold: true, maxWidth: Math.Max(20, Math.Min(wTop, wBottom) * 0.92));
+                dc.DrawText(label, new Point(cx - label.Width / 2, (y0 + y1) / 2 - label.Height / 2));
+            }
+        }
+    }
 
     // ---------------------------------------------------------------- helpers
 

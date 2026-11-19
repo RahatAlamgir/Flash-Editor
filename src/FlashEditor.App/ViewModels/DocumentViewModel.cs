@@ -34,6 +34,44 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
         RebuildLayers();
     }
 
+    // ------------------------------------------------------------------ page picture (for the page strip and the grid view)
+
+    private const int PageThumbnailWidth = 280, PageThumbnailHeight = 190;
+    private System.Windows.Media.ImageSource? _pageThumbnail;
+    private System.Windows.Threading.DispatcherTimer? _thumbnailTimer;
+
+    /// <summary>A small picture of the whole page. It is made the first time it is needed and redrawn a moment after the page changed.</summary>
+    public System.Windows.Media.ImageSource PageThumbnail => _pageThumbnail ??= MakePageThumbnail();
+
+    private System.Windows.Media.ImageSource MakePageThumbnail()
+    {
+        var small = Core.Imaging.Thumbnail.Create(Core.Painting.Compositor.Flatten(Model), PageThumbnailWidth, PageThumbnailHeight);
+        return Rendering.BitmapConverter.ToFrozenBitmap(small);
+    }
+
+    private void ScheduleThumbnail()
+    {
+        if (_pageThumbnail == null) return;                  // nobody looked at it yet
+        _thumbnailTimer ??= new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(350),
+        };
+        _thumbnailTimer.Tick -= OnThumbnailTimer;
+        _thumbnailTimer.Tick += OnThumbnailTimer;
+        _thumbnailTimer.Stop();
+        _thumbnailTimer.Start();
+    }
+
+    private void OnThumbnailTimer(object? sender, EventArgs e)
+    {
+        _thumbnailTimer?.Stop();
+        _pageThumbnail = MakePageThumbnail();
+        OnPropertyChanged(nameof(PageThumbnail));
+    }
+
+    /// <summary>"1280 x 720 px" for the grid view.</summary>
+    public string SizeText => $"{Model.Width} x {Model.Height} px";
+
     public Document Model { get; }
 
     /// <summary>Bottom to top: the canvas draws them in this order.</summary>
@@ -86,6 +124,15 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
     {
         get => PageTitle;
         set { if (value?.Trim() != PageTitle) CustomName = value; }
+    }
+
+    private bool _isPageSelected;
+
+    /// <summary>True when the page is picked in the page strip (Ctrl+click and Shift+click pick several); copy, duplicate and delete then work on all picked pages.</summary>
+    public bool IsPageSelected
+    {
+        get => _isPageSelected;
+        set => SetField(ref _isPageSelected, value);
     }
 
     /// <summary>True while the tab's name is being edited (double-click the tab).</summary>
@@ -169,7 +216,11 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
 
     public LayerViewModel? FindViewModel(Layer layer) => _layerViewModels.GetValueOrDefault(layer);
 
-    private void OnLayersChanged(object? sender, NotifyCollectionChangedEventArgs e) => RebuildLayers();
+    private void OnLayersChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        RebuildLayers();
+        ScheduleThumbnail();
+    }
 
     /// <summary>Re-creates the layer lists, reusing existing view models (and their bitmaps).</summary>
     private void RebuildLayers()
@@ -203,13 +254,14 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
         switch (e.PropertyName)
         {
             case nameof(Document.ActiveLayer): OnPropertyChanged(nameof(ActiveLayer)); break;
-            case nameof(Document.Width): OnPropertyChanged(nameof(Width)); break;
-            case nameof(Document.Height): OnPropertyChanged(nameof(Height)); break;
+            case nameof(Document.Width): OnPropertyChanged(nameof(Width)); OnPropertyChanged(nameof(SizeText)); ScheduleThumbnail(); break;
+            case nameof(Document.Height): OnPropertyChanged(nameof(Height)); OnPropertyChanged(nameof(SizeText)); ScheduleThumbnail(); break;
         }
     }
 
     private void OnHistoryChanged(object? sender, EventArgs e)
     {
+        ScheduleThumbnail();
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(TabTitle));
         Project?.Refresh();
@@ -221,6 +273,7 @@ public sealed class DocumentViewModel : ObservableObject, IRenamable, IDisposabl
         Model.Layers.CollectionChanged -= OnLayersChanged;
         Model.PropertyChanged -= OnModelPropertyChanged;
         Model.History.Changed -= OnHistoryChanged;
+        _thumbnailTimer?.Stop();
         foreach (var vm in _layerViewModels.Values) vm.Dispose();
         _layerViewModels.Clear();
     }

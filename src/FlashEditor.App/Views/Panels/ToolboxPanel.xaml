@@ -1,6 +1,7 @@
 <UserControl x:Class="FlashEditor.App.Views.Panels.ToolboxPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:FlashEditor.App.Services">
     <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,1,0" Width="52">
         <DockPanel>
             <!-- Foreground / background color swatches -->
@@ -58,7 +59,14 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <Path Style="{StaticResource IconPath}" Data="{Binding Current.IconKey, Converter={StaticResource IconGeometry}}" IsHitTestVisible="False" />
+                                    <Path Style="{StaticResource IconPath}" Data="{Binding Current.IconKey, Converter={StaticResource IconGeometry}}" IsHitTestVisible="False">
+                                        <Path.Stroke>
+                                            <MultiBinding Converter="{StaticResource ToolIconBrush}">
+                                                <Binding Path="Current.IconKey" />
+                                                <Binding Source="{x:Static svc:IconTheme.State}" Path="Version" />
+                                            </MultiBinding>
+                                        </Path.Stroke>
+                                    </Path>
                                 </Border>
                                 <!-- Triangle in the bottom right corner -->
                                 <Path Data="M0,6 L6,6 L6,0 Z" Fill="{StaticResource IconBrush}" Width="6" Height="6" Margin="0,0,3,3"
@@ -87,7 +95,14 @@
                                                             </Style>
                                                         </Border.Style>
                                                         <StackPanel Orientation="Horizontal">
-                                                            <Path Style="{StaticResource IconPath}" Data="{Binding IconKey, Converter={StaticResource IconGeometry}}" />
+                                                            <Path Style="{StaticResource IconPath}" Data="{Binding IconKey, Converter={StaticResource IconGeometry}}" >
+                                                                <Path.Stroke>
+                                                                    <MultiBinding Converter="{StaticResource ToolIconBrush}">
+                                                                        <Binding Path="IconKey" />
+                                                                        <Binding Source="{x:Static svc:IconTheme.State}" Path="Version" />
+                                                                    </MultiBinding>
+                                                                </Path.Stroke>
+                                                            </Path>
                                                             <TextBlock Text="{Binding ToolTip}" VerticalAlignment="Center" Margin="10,0,12,0" MinWidth="150" />
                                                         </StackPanel>
                                                     </Border>

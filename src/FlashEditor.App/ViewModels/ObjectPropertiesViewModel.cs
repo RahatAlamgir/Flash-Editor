@@ -104,7 +104,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public bool HasObject => Object != null;
 
     /// <summary>The settings are shown for an object and also for a layer of plain pixels (it becomes a picture on the first change).</summary>
-    public bool CanInspect => HasObject || IsPixelLayer;
+    public bool CanInspect => (HasObject || IsPixelLayer) && !_main.SelectionCleared;
 
     /// <summary>The box of the object, or for a layer of plain pixels the box around what is painted on it.</summary>
     private ObjectBox? Frame => Object?.Box ?? (_layer is { Object: null, IsAdjustment: false } pixels ? FlashEditor.App.Tools.Selecting.TransformHandles.FrameOf(pixels) : null);
@@ -113,7 +113,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public bool IsPixelLayer => _layer is { Object: null, IsAdjustment: false };
 
     /// <summary>An adjustment layer (brightness / contrast, Levels, Curves): its settings are shown here.</summary>
-    public bool IsAdjustmentLayer => _layer is { IsAdjustment: true };
+    public bool IsAdjustmentLayer => _layer is { IsAdjustment: true } && !_main.SelectionCleared;
 
     /// <summary>The "click something to edit it" hint: when no object is selected and the layer is not a pixel layer either.</summary>
     public bool ShowHint => !HasObject && !IsPixelLayer && !IsAdjustmentLayer;
@@ -170,7 +170,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     /// <summary>A straight line or an open curve: arrow heads make sense.</summary>
     public bool HasArrows => Shape is { IsLineLike: true } or { Shape: ShapeKind.Path, Closed: false };
 
-    public string Title => IsMulti ? $"{Targets.Count} layers selected" + (IsMixed ? " (different kinds)" : "") : (IsPart ? "Part: " : "") + Object switch
+    public string Title => _main.SelectionCleared ? "" : IsMulti ? $"{Targets.Count} layers selected" + (IsMixed ? " (different kinds)" : "") : (IsPart ? "Part: " : "") + Object switch
     {
         ShapeObject s => $"{s.SuggestedLayerName} shape",
         TextObject => "Text",
@@ -349,8 +349,8 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     private void ChangeChart(string name, Func<ChartObject, ChartObject> change)
         => Change(name, o => o is ChartObject c ? change(c) : o);
 
-    public int ChartKindIndex { get => (int)(Chart?.Kind ?? ChartKind.Columns); set => ChangeChart("Chart Kind", c => c with { Kind = (ChartKind)Math.Clamp(value, 0, 4) }); }
-    public static IReadOnlyList<string> ChartKindNames { get; } = new[] { "Columns", "Bars", "Line", "Pie", "Donut" };
+    public int ChartKindIndex { get => (int)(Chart?.Kind ?? ChartKind.Columns); set => ChangeChart("Chart Kind", c => c with { Kind = (ChartKind)Math.Clamp(value, 0, 10) }); }
+    public static IReadOnlyList<string> ChartKindNames { get; } = new[] { "Columns", "Bars", "Line", "Pie", "Donut", "Area", "Lollipop", "Half donut", "Radial bars", "Progress", "Funnel" };
     public string ChartTitle { get => Chart?.Title ?? ""; set => ChangeChart("Chart Title", c => c with { Title = value ?? "" }); }
 
     /// <summary>The chart types as buttons (the one in use is marked).</summary>
@@ -361,6 +361,12 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
         new ChartKindItem(ChartKind.Line, "Line", "ChartLine", Chart?.Kind == ChartKind.Line),
         new ChartKindItem(ChartKind.Pie, "Pie", "ChartPie", Chart?.Kind == ChartKind.Pie),
         new ChartKindItem(ChartKind.Donut, "Donut", "ChartDonut", Chart?.Kind == ChartKind.Donut),
+        new ChartKindItem(ChartKind.Area, "Area", "ChartArea", Chart?.Kind == ChartKind.Area),
+        new ChartKindItem(ChartKind.Lollipop, "Lollipop", "ChartLollipop", Chart?.Kind == ChartKind.Lollipop),
+        new ChartKindItem(ChartKind.HalfDonut, "Half donut", "ChartHalfDonut", Chart?.Kind == ChartKind.HalfDonut),
+        new ChartKindItem(ChartKind.RadialBars, "Radial bars", "ChartRadial", Chart?.Kind == ChartKind.RadialBars),
+        new ChartKindItem(ChartKind.Progress, "Progress", "ChartProgress", Chart?.Kind == ChartKind.Progress),
+        new ChartKindItem(ChartKind.Funnel, "Funnel", "ChartFunnel", Chart?.Kind == ChartKind.Funnel),
     };
 
     public RelayCommand SetChartKindCommand => _setChartKind ??= new RelayCommand(p =>
@@ -370,7 +376,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     private RelayCommand? _setChartKind;
 
     /// <summary>Bars take room for the bar width; lines and pies do not have bars.</summary>
-    public bool ChartHasBars => Chart?.Kind is ChartKind.Columns or ChartKind.Bars;
+    public bool ChartHasBars => Chart?.Kind is ChartKind.Columns or ChartKind.Bars or ChartKind.Lollipop or ChartKind.Progress;
 
     // ---- the number table
 
@@ -492,6 +498,8 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public double ToneBrightness { get => Math.Round(Object?.Tone?.Brightness ?? 0); set => ChangeTone(t => t with { Brightness = Math.Clamp(value, -100, 100) }); }
     public double ToneContrast { get => Math.Round(Object?.Tone?.Contrast ?? 0); set => ChangeTone(t => t with { Contrast = Math.Clamp(value, -100, 100) }); }
     public double ToneSaturation { get => Math.Round(Object?.Tone?.Saturation ?? 0); set => ChangeTone(t => t with { Saturation = Math.Clamp(value, -100, 100) }); }
+    public double ToneTemperature { get => Math.Round(Object?.Tone?.Temperature ?? 0); set => ChangeTone(t => t with { Temperature = Math.Clamp(value, -100, 100) }); }
+    public double ToneTint { get => Math.Round(Object?.Tone?.Tint ?? 0); set => ChangeTone(t => t with { Tint = Math.Clamp(value, -100, 100) }); }
     public double ToneHue { get => Math.Round(Object?.Tone?.Hue ?? 0); set => ChangeTone(t => t with { Hue = Math.Clamp(value, -180, 180) }); }
 
     public double BlurAmount

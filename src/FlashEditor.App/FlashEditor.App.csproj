@@ -30,6 +30,8 @@
   <ItemGroup>
     <!-- Window / title-bar icon. -->
     <Resource Include="Assets\FlashEditor.ico" />
+    <Resource Include="Assets\Tutorial*.jpg" />
+    <Resource Include="Assets\Tutorial*.png" />
     <None Remove="Assets\FlashEditor.png" />
   </ItemGroup>
 

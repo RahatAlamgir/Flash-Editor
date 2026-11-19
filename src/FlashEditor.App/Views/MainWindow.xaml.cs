@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         ProjectDragger = new Controls.TabDragger(ProjectTabs, (item, index) => _viewModel.MoveProject((ProjectGroup)item, index));
         PageDragger = new Controls.TabDragger(PageTabs, (item, index) => _viewModel.MovePage((DocumentViewModel)item, index));
 
+        Services.IconTheme.Style = Services.AppSettings.Current.IconStyle;
         BuildShapeMenu();
         Services.Shortcuts.Register(viewModel);
         Services.Shortcuts.Apply(this);
@@ -40,6 +41,7 @@ public partial class MainWindow : Window
         Ribbon.FileRequested += (_, _) => FileDrawer.Open();
         Ribbon.ExtraSearchRoot = ("File", FileDrawer);
         PreviewKeyDown += OnPreviewKeyDown;
+        PreviewMouseDown += OnAnyMouseDown;
         PreviewKeyUp += OnPreviewKeyUp;
         Drop += OnDrop;
         DragOver += OnDragOver;
@@ -61,6 +63,104 @@ public partial class MainWindow : Window
     }
 
     /// <summary>True when the user is typing somewhere, so letter keys must not switch tools.</summary>
+    /// <summary>A choice in the menu of a page card (under the canvas).</summary>
+    private void OnPageMenuClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string action } item && item.DataContext is DocumentViewModel page)
+            _viewModel.Pages.Run(page, action);
+    }
+
+    /// <summary>Click on a page card: Ctrl adds or removes it from the picked pages, Shift picks a range.</summary>
+    private void OnPageCardDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: DocumentViewModel page } || e.ClickCount != 1) return;
+        // The "..." button and the rename box do their own thing.
+        for (var d = e.OriginalSource as DependencyObject; d != null && d is not Border { Name: "Card" }; d = System.Windows.Media.VisualTreeHelper.GetParent(d))
+            if (d is Button or TextBox) return;
+        _viewModel.Pages.Click(page, Keyboard.Modifiers);
+    }
+
+    /// <summary>The "+" in the gap before a page card: a new empty page right there.</summary>
+    private void OnInsertPageBefore(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: DocumentViewModel page })
+        {
+            _viewModel.Pages.AddBlank(page.Project.Pages.IndexOf(page));
+            Keyboard.Focus(null);
+        }
+        e.Handled = true;
+    }
+
+    private bool _pagesFolded;
+
+    /// <summary>The arrow in the middle: slides the page strip away or back.</summary>
+    private void OnTogglePages(object sender, RoutedEventArgs e)
+    {
+        _pagesFolded = !_pagesFolded;
+        if (_pagesFolded) ReleasePages();
+        PagesToggle.Content = _pagesFolded ? "" : "";
+        PagesToggle.ToolTip = _pagesFolded ? "Show the pages" : "Hide the pages";
+        var animation = new System.Windows.Media.Animation.DoubleAnimation(_pagesFolded ? 0 : 128, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut },
+        };
+        PagesBar.BeginAnimation(HeightProperty, animation);
+    }
+
+    /// <summary>The keyboard goes back to the canvas and only the open page stays picked, so Delete works on the selected object again.</summary>
+    private void ReleasePages()
+    {
+        if (_viewModel.Document is { } doc) _viewModel.Pages.Click(doc, ModifierKeys.None);
+        Keyboard.ClearFocus();
+        Focus();
+    }
+
+    private static DependencyObject? NextParent(DependencyObject d) =>
+        d is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D ? System.Windows.Media.VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d);
+
+    /// <summary>A click anywhere outside the page strip (canvas, an object, panels) ends the page selection.</summary>
+    private void OnAnyMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!PagesHaveFocus) return;
+        for (var d = e.OriginalSource as DependencyObject; d != null; d = NextParent(d))
+            if (ReferenceEquals(d, PagesBar) || ReferenceEquals(d, PageGrid) || d is System.Windows.Controls.Primitives.Popup or System.Windows.Controls.ContextMenu) return;
+        ReleasePages();
+    }
+
+    private void OnPastePages(object sender, RoutedEventArgs e) => _viewModel.Pages.Paste();
+
+    /// <summary>True while the keyboard belongs to the page row or the grid view: Ctrl+C / X / V / D / A and Delete then work on pages.</summary>
+    private bool PagesHaveFocus => PagesBar.IsKeyboardFocusWithin || PageGrid.IsKeyboardFocusWithin;
+
+    private bool HandlePageKeys(Key key, ModifierKeys modifiers)
+    {
+        var pages = _viewModel.Pages;
+        if (modifiers == ModifierKeys.Control)
+        {
+            switch (key)
+            {
+                case Key.C: pages.Copy(); return true;
+                case Key.X: pages.Copy(); pages.Delete(); return true;
+                case Key.V: pages.Paste(); return true;
+                case Key.D: pages.Duplicate(); return true;
+                case Key.A: pages.SelectAll(); return true;
+            }
+        }
+        if (modifiers == ModifierKeys.None && key is Key.Delete or Key.Back) { pages.Delete(); return true; }
+        return false;
+    }
+
+    /// <summary>The "..." button on a page card opens the same menu as a right-click.</summary>
+    private void OnPageMenuButton(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: FrameworkElement card } && card.ContextMenu is { } menu)
+        {
+            menu.PlacementTarget = card;
+            menu.IsOpen = true;
+        }
+        e.Handled = true;
+    }
+
     private static bool IsTyping => Keyboard.FocusedElement is TextBoxBase or ComboBox { IsEditable: true };
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
@@ -69,6 +169,13 @@ public partial class MainWindow : Window
         if (IsTyping) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var modifiers = Keyboard.Modifiers;
+
+        // With the keyboard on the page row (after a click on a page): the same keys work on the picked pages.
+        if (PagesHaveFocus && HandlePageKeys(key, modifiers))
+        {
+            e.Handled = true;
+            return;
+        }
 
         // Space held = temporary hand tool.
         if (key == Key.Space)

@@ -77,14 +77,17 @@
             <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                 <TextBlock Text="Hue" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
                 <ctl:NumberSlider Grid.Column="1" Minimum="-180" Maximum="180" SliderWidth="96" BoxWidth="58" Unit="&#xB0;" Value="{Binding Document.ActiveLayer.AdjustHue}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Temperature" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" ToolTip="Cooler (blue) to warmer (orange)" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustTemperature}" /></Grid>
+            <Grid Margin="0,2,0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <TextBlock Text="Tint" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" ToolTip="Greener to more magenta" />
+                <ctl:NumberSlider Grid.Column="1" Minimum="-100" Maximum="100" SliderWidth="96" BoxWidth="58" Value="{Binding Document.ActiveLayer.AdjustTint}" /></Grid>
             </StackPanel>
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- Nothing editable selected (no layer, or a layer that is not an object) -->
-            <TextBlock Margin="10,8,10,10" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" FontSize="12"
-                       Text="Click a shape, text or image with the Select / Move tool (V) to change its color, border, size, rotation or font here."
-                       Visibility="{Binding Properties.ShowHint, Converter={StaticResource BoolToVisibility}}" />
+            <!-- Nothing selected: the panel stays empty -->
 
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           Visibility="{Binding Properties.CanInspect, Converter={StaticResource BoolToVisibility}}">
@@ -566,7 +569,7 @@
                                 <ItemsControl ItemsSource="{Binding ChartKinds}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
-                                            <UniformGrid Rows="1" />
+                                            <UniformGrid Columns="4" />
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
@@ -769,6 +772,14 @@
                                 <StackPanel Style="{StaticResource Row}">
                                     <TextBlock Text="Hue" Style="{StaticResource Label}" />
                                     <ctl:NumberSlider Minimum="-180" Maximum="180" Value="{Binding ToneHue}" SliderWidth="96" BoxWidth="52" Unit="°" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Temperature" Style="{StaticResource Label}" ToolTip="Cooler (blue) to warmer (orange)" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding ToneTemperature}" SliderWidth="96" BoxWidth="52" Unit="" />
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource Row}">
+                                    <TextBlock Text="Tint" Style="{StaticResource Label}" ToolTip="Greener to more magenta" />
+                                    <ctl:NumberSlider Minimum="-100" Maximum="100" Value="{Binding ToneTint}" SliderWidth="96" BoxWidth="52" Unit="" />
                                 </StackPanel>
                                 <StackPanel Style="{StaticResource Row}">
                                     <TextBlock Text="Blur" Style="{StaticResource Label}" />
