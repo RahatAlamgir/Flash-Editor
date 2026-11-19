@@ -86,6 +86,12 @@ public sealed class DialogService : IDialogService
         new BrandKitDialog(picture, (initial, title) => PickColor(initial, title)) { Owner = Owner }.ShowDialog();
     }
 
+    public FlashEditor.App.Views.Dialogs.IconChoice? ShowIconPicker(bool badges)
+    {
+        var dialog = new IconPickerDialog(badges) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Result : null;
+    }
+
     public void ShowShortcuts()
     {
         new ShortcutsDialog { Owner = Owner }.ShowDialog();

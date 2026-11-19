@@ -23,7 +23,8 @@ public sealed class EditCommands
         CutCommand = new RelayCommand(() => Copy(cut: true), () => Doc.ActiveLayer != null);
         PasteCommand = new RelayCommand(Paste, () => _main.Clipboard.HasImage);
         DeleteCommand = new RelayCommand(Delete, () => Doc.Selection != null);
-        FillCommand = new RelayCommand(Fill, () => Doc.ActiveLayer != null);
+        FillCommand = new RelayCommand(() => Fill(_main.Colors.Foreground), () => Doc.ActiveLayer != null);
+        FillWithColorCommand = new RelayCommand(FillWithChosenColor, () => Doc.ActiveLayer != null);
         // Ctrl+A: with the Select / Move tool it selects every layer (like in Canva); with the other tools it selects all pixels.
         SelectAllCommand = new RelayCommand(() =>
         {
@@ -57,6 +58,9 @@ public sealed class EditCommands
     public RelayCommand PasteCommand { get; }
     public RelayCommand DeleteCommand { get; }
     public RelayCommand FillCommand { get; }
+
+    /// <summary>Asks which color to use (a color window), then fills the selection (or the whole layer) with it.</summary>
+    public RelayCommand FillWithColorCommand { get; }
     public RelayCommand SelectAllCommand { get; }
     public RelayCommand DeselectCommand { get; }
     public RelayCommand InvertSelectionCommand { get; }
@@ -126,12 +130,18 @@ public sealed class EditCommands
     }
 
     /// <summary>Fills the selection (or the whole layer) with the foreground color.</summary>
-    private void Fill()
+    private void FillWithChosenColor()
+    {
+        var color = _main.Dialogs.PickColor(_main.Colors.Foreground, "Fill with which color?");
+        if (color is { } c) Fill(c with { A = 255 });
+    }
+
+    private void Fill(ColorRgba color)
     {
         if (!_main.TryGetEditableLayer(out var layer)) return;
         var selection = Doc.Selection ?? Selection.All(Doc.Width, Doc.Height);
         var before = layer.Pixels.Clone();
-        var dirty = SelectionPixels.Fill(layer.Pixels, selection, _main.Colors.Foreground);
+        var dirty = SelectionPixels.Fill(layer.Pixels, selection, color);
         layer.NotifyPixelsChanged(dirty);
         _main.Push(PixelChangeAction.Create("Fill", layer, before, dirty));
     }

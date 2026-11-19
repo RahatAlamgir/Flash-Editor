@@ -19,32 +19,17 @@
                         <HeaderedContentControl Header="Clipboard" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE77F;" Content="Paste" ToolTip="Paste (Ctrl+V)" Command="{Binding Edit.PasteCommand}" />
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8C6;" Content="Cut" ToolTip="Cut (Ctrl+X)" Command="{Binding Edit.CutCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8C8;" Content="Copy" ToolTip="Copy (Ctrl+C)" Command="{Binding Edit.CopyCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE74D;" Content="Delete Pixels" ToolTip="Delete Pixels (Delete)" Command="{Binding Edit.DeleteCommand}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </HeaderedContentControl>
-                        <HeaderedContentControl Header="Fill" Style="{StaticResource RibbonGroup}">
-                            <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE790;" Content="Fill Color" ToolTip="Fill with the foreground color" Command="{Binding Edit.FillCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE9A3;" Content="Fill (AI)" ToolTip="Select an object, then the AI paints in what would be behind it (Shift+F5)" Command="{Binding Inpaint.FillSelectionCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8C6;" Content="Cut" ToolTip="Cut (Ctrl+X)" Command="{Binding Edit.CutCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8C8;" Content="Copy" ToolTip="Copy (Ctrl+C)" Command="{Binding Edit.CopyCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE74D;" Content="Delete Pixels" ToolTip="Clear the selected pixels (Delete)" Command="{Binding Edit.DeleteCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE790;" Content="Fill Color" ToolTip="Choose a color, then fill the selection (or the whole layer) with it" Command="{Binding Edit.FillWithColorCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
                         <HeaderedContentControl Header="Layer" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8C8;" Content="Duplicate" ToolTip="Duplicate (Ctrl+D)" Command="{Binding Layers.DuplicateCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE74D;" Content="Delete Layer" Command="{Binding Layers.DeleteCommand}" />
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8AC;" Content="Rename" Command="{Binding Layers.RenameCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE72E;" Content="Lock / Unlock" ToolTip="Lock / Unlock (Ctrl+L)" Command="{Binding Layers.ToggleLockCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE74B;" Content="Merge Down" ToolTip="Merge Down (Ctrl+E)" Command="{Binding Layers.MergeDownCommand}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </HeaderedContentControl>
-                        <HeaderedContentControl Header="Objects" Style="{StaticResource RibbonGroup}">
-                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE74D;" Content="Delete" ToolTip="Delete the selected layer" Command="{Binding Layers.DeleteCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE72E;" Content="Lock / Unlock" ToolTip="Lock / Unlock (Ctrl+L)" Command="{Binding Layers.ToggleLockCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8A9;" Content="Group" ToolTip="Group (Ctrl+G)" Command="{Binding Layers.GroupCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8B4;" Content="Ungroup" ToolTip="Ungroup (Ctrl+Shift+G)" Command="{Binding Layers.UngroupCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE898;" Content="Order ▾" Click="OnDropDown">
@@ -57,26 +42,6 @@
                                         </ContextMenu>
                                     </Button.ContextMenu>
                                 </Button>
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8E3;" Content="Align ▾" Click="OnDropDown">
-                                    <Button.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Align Left" Command="{Binding Align.AlignCommand}" CommandParameter="Left" />
-                                            <MenuItem Header="Align Center (horizontally)" Command="{Binding Align.AlignCommand}" CommandParameter="CenterHorizontally" />
-                                            <MenuItem Header="Align Right" Command="{Binding Align.AlignCommand}" CommandParameter="Right" />
-                                            <Separator />
-                                            <MenuItem Header="Align Top" Command="{Binding Align.AlignCommand}" CommandParameter="Top" />
-                                            <MenuItem Header="Align Middle (vertically)" Command="{Binding Align.AlignCommand}" CommandParameter="CenterVertically" />
-                                            <MenuItem Header="Align Bottom" Command="{Binding Align.AlignCommand}" CommandParameter="Bottom" />
-                                            <Separator />
-                                            <MenuItem Header="Distribute Horizontally (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Horizontally" />
-                                            <MenuItem Header="Distribute Vertically (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Vertically" />
-                                        </ContextMenu>
-                                    </Button.ContextMenu>
-                                </Button>
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8AB;" Content="Flip Horizontal" Command="{Binding Layers.FlipLayerHorizontalCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8CB;" Content="Flip Vertical" Command="{Binding Layers.FlipLayerVerticalCommand}" />
-                                </StackPanel>
                             </StackPanel>
                         </HeaderedContentControl>
                     </StackPanel>
@@ -85,9 +50,8 @@
             <TabItem Header="Select" Style="{StaticResource RibbonTab}">
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Focusable="False">
                     <StackPanel Orientation="Horizontal" Margin="4,0">
-                        <HeaderedContentControl Header="Select" Style="{StaticResource RibbonGroup}">
+                        <HeaderedContentControl Header="Selection" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8B3;" Content="Select All" ToolTip="All layers with the Select / Move tool, all pixels with the other tools (Ctrl+A)" Command="{Binding Edit.SelectAllCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8FF;" Content="Deselect" ToolTip="Deselect (Ctrl+Shift+D)" Command="{Binding Edit.DeselectCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8B4;" Content="Invert Selection" ToolTip="Invert Selection (Ctrl+Shift+I)" Command="{Binding Edit.InvertSelectionCommand}" />
                             </StackPanel>
@@ -96,28 +60,21 @@
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE794;" Content="Subject (AI)" Command="{Binding Effects.SelectSubjectCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8BF;" Content="Layer Content" Command="{Binding Edit.SelectLayerContentCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE9A3;" Content="Fill (AI)" ToolTip="Select an object, then the AI paints in what would be behind it (Shift+F5)" Command="{Binding Inpaint.FillSelectionCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
-                        <HeaderedContentControl Header="Use the selection" Style="{StaticResource RibbonGroup}">
+                        <HeaderedContentControl Header="Add mask" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE7A8;" Content="Crop to Selection" Command="{Binding Image.CropToSelectionCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE7A8;" Content="Crop Layer" ToolTip="Crop the layer to the selection" Command="{Binding Layers.CropToSelectionCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE9A3;" Content="Remove / Fill (AI)" ToolTip="Select an object, then the AI paints in what would be behind it (Shift+F5)" Command="{Binding Inpaint.FillSelectionCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE790;" Content="Fill Color" ToolTip="Fill the selection with the foreground color" Command="{Binding Edit.FillCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8BF;" Content="Mask: Show Selection" ToolTip="Add a mask: the layer shows only the selected area" Command="{Binding Mask.FromSelectionCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8BF;" Content="Mask: Hide Selection" ToolTip="Add a mask: hide the selected area of the layer" Command="{Binding Mask.HideSelectionCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8BF;" Content="Mask: Show All" ToolTip="Add a mask that shows everything; paint black on it (Mask Brush, K) to hide parts" Command="{Binding Mask.RevealAllCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8BF;" Content="Mask: Hide All" ToolTip="Add a mask that hides everything; paint white on it to show parts" Command="{Binding Mask.HideAllCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
-                        <HeaderedContentControl Header="Mask from selection" Style="{StaticResource RibbonGroup}">
+                        <HeaderedContentControl Header="Mask" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8BF;" Content="Show Selection Only" ToolTip="The layer shows only the selected area" Command="{Binding Mask.FromSelectionCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8BF;" Content="Hide Selection" ToolTip="Hide the selected area of the layer" Command="{Binding Mask.HideSelectionCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8EB;" Content="Invert Mask" Command="{Binding Mask.InvertCommand}" />
-                                </StackPanel>
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8BF;" Content="Show All" Command="{Binding Mask.RevealAllCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8BF;" Content="Hide All" Command="{Binding Mask.HideAllCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE74D;" Content="Delete Mask" Command="{Binding Mask.DeleteCommand}" />
-                                </StackPanel>
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8EB;" Content="Invert Mask" Command="{Binding Mask.InvertCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE74D;" Content="Delete Mask" Command="{Binding Mask.DeleteCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
                     </StackPanel>
@@ -130,46 +87,28 @@
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE740;" Content="Image Size" ToolTip="Size and resolution (Ctrl+Alt+I)" Command="{Binding Image.ImageSizeCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8B2;" Content="Canvas Size" ToolTip="Canvas Size (Ctrl+Alt+C)" Command="{Binding Image.CanvasSizeCommand}" />
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE9E3;" Content="Upscale 2x (quick)" ToolTip="No AI" Command="{Binding Image.Upscale2xCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE794;" Content="AI Upscale / Clean Up" Command="{Binding Upscale.AiUpscaleCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8AD;" Content="Magic Resize" ToolTip="Turn this design into another size, for example a post into a story" Command="{Binding Image.MagicResizeCommand}" />
-                                </StackPanel>
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE924;" Content="Trim Edges" ToolTip="Trim transparent edges" Command="{Binding Image.TrimCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE7B3;" Content="Reveal All" ToolTip="Show pixels outside the canvas" Command="{Binding Image.RevealAllCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE7AD;" Content="Straighten" ToolTip="Turn the picture a little and cut off the empty corners" Command="{Binding Image.StraightenCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
-                        <HeaderedContentControl Header="Crop" Style="{StaticResource RibbonGroup}">
+                        <HeaderedContentControl Header="Upscale and resize" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE7A8;" Content="Crop to Selection" Command="{Binding Image.CropToSelectionCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE9A6;" Content="Perspective Crop" ToolTip="Click the four corners of something photographed at an angle: it is cut out and made flat" Command="{Binding Image.PerspectiveCropCommand}" />
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE924;" Content="Trim Transparent Edges" Command="{Binding Image.TrimCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE7B3;" Content="Reveal All" ToolTip="Show pixels outside the canvas" Command="{Binding Image.RevealAllCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE7AD;" Content="Straighten" ToolTip="Turn the picture a little and cut off the empty corners" Command="{Binding Image.StraightenCommand}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </HeaderedContentControl>
-                        <HeaderedContentControl Header="Rotate and flip" Style="{StaticResource RibbonGroup}">
-                            <StackPanel Orientation="Horizontal">
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE72C;" Content="Rotate 90° Clockwise" Command="{Binding Image.Rotate90ClockwiseCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE777;" Content="Rotate 90° Counter-Clockwise" Command="{Binding Image.Rotate90CounterClockwiseCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8EE;" Content="Rotate 180°" Command="{Binding Image.Rotate180Command}" />
-                                </StackPanel>
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8ED;" Content="Rotate by Angle" Command="{Binding Image.RotateCustomCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8AB;" Content="Flip Horizontal" Command="{Binding Image.FlipHorizontalCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8CB;" Content="Flip Vertical" Command="{Binding Image.FlipVerticalCommand}" />
-                                </StackPanel>
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE9E3;" Content="Upscale 2x" ToolTip="Quick, no AI" Command="{Binding Image.Upscale2xCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE794;" Content="AI Upscale" ToolTip="AI clean up and upscale" Command="{Binding Upscale.AiUpscaleCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8AD;" Content="Magic Resize" ToolTip="Turn this design into another size, for example a post into a story" Command="{Binding Image.MagicResizeCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
                         <HeaderedContentControl Header="Background" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE75C;" Content="Remove BG (AI)" ToolTip="Remove BG (AI) (Ctrl+Alt+B)" Command="{Binding Effects.RemoveBackgroundCommand}" />
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE790;" Content="Remove by Color" Command="{Binding Effects.RemoveBackgroundByColorCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE9A3;" Content="Remove / Fill Selection (AI)" ToolTip="Select an object, then the AI paints in what would be behind it (Shift+F5)" Command="{Binding Inpaint.FillSelectionCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8A9;" Content="Split Asset Sheet" Command="{Binding Image.SplitSheetCommand}" />
-                                </StackPanel>
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE790;" Content="Remove by Color" Command="{Binding Effects.RemoveBackgroundByColorCommand}" />
+                            </StackPanel>
+                        </HeaderedContentControl>
+                        <HeaderedContentControl Header="Split" Style="{StaticResource RibbonGroup}">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8C6;" Content="Split Selection" ToolTip="The selected part moves onto a new layer (like Cut); the original stays visible without it" Command="{Binding Layers.SplitCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8A9;" Content="Split Asset Sheet" Command="{Binding Image.SplitSheetCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
                     </StackPanel>
@@ -182,60 +121,14 @@
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE710;" Content="New Layer" ToolTip="New Layer (Ctrl+Shift+N)" Command="{Binding Layers.NewLayerCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8C8;" Content="Duplicate" ToolTip="Duplicate (Ctrl+D)" Command="{Binding Layers.DuplicateCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE74D;" Content="Delete" Command="{Binding Layers.DeleteCommand}" />
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8AC;" Content="Rename" Command="{Binding Layers.RenameCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE72E;" Content="Lock / Unlock" ToolTip="Lock / Unlock (Ctrl+L)" Command="{Binding Layers.ToggleLockCommand}" />
-                                </StackPanel>
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE74D;" Content="Delete" ToolTip="Delete the selected layer" Command="{Binding Layers.DeleteCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8AC;" Content="Rename" Command="{Binding Layers.RenameCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE72E;" Content="Lock / Unlock" ToolTip="Lock / Unlock (Ctrl+L)" Command="{Binding Layers.ToggleLockCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8A9;" Content="Group / Ungroup" ToolTip="Select several layers to group them; select a group to ungroup it (Ctrl+G)" Command="{Binding Layers.GroupToggleCommand}" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8B9;" Content="Flatten Image" ToolTip="Merge all layers into one" Command="{Binding Layers.FlattenCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
-                        <HeaderedContentControl Header="Organize" Style="{StaticResource RibbonGroup}">
-                            <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8A9;" Content="Group" ToolTip="Group (Ctrl+G)" Command="{Binding Layers.GroupCommand}" />
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8B4;" Content="Ungroup" ToolTip="Ungroup (Ctrl+Shift+G)" Command="{Binding Layers.UngroupCommand}" />
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE74B;" Content="Merge Down" ToolTip="With several layers selected, Ctrl+E merges all of them (Ctrl+E)" Command="{Binding Layers.MergeDownCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE81E;" Content="Merge Selected" Command="{Binding Layers.MergeSelectedCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8B9;" Content="Flatten Image" Command="{Binding Layers.FlattenCommand}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </HeaderedContentControl>
-                        <HeaderedContentControl Header="Arrange" Style="{StaticResource RibbonGroup}">
-                            <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE898;" Content="Order ▾" Click="OnDropDown">
-                                    <Button.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Bring to Front" Command="{Binding Layers.BringToFrontCommand}" InputGestureText="Ctrl+Shift+]" />
-                                            <MenuItem Header="Bring Forward (Move Up)" Command="{Binding Layers.MoveUpCommand}" InputGestureText="Ctrl+]" />
-                                            <MenuItem Header="Send Backward (Move Down)" Command="{Binding Layers.MoveDownCommand}" InputGestureText="Ctrl+[" />
-                                            <MenuItem Header="Send to Back" Command="{Binding Layers.SendToBackCommand}" InputGestureText="Ctrl+Shift+[" />
-                                        </ContextMenu>
-                                    </Button.ContextMenu>
-                                </Button>
-                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8E3;" Content="Align ▾" Click="OnDropDown">
-                                    <Button.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Align Left" Command="{Binding Align.AlignCommand}" CommandParameter="Left" />
-                                            <MenuItem Header="Align Center (horizontally)" Command="{Binding Align.AlignCommand}" CommandParameter="CenterHorizontally" />
-                                            <MenuItem Header="Align Right" Command="{Binding Align.AlignCommand}" CommandParameter="Right" />
-                                            <Separator />
-                                            <MenuItem Header="Align Top" Command="{Binding Align.AlignCommand}" CommandParameter="Top" />
-                                            <MenuItem Header="Align Middle (vertically)" Command="{Binding Align.AlignCommand}" CommandParameter="CenterVertically" />
-                                            <MenuItem Header="Align Bottom" Command="{Binding Align.AlignCommand}" CommandParameter="Bottom" />
-                                            <Separator />
-                                            <MenuItem Header="Distribute Horizontally (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Horizontally" />
-                                            <MenuItem Header="Distribute Vertically (equal gaps)" Command="{Binding Align.DistributeCommand}" CommandParameter="Vertically" />
-                                        </ContextMenu>
-                                    </Button.ContextMenu>
-                                </Button>
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8AB;" Content="Flip Layer Horizontal" Command="{Binding Layers.FlipLayerHorizontalCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8CB;" Content="Flip Layer Vertical" Command="{Binding Layers.FlipLayerVerticalCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE8B9;" Content="Convert to Pixels" Command="{Binding Layers.ConvertToPixelsCommand}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </HeaderedContentControl>
-                        <HeaderedContentControl Header="Mask" Style="{StaticResource RibbonGroup}">
+                        <HeaderedContentControl Header="Mask and adjust" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE7C4;" Content="Clip Below" ToolTip="The layer shows only inside the shape of the layer under it (a picture inside a shape or text)" Command="{Binding Mask.ClipToBelowCommand}" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8BF;" Content="Layer Mask ▾" Click="OnDropDown">
@@ -253,10 +146,6 @@
                                         </ContextMenu>
                                     </Button.ContextMenu>
                                 </Button>
-                            </StackPanel>
-                        </HeaderedContentControl>
-                        <HeaderedContentControl Header="Special layers" Style="{StaticResource RibbonGroup}">
-                            <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE793;" Content="Adjustment ▾" Click="OnDropDown">
                                     <Button.ContextMenu>
                                         <ContextMenu>
@@ -275,10 +164,6 @@
                                         </ContextMenu>
                                     </Button.ContextMenu>
                                 </Button>
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE72E;" Content="Lock All Selected" Command="{Binding Layers.LockSelectedCommand}" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE785;" Content="Unlock All Selected" Command="{Binding Layers.UnlockSelectedCommand}" />
-                                </StackPanel>
                             </StackPanel>
                         </HeaderedContentControl>
                     </StackPanel>
@@ -312,10 +197,23 @@
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8A8;" Content="Fill Frames" ToolTip="Select one or more frames (shapes), then choose the pictures to put in them" Command="{Binding Insert.FillFramesCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
+                        <HeaderedContentControl Header="Text" Style="{StaticResource RibbonGroup}">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE8D2;" Content="Heading" ToolTip="Add a big bold heading" Command="{Binding Insert.AddTextCommand}" CommandParameter="Heading" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE97E;" Content="Subheading" ToolTip="Add a smaller bold line" Command="{Binding Insert.AddTextCommand}" CommandParameter="Subheading" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE97F;" Content="Body Text" ToolTip="Add a normal line of text" Command="{Binding Insert.AddTextCommand}" CommandParameter="Body" />
+                            </StackPanel>
+                        </HeaderedContentControl>
                         <HeaderedContentControl Header="Shape" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
                                 <WrapPanel Width="210" VerticalAlignment="Center" Margin="2,0" Loaded="OnQuickShapesLoaded" />
                                 <Button Style="{StaticResource RibbonLarge}" Tag="&#xE739;" Content="Shapes ▾" ToolTip="All shapes: rectangle, circle, star, arrow, line and more" Click="OnDropDown" ContextMenu="{StaticResource ShapeMenu}" />
+                            </StackPanel>
+                        </HeaderedContentControl>
+                        <HeaderedContentControl Header="Icons" Style="{StaticResource RibbonGroup}">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE899;" Content="Icons" ToolTip="About 150 icons: arrows, symbols, mail, music, travel and more" Command="{Binding Insert.AddIconCommand}" CommandParameter="Icons" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE735;" Content="Badges" ToolTip="Ready-made labels: SALE, NEW, 5 stars, speech bubble and more" Command="{Binding Insert.AddIconCommand}" CommandParameter="Badges" />
                             </StackPanel>
                         </HeaderedContentControl>
                         <HeaderedContentControl Header="Chart" Style="{StaticResource RibbonGroup}">
@@ -446,15 +344,11 @@
                         </HeaderedContentControl>
                         <HeaderedContentControl Header="Show" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <ToggleButton Style="{StaticResource RibbonSmallToggle}" Tag="&#xE70B;" Content="Rulers" IsChecked="{Binding Aids.ShowRulers}" ToolTip="Ctrl+R" />
-                                    <ToggleButton Style="{StaticResource RibbonSmallToggle}" Tag="&#xE80A;" Content="Grid" IsChecked="{Binding Aids.ShowGrid}" ToolTip="Ctrl+'" />
-                                    <ToggleButton Style="{StaticResource RibbonSmallToggle}" Tag="&#xE8B2;" Content="Guides" IsChecked="{Binding Aids.ShowGuides}" ToolTip="Ctrl+;" />
-                                </StackPanel>
-                                <StackPanel VerticalAlignment="Center" Margin="2,0">
-                                    <ToggleButton Style="{StaticResource RibbonSmallToggle}" Tag="&#xE718;" Content="Snapping" IsChecked="{Binding Aids.SnapEnabled}" ToolTip="Ctrl+Shift+;" />
-                                    <Button Style="{StaticResource RibbonSmall}" Tag="&#xE894;" Content="Clear Guides" Command="{Binding View.ClearGuidesCommand}" />
-                                </StackPanel>
+                                <ToggleButton Style="{StaticResource RibbonLargeToggle}" Tag="&#xE70B;" Content="Rulers" IsChecked="{Binding Aids.ShowRulers}" ToolTip="Ctrl+R" />
+                                <ToggleButton Style="{StaticResource RibbonLargeToggle}" Tag="&#xE80A;" Content="Grid" IsChecked="{Binding Aids.ShowGrid}" ToolTip="Ctrl+'" />
+                                <ToggleButton Style="{StaticResource RibbonLargeToggle}" Tag="&#xE8B2;" Content="Guides" IsChecked="{Binding Aids.ShowGuides}" ToolTip="Ctrl+;" />
+                                <ToggleButton Style="{StaticResource RibbonLargeToggle}" Tag="&#xE718;" Content="Snapping" IsChecked="{Binding Aids.SnapEnabled}" ToolTip="Ctrl+Shift+;" />
+                                <Button Style="{StaticResource RibbonLarge}" Tag="&#xE894;" Content="Clear Guides" Command="{Binding View.ClearGuidesCommand}" />
                             </StackPanel>
                         </HeaderedContentControl>
                         <HeaderedContentControl Header="Pictures" Style="{StaticResource RibbonGroup}">
@@ -496,6 +390,27 @@
         <Button x:Name="FileButton" Style="{StaticResource RibbonFileButton}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6,3,0,0" Click="OnFileClicked" ToolTip="Open, save, export and more">
             <StackPanel Orientation="Horizontal"><TextBlock FontFamily="{StaticResource RibbonIconFont}" FontSize="13" Text="&#xE700;" VerticalAlignment="Center" Margin="0,1,7,0" /><TextBlock Text="File" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,40,0" Width="240" Height="24">
+            <TextBox x:Name="SearchBox" Padding="26,0,6,0" VerticalContentAlignment="Center" FontSize="12" MinHeight="0" TextChanged="OnSearchChanged" PreviewKeyDown="OnSearchKeyDown" ToolTip="Type what you want to do, for example rotate, blur or export" />
+            <TextBlock Text="&#xE721;" FontFamily="{StaticResource RibbonIconFont}" FontSize="11" Margin="9,0,0,0" IsHitTestVisible="False" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+            <TextBlock x:Name="SearchHint" Text="Search commands" FontSize="12" Margin="27,0,0,0" IsHitTestVisible="False" VerticalAlignment="Center" Foreground="{StaticResource SubtleTextBrush}" />
+            <Popup x:Name="SearchPopup" PlacementTarget="{Binding ElementName=SearchBox}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                <Border Background="{StaticResource PanelHeaderBrush}" BorderBrush="{StaticResource DividerBrush}" BorderThickness="1" CornerRadius="4" Width="340" Margin="0,3,12,12" Padding="3">
+                    <Border.Effect><DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.45" /></Border.Effect>
+                    <ListBox x:Name="SearchResults" MaxHeight="340" BorderThickness="0" Background="Transparent" PreviewMouseLeftButtonUp="OnSearchResultClicked" Focusable="False">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Opacity="{Binding Opacity}" Margin="0,1">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Where}" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" Margin="12,0,2,0" />
+                                    <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource RibbonIconFont}" FontSize="14" Width="26" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
+                                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+            </Popup>
+        </Grid>
         <Button x:Name="CollapseButton" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,8,0" Width="24" Height="22" Style="{StaticResource IconButton}"
                 Click="OnCollapseClicked" ToolTip="Hide or show the ribbon (double-click a tab does the same)" Padding="0">
             <TextBlock x:Name="CollapseGlyph" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" Text="&#xE70E;" />

@@ -433,6 +433,11 @@ public partial class CanvasView : UserControl, ICanvasView
 
     private void OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        if (ActiveTool?.MouseWheel(CreateArgs(e, null), e.Delta) == true)
+        {
+            e.Handled = true;
+            return;
+        }
         double factor = Math.Pow(1.2, e.Delta / 120.0);
         ZoomAt(e.GetPosition(Viewport), _zoom * factor);
         e.Handled = true;

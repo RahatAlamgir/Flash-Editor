@@ -37,6 +37,8 @@ public sealed class MoveTool : ToolBase
     private HandleKind _handle;
     private PointD _start;
     private string _actionName = "Move";
+    private Layer? _pictureLayer;         // a frame with a picture whose picture is being moved (after a double-click on it)
+    private bool _panPicture;             // true while the picture of that frame is being dragged
 
     public MoveTool(IToolHost host) : base(host)
     {
@@ -99,6 +101,7 @@ public sealed class MoveTool : ToolBase
 
         // 3) Whatever is under the mouse: select it and start moving it.
         var hit = Host.FindLayerAt(e.Position, 3 / Zoom);
+        if (!ReferenceEquals(hit, _pictureLayer)) _pictureLayer = null;
         if (hit == null)
         {
             // Outside the canvas: deselect everything (also after Select All).
@@ -172,6 +175,20 @@ public sealed class MoveTool : ToolBase
             EditText(hit);
             return;
         }
+        // A frame with a picture: double-click, then drag to move the picture inside the frame (Esc = done).
+        if (hit.Object is ShapeObject { Picture: not null } && (e.ClickCount == 2 || ReferenceEquals(_pictureLayer, hit)))
+        {
+            if (!ReferenceEquals(_pictureLayer, hit))
+                Host.SetStatus("Drag to move the picture inside the frame, mouse wheel to zoom it in or out. Esc or a click elsewhere when done.");
+            _pictureLayer = hit;
+            _objectLayer = hit;
+            _startObject = hit.Object;
+            _partIndex = null; _startPart = null; _cornerIndex = null;
+            _handle = HandleKind.Move;
+            _actionName = "Move Picture in Frame";
+            _panPicture = true;
+            return;
+        }
         if (e.ClickCount == 2 && hit.Object is ShapeObject { Shape: ShapeKind.Path })
         {
             Host.SelectTool<FlashEditor.App.Tools.Shapes.CurveTool>();          // double-click a curve: edit its points
@@ -220,6 +237,12 @@ public sealed class MoveTool : ToolBase
             return;
         }
 
+        if (_objectLayer != null && _panPicture && _startObject is ShapeObject { Picture: { } } framed)
+        {
+            _objectLayer.SetObject(PicturePanned(framed, e.Position));
+            return;
+        }
+
         if (_objectLayer != null && _startObject != null)
         {
             // Dragging a part: change the part, then let the group fit itself around its parts again.
@@ -244,6 +267,7 @@ public sealed class MoveTool : ToolBase
 
     public override void Deactivate()
     {
+        _pictureLayer = null;
         CancelMarquee();
         Finish();
     }
@@ -318,8 +342,26 @@ public sealed class MoveTool : ToolBase
         return result;
     }
 
+    /// <summary>In picture mode (after a double-click on a frame with a picture) the wheel zooms the picture inside the frame.</summary>
+    public override bool MouseWheel(ToolMouseArgs e, int delta)
+    {
+        if (_pictureLayer is not { Object: ShapeObject { Picture: { } picture } frame } layer || layer.IsLocked) return false;
+        if (!ReferenceEquals(Host.FindLayerAt(e.Position, 3 / Zoom), layer)) return false;
+        double zoom = Math.Clamp(picture.Zoom * Math.Pow(1.1, delta / 120.0), 0.25, 5);
+        Push(ObjectChangeAction.Apply("Zoom Picture", layer, frame with { Picture = picture with { Zoom = zoom } }, mergeKey: "Zoom Picture"));
+        Host.SetStatus($"Picture zoom {Math.Round(zoom * 100)}%. Drag to move it.");
+        return true;
+    }
+
     public override bool KeyDown(Key key, ModifierKeys modifiers)
     {
+        if (_pictureLayer != null && key == Key.Escape && modifiers == ModifierKeys.None)
+        {
+            _pictureLayer = null;
+            Host.SetStatus("Done with the picture.");
+            return true;
+        }
+
         // While reshaping a shape, Esc finishes it.
         if (Host.IsReshaping && key == Key.Escape && modifiers == ModifierKeys.None)
         {
@@ -507,6 +549,7 @@ public sealed class MoveTool : ToolBase
         _partIndex = null;
         _startPart = null;
         _cornerIndex = null;
+        _panPicture = false;
         _handle = HandleKind.None;
         _multiStart = null;
         _snapStart = null;
@@ -554,8 +597,28 @@ public sealed class MoveTool : ToolBase
         Push(ObjectChangeAction.Apply("Edit Text", layer, updated with { Box = updated.Box with { Width = w, Height = h } }));
     }
 
+    /// <summary>The frame with its picture moved by the mouse (the picture follows the pointer; it never leaves the frame bare).</summary>
+    private ShapeObject PicturePanned(ShapeObject frame, PointD mouse)
+    {
+        var picture = frame.Picture!;
+        var a = frame.Box.ToLocal(_start);
+        var b = frame.Box.ToLocal(mouse);
+        double dx = (b.X - a.X) * (frame.FlipX ? -1 : 1), dy = (b.Y - a.Y) * (frame.FlipY ? -1 : 1);
+        var (_, _, w, h) = picture.Place(frame.Box.Width, frame.Box.Height);
+        double roomX = Math.Abs(w - frame.Box.Width) / 2, roomY = Math.Abs(h - frame.Box.Height) / 2;
+        var start = ((ShapeObject)_startObject!).Picture!;
+        double panX = roomX > 1e-6 ? Math.Clamp(start.PanX + dx / roomX, -1, 1) : start.PanX;
+        double panY = roomY > 1e-6 ? Math.Clamp(start.PanY + dy / roomY, -1, 1) : start.PanY;
+        return frame with { Picture = picture with { PanX = panX, PanY = panY } };
+    }
+
     private void UpdateHoverCursor(PointD position)
     {
+        if (_pictureLayer != null && ReferenceEquals(Host.FindLayerAt(position, 3 / Zoom), _pictureLayer))
+        {
+            Host.Canvas?.SetCursorOverride(Cursors.Hand);
+            return;
+        }
         var active = Document.ActiveLayer;
         Cursor? cursor = null;
         if (Host.IsReshaping && active is { Object: { } shape } && TransformHandles.VertexAt(shape, position, Zoom) != null)

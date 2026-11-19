@@ -12,33 +12,33 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Margin="8,0,8,16">
                         <TextBlock Style="{StaticResource DrawerHeading}" Text="Project" />
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.ProjectManagerCommand}" Click="OnItemClick" ToolTip="All your projects, and create a new one">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Project Manager" AutomationProperties.HelpText="Project" Tag="&#xE80F;" Command="{Binding File.ProjectManagerCommand}" Click="OnItemClick" ToolTip="All your projects, and create a new one">
                             <DockPanel>
                                 <TextBlock Text="&#xE80F;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Project Manager" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.NewCommand}" Click="OnItemClick" ToolTip="New picture">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="New..." AutomationProperties.HelpText="Project" Tag="&#xE7C3;" Command="{Binding File.NewCommand}" Click="OnItemClick" ToolTip="New picture">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+N" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE7C3;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="New..." VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.OpenCommand}" Click="OnItemClick" ToolTip="Open a picture or a project">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Open (picture or project)" AutomationProperties.HelpText="Project" Tag="&#xE838;" Command="{Binding File.OpenCommand}" Click="OnItemClick" ToolTip="Open a picture or a project">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+O" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE838;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Open (picture or project)" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.PlaceCommand}" Click="OnItemClick">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Place Image as Layer..." AutomationProperties.HelpText="Project" Tag="&#xE91B;" Command="{Binding File.PlaceCommand}" Click="OnItemClick">
                             <DockPanel>
                                 <TextBlock Text="&#xE91B;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Place Image as Layer..." VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding CloseProjectCommand}" Click="OnItemClick">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Close Project" AutomationProperties.HelpText="Project" Tag="&#xE8BB;" Command="{Binding CloseProjectCommand}" Click="OnItemClick">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+W" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE8BB;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
@@ -46,47 +46,47 @@
                             </DockPanel>
                         </Button>
                         <TextBlock Style="{StaticResource DrawerHeading}" Text="Save" />
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.SaveCommand}" Click="OnItemClick" ToolTip="Saves a .flash file that keeps every layer, shape and text editable">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Save Project" AutomationProperties.HelpText="Save" Tag="&#xE74E;" Command="{Binding File.SaveCommand}" Click="OnItemClick" ToolTip="Saves a .flash file that keeps every layer, shape and text editable">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+S" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE74E;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Save Project" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.SaveAsCommand}" Click="OnItemClick">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Save Project As" AutomationProperties.HelpText="Save" Tag="&#xE792;" Command="{Binding File.SaveAsCommand}" Click="OnItemClick">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+Shift+S" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE792;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Save Project As" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.SaveAsTemplateCommand}" Click="OnItemClick" ToolTip="Keep this picture as a starting point for new pictures (File &gt; New &gt; Start from)">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Save as Template" AutomationProperties.HelpText="Save" Tag="&#xE8A1;" Command="{Binding File.SaveAsTemplateCommand}" Click="OnItemClick" ToolTip="Keep this picture as a starting point for new pictures (File &gt; New &gt; Start from)">
                             <DockPanel>
                                 <TextBlock Text="&#xE8A1;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Save as Template" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
                         <TextBlock Style="{StaticResource DrawerHeading}" Text="Pages" />
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.AddPageCommand}" Click="OnItemClick" ToolTip="A new empty page after this one. All pages are saved together in one .flash file.">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Add Page" AutomationProperties.HelpText="Pages" Tag="&#xE8F4;" Command="{Binding File.AddPageCommand}" Click="OnItemClick" ToolTip="A new empty page after this one. All pages are saved together in one .flash file.">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+Alt+N" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE8F4;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Add Page" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.DuplicatePageCommand}" Click="OnItemClick">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Duplicate Page" AutomationProperties.HelpText="Pages" Tag="&#xE8C8;" Command="{Binding File.DuplicatePageCommand}" Click="OnItemClick">
                             <DockPanel>
                                 <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Duplicate Page" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding CloseDocumentCommand}" Click="OnItemClick">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Close Page" AutomationProperties.HelpText="Pages" Tag="&#xE711;" Command="{Binding CloseDocumentCommand}" Click="OnItemClick">
                             <DockPanel>
                                 <TextBlock Text="&#xE711;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Close Page" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding NextDocumentCommand}" Click="OnItemClick">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Next Picture" AutomationProperties.HelpText="Pages" Tag="&#xE72A;" Command="{Binding NextDocumentCommand}" Click="OnItemClick">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+Tab" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE72A;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
@@ -94,57 +94,57 @@
                             </DockPanel>
                         </Button>
                         <TextBlock Style="{StaticResource DrawerHeading}" Text="Export" />
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.ExportCommand}" Click="OnItemClick" ToolTip="Makes a normal picture file; choose format, quality and size">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="As Picture (PNG, JPG, WEBP...)" AutomationProperties.HelpText="Export" Tag="&#xE78B;" Command="{Binding File.ExportCommand}" Click="OnItemClick" ToolTip="Makes a normal picture file; choose format, quality and size">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="Ctrl+Alt+S" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="&#xE78B;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="As Picture (PNG, JPG, WEBP...)" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.ExportForCommand}" Click="OnItemClick" ToolTip="A ready-made size for social media, video, print or the web; also for all pages at once">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="For Social Media, Video, Print..." AutomationProperties.HelpText="Export" Tag="&#xE72D;" Command="{Binding File.ExportForCommand}" Click="OnItemClick" ToolTip="A ready-made size for social media, video, print or the web; also for all pages at once">
                             <DockPanel>
                                 <TextBlock Text="&#xE72D;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="For Social Media, Video, Print..." VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.ExportAllPagesCommand}" Click="OnItemClick" ToolTip="One picture file for every page">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="All Pages as Pictures" AutomationProperties.HelpText="Export" Tag="&#xE8F1;" Command="{Binding File.ExportAllPagesCommand}" Click="OnItemClick" ToolTip="One picture file for every page">
                             <DockPanel>
                                 <TextBlock Text="&#xE8F1;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="All Pages as Pictures" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding PagesExport.ExportPdfCommand}" Click="OnItemClick" ToolTip="One PDF page for every page of the project">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="As PDF (all pages)" AutomationProperties.HelpText="Export" Tag="&#xE8A5;" Command="{Binding PagesExport.ExportPdfCommand}" Click="OnItemClick" ToolTip="One PDF page for every page of the project">
                             <DockPanel>
                                 <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="As PDF (all pages)" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding PagesExport.ExportGifCommand}" Click="OnItemClick" ToolTip="Every page becomes one frame of an animated GIF">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="As Animated GIF (all pages)" AutomationProperties.HelpText="Export" Tag="&#xE768;" Command="{Binding PagesExport.ExportGifCommand}" Click="OnItemClick" ToolTip="Every page becomes one frame of an animated GIF">
                             <DockPanel>
                                 <TextBlock Text="&#xE768;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="As Animated GIF (all pages)" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.ExportSvgCommand}" Click="OnItemClick" ToolTip="Shapes and text stay sharp vectors; effects and pictures are embedded">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="As SVG (vector)" AutomationProperties.HelpText="Export" Tag="&#xE8A9;" Command="{Binding File.ExportSvgCommand}" Click="OnItemClick" ToolTip="Shapes and text stay sharp vectors; effects and pictures are embedded">
                             <DockPanel>
                                 <TextBlock Text="&#xE8A9;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="As SVG (vector)" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding File.ExportPsdCommand}" Click="OnItemClick" ToolTip="Saves every layer so Photoshop and other editors can open it">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="As Photoshop File (.psd, with layers)" AutomationProperties.HelpText="Export" Tag="&#xE81E;" Command="{Binding File.ExportPsdCommand}" Click="OnItemClick" ToolTip="Saves every layer so Photoshop and other editors can open it">
                             <DockPanel>
                                 <TextBlock Text="&#xE81E;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="As Photoshop File (.psd, with layers)" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
-                        <Button Style="{StaticResource DrawerItem}" Command="{Binding PagesExport.BatchConvertCommand}" Click="OnItemClick" ToolTip="Convert every picture in a folder to another format and / or size">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Batch Convert Folder" AutomationProperties.HelpText="Export" Tag="&#xE895;" Command="{Binding PagesExport.BatchConvertCommand}" Click="OnItemClick" ToolTip="Convert every picture in a folder to another format and / or size">
                             <DockPanel>
                                 <TextBlock Text="&#xE895;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Batch Convert Folder" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
                         <TextBlock Style="{StaticResource DrawerHeading}" Text="App" />
-                        <Button Style="{StaticResource DrawerItem}" Click="OnExit">
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="Exit" AutomationProperties.HelpText="App" Tag="&#xE7E8;" Click="OnExit">
                             <DockPanel>
                                 <TextBlock Text="&#xE7E8;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{StaticResource IconBrush}" />
                                 <TextBlock Text="Exit" VerticalAlignment="Center" />

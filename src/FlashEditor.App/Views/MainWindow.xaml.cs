@@ -38,6 +38,7 @@ public partial class MainWindow : Window
         Services.Shortcuts.Apply(this);
         Services.Shortcuts.Changed += (_, _) => Services.Shortcuts.Apply(this);
         Ribbon.FileRequested += (_, _) => FileDrawer.Open();
+        Ribbon.ExtraSearchRoot = ("File", FileDrawer);
         PreviewKeyDown += OnPreviewKeyDown;
         PreviewKeyUp += OnPreviewKeyUp;
         Drop += OnDrop;

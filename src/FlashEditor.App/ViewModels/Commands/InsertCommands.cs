@@ -21,6 +21,8 @@ public sealed class InsertCommands
         _main = main;
         AddQrCommand = new RelayCommand(AddQr);
         AddBarcodeCommand = new RelayCommand(p => AddBarcode(Enum.Parse<BarcodeKind>((string)(p ?? "Code128"))));
+        AddTextCommand = new RelayCommand(p => AddText((string)(p ?? "Heading")));
+        AddIconCommand = new RelayCommand(p => AddIcon((string)(p ?? "Icons") == "Badges"));
         AddChartCommand = new RelayCommand(p => AddChart(Enum.Parse<ChartKind>((string)(p ?? "Columns"))));
         AddShapeCommand = new RelayCommand(p => AddShape(Enum.Parse<ShapeKind>((string)p!)));
         AddFrameCommand = new RelayCommand(p => AddFrame((string)(p ?? "Rectangle")));
@@ -29,6 +31,12 @@ public sealed class InsertCommands
     }
 
     public RelayCommand AddQrCommand { get; }
+
+    /// <summary>Parameter: Icons or Badges (which page of the picker opens first).</summary>
+    public RelayCommand AddIconCommand { get; }
+
+    /// <summary>Parameter: Heading, Subheading or Body.</summary>
+    public RelayCommand AddTextCommand { get; }
 
     /// <summary>Parameter: Code128, Ean13, UpcA, Ean8 or Code39.</summary>
     public RelayCommand AddBarcodeCommand { get; }
@@ -90,6 +98,48 @@ public sealed class InsertCommands
         var code = new BarcodeObject(new ObjectBox((Doc.Width - w) / 2, (Doc.Height - h) / 2, w, h), text.Trim(), kind, ColorRgba.Black, ColorRgba.White);
         _main.AddObjectLayer(code, "Insert Barcode");
         _main.SetStatus("Added a barcode. Change its text, type and colors in Properties. Test it with a scanner or your phone before printing.");
+    }
+
+    /// <summary>Asks for the words and puts a heading, subheading or body text in the middle of the picture.</summary>
+    private void AddText(string kind)
+    {
+        var (title, sample, scale, bold) = kind switch
+        {
+            "Subheading" => ("Add a Subheading", "A subheading", 0.06, true),
+            "Body" => ("Add Body Text", "A little bit of body text", 0.04, false),
+            _ => ("Add a Heading", "Your heading", 0.11, true),
+        };
+        var text = _main.Dialogs.ShowTextInput(title, "Type your text (Enter = new line):", sample);
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        double size = Math.Max(14, Math.Round(Math.Min(Doc.Width, Doc.Height) * scale));
+        var obj = new TextObject(new ObjectBox(0, 0, 1, 1), text.Replace("\r\n", "\n"), "Segoe UI", size, _main.Colors.Foreground, bold);
+        var (w, h) = ObjectRendering.Renderer.MeasureText(obj);
+        obj = obj with { Box = new ObjectBox(Math.Round((Doc.Width - w) / 2), Math.Round((Doc.Height - h) / 2), w, h) };
+        _main.AddObjectLayer(obj, "Add Text");
+        _main.SetStatus("Text added. Double-click it to change the words; font, color and designs are in Properties.");
+    }
+
+    /// <summary>Opens the icon / badge picker and puts the choice in the middle of the picture.</summary>
+    private void AddIcon(bool badges)
+    {
+        var choice = _main.Dialogs.ShowIconPicker(badges);
+        if (choice == null) return;
+        double side = Math.Min(Doc.Width, Doc.Height);
+        if (choice.IsBadge)
+        {
+            var badge = Rendering.Badges.Build(choice.Id, Doc.Width, Doc.Height, Math.Max(80, side * 0.3));
+            var layer = _main.AddObjectLayer(badge, "Insert Badge");
+            layer.Name = choice.Name;
+            _main.SetStatus($"Added the \"{choice.Name}\" badge. Ungroup it (Ctrl+Shift+G) to change its colors and words.");
+            return;
+        }
+        var icon = new TextObject(new ObjectBox(0, 0, 1, 1), choice.Glyph, Services.IconCatalog.FontFamily, Math.Max(24, Math.Round(side * 0.2)), _main.Colors.Foreground);
+        var (w, h) = ObjectRendering.Renderer.MeasureText(icon);
+        icon = icon with { Box = new ObjectBox(Math.Round((Doc.Width - w) / 2), Math.Round((Doc.Height - h) / 2), w, h) };
+        var iconLayer = _main.AddObjectLayer(icon, "Insert Icon");
+        iconLayer.Name = choice.Name + " icon";
+        _main.SetStatus($"Added the {choice.Name.ToLowerInvariant()} icon. It is text: change its color, size, outline and shadow in Properties.");
     }
 
     /// <summary>A chart with sample numbers in the middle of the picture; change the numbers in Properties.</summary>

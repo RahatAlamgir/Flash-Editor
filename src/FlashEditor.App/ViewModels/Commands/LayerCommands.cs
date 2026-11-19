@@ -30,6 +30,8 @@ public sealed class LayerCommands
         SplitCommand = new RelayCommand(Split, () => Doc.Selection != null && Doc.ActiveLayer is { IsLocked: false, IsAdjustment: false });
         GroupCommand = new RelayCommand(Group, () => _main.SelectedLayers.Count >= 2 && _main.SelectedLayers.All(l => !l.IsLocked));
         UngroupCommand = new RelayCommand(Ungroup, () => Doc.ActiveLayer is { Object: GroupObject, IsLocked: false });
+        GroupToggleCommand = new RelayCommand(() => { if (UngroupCommand.CanExecute(null)) UngroupCommand.Execute(null); else GroupCommand.Execute(null); },
+            () => UngroupCommand.CanExecute(null) || GroupCommand.CanExecute(null));
         MoveUpCommand = new RelayCommand(() => Move(+1), () => Doc.ActiveLayer != null && Doc.ActiveLayerIndex < Doc.Layers.Count - 1);
         MoveDownCommand = new RelayCommand(() => Move(-1), () => Doc.ActiveLayerIndex > 0);
         BringToFrontCommand = new RelayCommand(() => MoveTo(Doc.Layers.Count - 1, "Bring to Front"),
@@ -84,6 +86,9 @@ public sealed class LayerCommands
     /// <summary>Unlocks every selected layer that is locked.</summary>
     public RelayCommand UnlockSelectedCommand { get; }
     public RelayCommand GroupCommand { get; }
+
+    /// <summary>One button for both: a selected group is ungrouped, several selected layers are grouped.</summary>
+    public RelayCommand GroupToggleCommand { get; }
     public RelayCommand CropToSelectionCommand { get; }
     public RelayCommand CropObjectCommand { get; }
     public RelayCommand RotateRightCommand { get; }

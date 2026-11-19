@@ -67,6 +67,9 @@ public abstract class ToolBase : ObservableObject
     public virtual void MouseMove(ToolMouseArgs e) { }
     public virtual void MouseUp(ToolMouseArgs e) { }
 
+    /// <summary>The mouse wheel turned over the canvas. Return true if the tool used it (the canvas then does not zoom).</summary>
+    public virtual bool MouseWheel(ToolMouseArgs e, int delta) => false;
+
     /// <summary>Return true if the tool handled the key.</summary>
     public virtual bool KeyDown(Key key, ModifierKeys modifiers) => false;
 

@@ -519,7 +519,7 @@
                                 <TextBlock Text="The picture is part of the frame: moving or resizing the frame takes it along." FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,0,6" />
                                 <StackPanel Style="{StaticResource Row}">
                                     <TextBlock Text="Zoom" Style="{StaticResource Label}" ToolTip="Zoom in on the picture inside the frame" />
-                                    <ctl:NumberSlider Minimum="100" Maximum="500" Value="{Binding PictureZoomPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
+                                    <ctl:NumberSlider Minimum="25" Maximum="500" Value="{Binding PictureZoomPercent}" SliderWidth="96" BoxWidth="52" Unit="%" />
                                 </StackPanel>
                                 <StackPanel Style="{StaticResource Row}">
                                     <TextBlock Text="Left / right" Style="{StaticResource Label}" ToolTip="Which part of the picture shows (needs zoom above 100% to see a change in the other direction)" />

@@ -1,0 +1,28 @@
+<Window x:Class="FlashEditor.App.Views.Dialogs.IconPickerDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Icons and Badges" Width="760" Height="600" MinWidth="560" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}">
+    <DockPanel>
+        <Grid DockPanel.Dock="Top" Margin="20,16,20,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <RadioButton x:Name="IconsTab" Content="Icons" GroupName="Kind" IsChecked="True" Checked="OnKindChanged" Padding="14,4" Margin="0,0,6,0"
+                             Style="{StaticResource {x:Type ToggleButton}}" />
+                <RadioButton x:Name="BadgesTab" Content="Badges" GroupName="Kind" Checked="OnKindChanged" Padding="14,4"
+                             Style="{StaticResource {x:Type ToggleButton}}" />
+            </StackPanel>
+            <TextBox x:Name="Search" Grid.Column="1" Margin="16,0,0,0" TextChanged="OnSearchChanged" MaxWidth="320" HorizontalAlignment="Right" Width="260"
+                     ToolTip="Type part of a name, for example arrow, mail or star" />
+        </Grid>
+        <TextBlock x:Name="Hint" DockPanel.Dock="Bottom" Margin="22,6,22,12" FontSize="11.5" TextWrapping="Wrap" Foreground="{StaticResource SubtleTextBrush}" />
+        <ListBox x:Name="Categories" DockPanel.Dock="Left" Width="170" Margin="14,0,0,0" BorderThickness="0" Background="Transparent" SelectionChanged="OnCategoryChanged" />
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="6,0,8,0">
+            <WrapPanel x:Name="Grid" Margin="8,0,8,8" />
+        </ScrollViewer>
+    </DockPanel>
+</Window>

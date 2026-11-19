@@ -284,7 +284,7 @@ public sealed class ObjectPropertiesViewModel : ObservableObject
     public double PictureZoomPercent
     {
         get => Math.Round((Pic?.Zoom ?? 1) * 100);
-        set => ChangePic("Picture Zoom", p => p with { Zoom = Math.Clamp(value, 100, 500) / 100.0 });
+        set => ChangePic("Picture Zoom", p => p with { Zoom = Math.Clamp(value, 25, 500) / 100.0 });
     }
 
     /// <summary>Which part of the picture shows: -100 = its left edge, 0 = the middle, 100 = its right edge.</summary>
