@@ -299,3 +299,9 @@ Flash Editor/
 * AI background removal keeps the *main* subject. When it gets a part wrong, fix it with the Refine brush (R).
 * AI upscaling makes believable detail but cannot recover detail that was never there (e.g. a tiny face).
 * The first AI run after starting the app takes a few extra seconds while the model is prepared for the graphics card.
+
+## About this project and license
+
+Flash Editor was built with the help of AI (Claude by Anthropic), directed and tested by Rahat Alamgir.
+
+Everyone is free to use, copy, change and share it, for personal or commercial use. It is released under the [MIT License](LICENSE): keep the license notice with the code, and note that the software comes without any warranty. The optional AI models the app downloads have their own licenses.
