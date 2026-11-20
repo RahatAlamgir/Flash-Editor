@@ -5,6 +5,12 @@
 A Photoshop-style image editor for Windows with Canva-style editable objects and built-in AI tools.
 Written in **C# / .NET 10 / WPF**. AI runs on your PC (no internet, no account), on the graphics card when there is one.
 
+## Download
+
+**[Download Flash Editor for Windows (installer)](https://github.com/RahatAlamgir/Flash-Editor/releases/latest/download/FlashEditor-Setup-1.0.0.exe)**
+
+Run the installer. If Windows shows "Windows protected your PC", click **More info > Run anyway** (the installer is not code-signed). All versions: [Releases](https://github.com/RahatAlamgir/Flash-Editor/releases).
+
 ---
 
 ## Highlights
@@ -17,23 +23,16 @@ Written in **C# / .NET 10 / WPF**. AI runs on your PC (no internet, no account),
 | **Editable objects** | Shapes, text and placed pictures stay editable (like Canva): click to select, drag the handles to resize or rotate, change colors and fonts any time. |
 | **AI Upscale / Clean Up** | Makes small or blurry pictures sharper, or 2x to 4x larger with real-looking detail (Real-ESRGAN). |
 | **Selections** | Rectangle, ellipse, lasso, polygon lasso, pen (curves), magic wand, quick-select brush, AI "Select Subject". |
-| **Export** | Pick format, quality and size, crop to 1:1 / 4:5 / 16:9..., and see the real file size before saving. |
+| **Export** | Pick format, quality and size, crop to 1:1 / 4:5 / 16:9..., and see the real file size before saving. Also PDF, animated GIF, SVG, Photoshop and editable PowerPoint. |
 
 ---
 
 ## Screenshots
 
-### Change a T-shirt color, keeping the fabric's shading
-Select the shirt (Magic Wand or Quick Select), then **Adjust > Recolor**. Tip: remove the background first, so the selection cannot spill into the background.
+### The editor
+Tools on the left, the page in the middle, Properties and Layers on the right, and the pages of the project along the bottom. This is the built-in tutorial project, made for you the first time you start the program.
 
-![Recolor](docs/screenshots/02-recolor-tshirt.png)
-
-### Editable shapes and text
-Speech bubble, text and a rotated star, each on its own layer. The **Properties** panel changes fill, border, corners, points, rotation, font and size, with a number box next to every slider.
-
-![Editable objects](docs/screenshots/03-shapes.png)
-
-
+![Flash Editor](docs/screenshots/01-editor-tutorial.jpg)
 
 ## Features
 
@@ -67,9 +66,11 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 ### Painting and selecting
 * Brush, eraser, paint bucket, eyedropper, foreground / background colors with an HSV color picker. **Brush types** (pick in the tool options, each with a preview): round, square, calligraphy, pencil, chalk, spray, splatter.
 * **Retouching tools**: **Clone Stamp (S)** (Alt+click the place to copy from, then paint; *Aligned* keeps the distance between strokes), **Spot Healing (J)** (paint over a blemish, it is healed from a clean place the program finds), **Healing Brush (J)** (like Clone Stamp, but the copied detail takes on the light and color of its new place), **Patch (J)** (draw around a blemish, drag the outline onto a clean area), **Dodge / Burn (O)** (lighten or darken shadows, midtones or highlights; Alt = the other one) and **Blur / Sharpen (Q)** (Alt = the other one). J switches between Spot Healing, Healing Brush and Patch. They paint on pixels (a placed picture is turned into pixels first; **Make editable** brings it back). One undo step per stroke; a selection limits the effect.
-* **Shadow size**: the **Size** slider of a shadow makes it smaller (below 100 %) or bigger (above 100 %) than the object, around the middle of the object.* **3D look**: tick **3D look** in the Properties panel to give any shape, text, picture or group a solid side (a block or 3D-letter look) and lit / shaded edges on its face. Pick a preset (Block, Long, Pop, Floor, Left) or set **Depth**, **Angle**, **Edges** (bevel strength) and the side color (automatic = the object's own color, darker). The side follows the real outline, works together with shadows and keeps its direction when the object is turned.
+* **Shadow size**: the **Size** slider of a shadow makes it smaller (below 100 %) or bigger (above 100 %) than the object, around the middle of the object.
+* **3D look**: tick **3D look** in the Properties panel to give any shape, text, picture or group a solid side (a block or 3D-letter look) and lit / shaded edges on its face. Pick a preset (Block, Long, Pop, Floor, Left) or set **Depth**, **Angle**, **Edges** (bevel strength) and the side color (automatic = the object's own color, darker). The side follows the real outline, works together with shadows and keeps its direction when the object is turned.
 * **Quick merge**: select two or more layers (Ctrl+click in the Layers panel, Shift+click or Ctrl+drag on the canvas) and press **Merge** in the Layers panel, **Ctrl+E**, Layer > Merge Selected Layers, or right-click > Merge N Layers. They become one layer where the top one was, with each layer's opacity kept; hidden and locked layers in the selection are left alone. One undo step. (With one layer selected Ctrl+E still merges it down. Use **Group**, Ctrl+G, to keep objects editable.)
-* **Tool groups**: similar tools share one button in the toolbox (like Photoshop). A small triangle in the button corner means more tools: click the triangle (or right-click the button) to open the list and pick one; the button then shows it. Groups: rectangle / ellipse select, lasso / polygon lasso, quick select / magic wand, brush / eraser / refine, spot healing / healing brush / patch.* **Rulers, grid, guides and snapping**: toggle buttons above the canvas (also in the View menu). **Rulers** (Ctrl+R) show pixel units; drag from a ruler onto the picture to make a **guide line**, drag a guide with Select / Move to move it, drag it back onto the ruler to remove it. **Grid** (Ctrl+') with a size you choose. **Snapping** (Ctrl+Shift+;) makes objects, pictures, new shapes and selections click into place against other objects (edges and centers), the canvas edges and center, the grid and the guides, with pink smart-guide lines. **Equal spacing** (like Canva): when you drag an object it also snaps so its gap to a neighbor equals the gaps between other objects in the same row or column, or sits exactly in the middle between two objects, and the gaps are shown in pixels. Hold **Alt** to move without snapping. The settings are remembered.
+* **Tool groups**: similar tools share one button in the toolbox (like Photoshop). A small triangle in the button corner means more tools: click the triangle (or right-click the button) to open the list and pick one; the button then shows it. Groups: rectangle / ellipse select, lasso / polygon lasso, quick select / magic wand, brush / eraser / refine, spot healing / healing brush / patch.
+* **Rulers, grid, guides and snapping**: toggle buttons above the canvas (also in the View menu). **Rulers** (Ctrl+R) show pixel units; drag from a ruler onto the picture to make a **guide line**, drag a guide with Select / Move to move it, drag it back onto the ruler to remove it. **Grid** (Ctrl+') with a size you choose. **Snapping** (Ctrl+Shift+;) makes objects, pictures, new shapes and selections click into place against other objects (edges and centers), the canvas edges and center, the grid and the guides, with pink smart-guide lines. **Equal spacing** (like Canva): when you drag an object it also snaps so its gap to a neighbor equals the gaps between other objects in the same row or column, or sits exactly in the middle between two objects, and the gaps are shown in pixels. Hold **Alt** to move without snapping. The settings are remembered.
 * Selection tools: rectangle, ellipse, lasso, polygon lasso, **pen (curves)**, magic wand, **quick-select brush**, select subject (AI), select layer content. **Shift** adds, **Alt** subtracts. The program starts with **Select / Move** active.
 * Move the selected pixels, copy, cut, paste, delete, fill, invert. Nothing is cut off at the canvas edge; **Image > Reveal All** shows parts moved outside.
 
@@ -114,7 +115,7 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 * **Click Select (AI)** (W group): click an object and the AI selects just that object, or drag a box around it. Shift adds, Alt subtracts. It uses MobileSAM (two small files, about 44 MB together, MIT/Apache licensed, from huggingface.co/Acly/MobileSAM), downloaded once after you say yes (Settings > AI Models lists and removes them). The first click on a picture takes a few seconds while the AI studies it; more clicks on the same picture are almost instant. It runs on the processor, because the graphics-card version gave wrong outlines.
 * **Crop (C)** works like a selection tool: drag a box over the picture, then adjust it with the mouse (corners and edges resize it, dragging inside moves it, dragging outside draws a new one). Choose a shape (Square, 16:9...) if you want, then press **Enter**. The part inside the box becomes a **new layer** and the original layer is **hidden, not changed** (show it again with the eye icon). The canvas is never resized (use Image > Canvas Size for that). Esc cancels.
 * **Colors**: the color picker keeps your **recent colors** and **swatches** (saved in `settings\app.json`).
-* **File > Export** holds every way to export in one submenu (it opens when the mouse rests on it): picture (Ctrl+Alt+S), ready-made sizes, all pages as pictures, PDF, animated GIF, SVG and Photoshop file.
+* **File > Export** holds every way to export in one submenu (it opens when the mouse rests on it): picture (Ctrl+Alt+S), ready-made sizes, all pages as pictures, PDF, PowerPoint, animated GIF, SVG and Photoshop file.
 * **Export For** (File > Export): ready-made sizes and quality for Instagram, YouTube, print and more, for one page or all pages.
 * **Photoshop files**: open `.psd` (layers, opacity, blend modes) and **Export as Photoshop File** with layers. Objects, text and effects become pictures in Photoshop; adjustment layers are left out. Tested with hand-built files only, not with Photoshop itself.
 * **SVG**: **Export as SVG** keeps plain shapes and text as vectors (anything with effects becomes an embedded picture). Opening an `.svg` reads rectangles, circles, ellipses, lines, polygons, paths (curves are flattened, arcs become straight lines), text and embedded pictures as editable objects. Gradients, filters and clipping in SVG files are not supported.
@@ -138,7 +139,7 @@ Speech bubble, text and a rotated star, each on its own layer. The **Properties*
 * **Export as PDF** (all pages, one PDF page each, JPEG pictures, choose quality and dpi) and **Export as Animated GIF** (every page is a frame; choose the time per page and looping). Both in File > Export.
 * **Export as PowerPoint (.pptx)** (File > Export): every page becomes one slide of the same size. *Editable* (default): text becomes text boxes and simple shapes (rectangles, ellipses, stars, arrows, lines...) become PowerPoint shapes; placed pictures stay pictures; groups are opened up; anything PowerPoint cannot draw the same way (shadows, glow, 3D, charts, QR codes, painted layers, shapes with a picture) is placed as a picture at the right spot. A page with adjustment layers or blend modes becomes one picture. Or choose a plain picture of every page (JPEG or lossless PNG).
 * **Batch Convert Folder** (File menu): turns every picture of a folder into another format and / or a smaller size (never enlarged, never overwriting; subfolders optional).
-* **Save as Template** (File menu) keeps the current picture, fully editable, as a starting point: it appears in File > New under **Start from**, marked with a star (saved in `settings	emplates`).
+* **Save as Template** (File menu) keeps the current picture, fully editable, as a starting point: it appears in File > New under **Start from**, marked with a star (saved in `settings\templates`).
 * **Brand Kit** (Settings menu): up to 12 colors (they come first in every color picker; "Add colors from this picture" finds the main colors of your picture) and 3 fonts (quick buttons when a text is selected).
 * **Keyboard Shortcuts** (Settings tab, or F1): every shortcut of every command and tool in one list. Click a shortcut and press the new keys (commands need Ctrl or Alt, tools use one key); Backspace removes a shortcut, the arrow button brings the normal one back, Reset all restores everything. If you give a key that another command has, that command loses it. Saved in the settings folder.
 * **Search commands** (the box at the right end of the tab row): type what you want to do (rotate, blur, export, pie chart...) and press Enter or click a result; it finds every ribbon button, the entries of the lists under them and everything in the File drawer. Results that cannot be used right now are dimmed.
@@ -159,7 +160,7 @@ Press **F1** in the app for all keyboard shortcuts.
 
 ## Install
 
-Download one of the two installers (Windows 10 / 11, 64-bit; no .NET needed):
+The installers are for Windows 10 / 11, 64-bit, and need no .NET. The **Standard** one is on the [Releases](https://github.com/RahatAlamgir/Flash-Editor/releases) page; the **AI** edition is not uploaded because of its size, but you can build it yourself (see below):
 
 | Installer | Size | AI tools |
 |---|---|---|
@@ -207,6 +208,7 @@ The models are **not** in the repository (they are large). The app downloads eac
 | IS-Net general use (from the rembg project) | Remove Background, Select Subject | 170 MB | Apache 2.0 |
 | LaMa big-lama (ONNX by Carve) | Remove / Fill Selection | 198 MB | Apache 2.0 |
 | Real-ESRGAN x4plus (ONNX build from Qualcomm AI Hub) | AI Upscale / Clean Up | 62 MB | BSD-3 |
+| MobileSAM (two small files, from Acly/MobileSAM) | Click Select (AI) | 44 MB | MIT / Apache 2.0 |
 
 Files are checked (size and SHA-256) before use and saved only in the `models` folder next to `FlashEditor.exe`. After that everything works offline. When copying the app to another PC, copy the whole folder.
 
@@ -294,7 +296,7 @@ Flash Editor/
 
 ## Notes and limits
 
-* Saving merges all visible layers into one picture; there is no layered project file yet.
+* **Export** merges all visible layers into one picture. To keep your layers, save as a project (`.flash`) with Ctrl+S.
 * JPG has no transparency: transparent areas are filled with the background color.
 * AI background removal keeps the *main* subject. When it gets a part wrong, fix it with the Refine brush (R).
 * AI upscaling makes believable detail but cannot recover detail that was never there (e.g. a tiny face).
