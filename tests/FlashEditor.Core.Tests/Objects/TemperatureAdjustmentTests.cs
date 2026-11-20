@@ -1,6 +1,5 @@
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Objects;
 

@@ -1,5 +1,4 @@
 using FlashEditor.Core.Imaging;
-using FlashEditor.Core.Painting;
 using FlashEditor.Core.Transforms;
 
 namespace FlashEditor.Core.IO;
@@ -23,21 +22,6 @@ public static class IcoEncoder
             .Select(s => (Size: s, Png: ImageEncoder.EncodePng(Resampler.Resize(square, s, s))))
             .ToList();
         if (images.Count == 0) throw new ArgumentException("No valid icon sizes.", nameof(sizes));
-        return Write(images);
-    }
-
-    /// <summary>
-    /// An icon from ready-made square images, one per size (each drawn for its size, so small sizes stay
-    /// crisp). Sizes above 256 are ignored.
-    /// </summary>
-    public static byte[] EncodeFrames(IReadOnlyList<PixelBuffer> frames)
-    {
-        var images = frames
-            .Where(f => f.Width == f.Height && f.Width is > 0 and <= 256)
-            .OrderBy(f => f.Width)
-            .Select(f => (Size: f.Width, Png: ImageEncoder.EncodePng(f)))
-            .ToList();
-        if (images.Count == 0) throw new ArgumentException("No square frames of 1..256 px.", nameof(frames));
         return Write(images);
     }
 

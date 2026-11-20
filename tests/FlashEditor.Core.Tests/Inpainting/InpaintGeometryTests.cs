@@ -1,6 +1,5 @@
 using FlashEditor.AI.Inpainting;
 using FlashEditor.Core.Imaging;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Inpainting;
 

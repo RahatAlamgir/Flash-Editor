@@ -2,7 +2,6 @@ using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Painting;
 using FlashEditor.Core.Retouch;
 using FlashEditor.Core.Selections;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Retouch;
 

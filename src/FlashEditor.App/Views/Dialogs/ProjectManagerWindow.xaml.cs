@@ -20,7 +20,6 @@ public partial class ProjectManagerWindow : Window
 {
     private readonly ProjectLibrary _library;
     private readonly IDialogService _dialogs;
-    private readonly bool _atStartup;
     private List<ProjectEntry> _all = new();
 
     public ProjectManagerWindow(ProjectLibrary library, IDialogService dialogs, bool atStartup)
@@ -28,7 +27,6 @@ public partial class ProjectManagerWindow : Window
         InitializeComponent();
         _library = library;
         _dialogs = dialogs;
-        _atStartup = atStartup;
         if (!atStartup) WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowFolder();
         Loaded += async (_, _) => await ReloadAsync();

@@ -1,5 +1,4 @@
 using FlashEditor.Core.Qr;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Qr;
 

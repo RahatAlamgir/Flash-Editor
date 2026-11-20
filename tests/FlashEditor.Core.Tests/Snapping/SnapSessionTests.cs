@@ -1,7 +1,6 @@
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Snapping;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Snapping;
 

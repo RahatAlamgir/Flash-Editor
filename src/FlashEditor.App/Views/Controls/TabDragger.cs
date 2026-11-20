@@ -83,11 +83,7 @@ public sealed class TabDragger
         if (current >= 0 && target != current) _move(_item!, target);
     }
 
-    /// <summary>For tests: starts dragging <paramref name="item"/> as if it had been pressed and pulled far enough.</summary>
-    public void BeginDragForTest(object item) { _item = item; _dragging = true; }
 
-    /// <summary>For tests: the pointer is now at <paramref name="x"/> (in the strip).</summary>
-    public void DragToForTest(double x) => Follow(x);
 
     private void OnUp(object sender, MouseButtonEventArgs e)
     {

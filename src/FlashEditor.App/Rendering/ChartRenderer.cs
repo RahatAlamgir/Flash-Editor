@@ -415,7 +415,6 @@ internal static class ChartRenderer
         return (Math.Floor(lo / step) * step, Math.Ceiling(hi / step) * step, step);
     }
 
-    private static string Number(double v) => Math.Abs(v) >= 1000 ? v.ToString("#,0.##", CultureInfo.InvariantCulture) : v.ToString("0.##", CultureInfo.InvariantCulture);
 
     private static FormattedText Text(string s, double size, Brush brush, bool bold = false, double maxWidth = 0)
     {

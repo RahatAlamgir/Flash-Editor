@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using FlashEditor.App.Services;
 using FlashEditor.Core.IO;

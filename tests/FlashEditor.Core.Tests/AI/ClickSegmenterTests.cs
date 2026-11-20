@@ -1,5 +1,4 @@
 using FlashEditor.AI.Segmentation;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.AI;
 

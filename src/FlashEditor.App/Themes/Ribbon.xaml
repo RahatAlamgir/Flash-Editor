@@ -164,64 +164,7 @@
     </Style>
 
     <!-- Small button: picture and name side by side, up to three above each other -->
-    <Style x:Key="RibbonSmall" TargetType="Button">
-        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-        <Setter Property="Focusable" Value="False" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bg" Background="Transparent" CornerRadius="3" Padding="5,0,7,0" Height="19">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource RibbonIconFont}" FontSize="13" Width="19" TextAlignment="Left"
-                                       Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource TemplatedParent}, FallbackValue={StaticResource IconBrush}, TargetNullValue={StaticResource IconBrush}}" VerticalAlignment="Center" />
-                            <TextBlock Text="{TemplateBinding Content}" FontSize="11" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource HoverBrush}" />
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource AccentSoftBrush}" />
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.38" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
 
-    <Style x:Key="RibbonSmallToggle" TargetType="ToggleButton">
-        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-        <Setter Property="Focusable" Value="False" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="Bg" Background="Transparent" CornerRadius="3" Padding="5,0,7,0" Height="19">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource RibbonIconFont}" FontSize="13" Width="19" TextAlignment="Left"
-                                       Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource TemplatedParent}, FallbackValue={StaticResource IconBrush}, TargetNullValue={StaticResource IconBrush}}" VerticalAlignment="Center" />
-                            <TextBlock Text="{TemplateBinding Content}" FontSize="11" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource HoverBrush}" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Bg" Property="Background" Value="{StaticResource AccentSoftBrush}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
 
     <!-- The File button at the left end of the tab row: opens the drawer -->
     <Style x:Key="RibbonFileButton" TargetType="Button">

@@ -1,7 +1,6 @@
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.IO.Project;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Documents;
 

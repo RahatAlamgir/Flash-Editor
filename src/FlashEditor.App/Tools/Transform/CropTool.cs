@@ -30,7 +30,6 @@ public sealed class CropTool : ToolBase
     private Path? _handles;
     private PixelRect _cropRect = PixelRect.Empty;
     private CropAspect _aspect;
-    private Layer? _target;
     private Drag _drag;
     private HandleKind _handle;
     private PointD _start;
@@ -87,7 +86,6 @@ public sealed class CropTool : ToolBase
             Host.SetStatus($"\"{layer.Name}\" is outside the picture.");
             return;
         }
-        _target = layer;
         SetCropRect(FitAspect(bounds));
         Host.SetStatus($"Cropping \"{layer.Name}\": drag the corners and edges to adjust the box, then press Enter. Esc cancels. The canvas keeps its size.");
     }
@@ -316,7 +314,6 @@ public sealed class CropTool : ToolBase
         if (_handles != null) Host.Canvas?.RemoveOverlay(_handles);
         _shade = null;
         _handles = null;
-        _target = null;
         _cropRect = PixelRect.Empty;
         _drag = Drag.None;
         OnPropertyChanged(nameof(HasCropRect));

@@ -3,7 +3,6 @@ using FlashEditor.App.Rendering;
 using FlashEditor.Core.Common;
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.History;
-using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Objects;
 
 namespace FlashEditor.App.ViewModels;

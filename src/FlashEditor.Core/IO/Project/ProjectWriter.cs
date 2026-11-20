@@ -1,7 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
 using FlashEditor.Core.Documents;
-using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Painting;
 using FlashEditor.Core.Transforms;
 

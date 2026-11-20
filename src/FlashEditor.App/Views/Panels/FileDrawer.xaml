@@ -120,6 +120,12 @@
                                 <TextBlock Text="As PDF (all pages)" VerticalAlignment="Center" />
                             </DockPanel>
                         </Button>
+                        <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="As PowerPoint (.pptx)" AutomationProperties.HelpText="Export" Tag="&#xE7BE;" svc:RibbonIcon.Brush="{DynamicResource Icon.Blue}" Command="{Binding PagesExport.ExportPptxCommand}" Click="OnItemClick" ToolTip="One slide for every page of the project (pictures)">
+                            <DockPanel>
+                                <TextBlock Text="&#xE7BE;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource AncestorType=Button}, FallbackValue={StaticResource IconBrush}}" />
+                                <TextBlock Text="As PowerPoint (.pptx)" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Button>
                         <Button Style="{StaticResource DrawerItem}" AutomationProperties.Name="As Animated GIF (all pages)" AutomationProperties.HelpText="Export" Tag="&#xE768;" svc:RibbonIcon.Brush="{DynamicResource Icon.Blue}" Command="{Binding PagesExport.ExportGifCommand}" Click="OnItemClick" ToolTip="Every page becomes one frame of an animated GIF">
                             <DockPanel>
                                 <TextBlock Text="&#xE768;" FontFamily="{StaticResource RibbonIconFont}" FontSize="16" Width="32" VerticalAlignment="Center" Foreground="{Binding Path=(svc:RibbonIcon.Brush), RelativeSource={RelativeSource AncestorType=Button}, FallbackValue={StaticResource IconBrush}}" />

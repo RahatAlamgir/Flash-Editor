@@ -5,12 +5,10 @@
     <conv:ResourceKeyToGeometryConverter x:Key="IconGeometry" />
     <conv:ColorToBrushConverter x:Key="ColorToBrush" />
     <conv:ToolIconBrushConverter x:Key="ToolIconBrush" />
-    <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
     <conv:EqualsConverter x:Key="EqualsConverter" />
     <conv:InverseBoolConverter x:Key="InverseBool" />
     <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
     <conv:LineOrBorderConverter x:Key="LineOrBorder" />
-    <conv:ShapeKindToGeometryConverter x:Key="ShapeIcon" />
     <conv:ShapeNameConverter x:Key="ShapeName" />
     <conv:BoolToDimConverter x:Key="BoolToDim" />
 </ResourceDictionary>

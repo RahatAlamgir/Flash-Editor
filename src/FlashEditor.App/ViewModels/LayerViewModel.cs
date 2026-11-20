@@ -320,9 +320,6 @@ public sealed class LayerViewModel : ObservableObject, IEditableName, IDisposabl
 
     private AdjustmentStyle? _curveBefore;
 
-    /// <summary>Puts the curve of the chosen channel back to a straight line.</summary>
-    public void ResetCurve() => SetCurve(CurveMath.Straight, commit: true);
-
     private void Adjust(Func<AdjustmentStyle, AdjustmentStyle> change)
     {
         if (Model.Adjustment is not { } old) return;

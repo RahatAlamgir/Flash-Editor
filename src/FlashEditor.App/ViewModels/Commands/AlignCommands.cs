@@ -2,7 +2,6 @@ using FlashEditor.App.Tools;
 using FlashEditor.App.ViewModels.Infrastructure;
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.History;
-using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Layout;
 using FlashEditor.Core.Objects;
 

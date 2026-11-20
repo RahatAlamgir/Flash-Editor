@@ -3,6 +3,7 @@ using FlashEditor.App.ViewModels.Infrastructure;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.IO;
 using FlashEditor.Core.IO.Pdf;
+using FlashEditor.Core.IO.Pptx;
 using FlashEditor.Core.Painting;
 using FlashEditor.Core.Effects;
 
@@ -17,11 +18,13 @@ public sealed class PagesExportCommands
     {
         _main = main;
         ExportPdfCommand = new RelayCommand(ExportPdf);
+        ExportPptxCommand = new RelayCommand(ExportPptx);
         ExportGifCommand = new RelayCommand(ExportGif);
         BatchConvertCommand = new RelayCommand(BatchConvert);
     }
 
     public RelayCommand ExportPdfCommand { get; }
+    public RelayCommand ExportPptxCommand { get; }
     public RelayCommand ExportGifCommand { get; }
     public RelayCommand BatchConvertCommand { get; }
 
@@ -66,6 +69,31 @@ public sealed class PagesExportCommands
         {
             await Task.Run(() => PdfWriter.Save(pages, path, q, d, matte));
             _main.SetStatus($"Saved {Path.GetFileName(path)}: {pages.Count} page{(pages.Count == 1 ? "" : "s")}.");
+        });
+    }
+
+    private void ExportPptx()
+    {
+        var quality = new EffectParameter("quality", "Picture quality", 40, 100, 90, 1, "%");
+        var editable = EffectParameter.Toggle("editable", "Editable (text and shapes)", true);
+        var sharp = EffectParameter.Toggle("lossless", "Lossless pictures (PNG), when not editable", false);
+        var values = _main.Dialogs.ShowParameters("Export as PowerPoint", new[] { editable, quality, sharp }, new EffectValues(new[] { editable, quality, sharp }), null,
+            "Every page of this project becomes one slide, as big as the page. Editable: text becomes text boxes and simple shapes become PowerPoint shapes you can change; pictures stay pictures, and effects such as shadows, charts and QR codes are placed as pictures. Not editable: each slide is one picture of the page.");
+        if (values == null) return;
+        var path = _main.Dialogs.ShowSaveFile("Save as PowerPoint", "PowerPoint presentation|*.pptx", ".pptx", SuggestedName);
+        if (path == null) return;
+
+        int q = (int)values["quality"];
+        bool lossless = values["lossless"] >= 0.5, asObjects = values["editable"] >= 0.5;
+        var matte = _main.Colors.Background;
+        var documents = Doc.Project.Pages.Select(p => p.Model).ToList();
+        var pages = asObjects ? null : FlattenPages();
+        _main.RunAsync("Saving the presentation", async () =>
+        {
+            if (asObjects) await Task.Run(() => EditablePptx.Save(documents, path, new EditablePptx.Options(q, matte)));
+            else await Task.Run(() => PptxWriter.Save(pages!, path, q, lossless, matte));
+            int count = documents.Count;
+            _main.SetStatus($"Saved {Path.GetFileName(path)}: {count} slide{(count == 1 ? "" : "s")}" + (asObjects ? " (text and shapes can be edited)." : "."));
         });
     }
 

@@ -1,5 +1,4 @@
 using FlashEditor.Core.Barcodes;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Barcodes;
 

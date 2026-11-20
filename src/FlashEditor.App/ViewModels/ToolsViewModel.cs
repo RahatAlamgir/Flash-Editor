@@ -1,7 +1,6 @@
 using System.Windows.Input;
 using FlashEditor.App.Tools;
 using FlashEditor.App.Tools.Navigation;
-using FlashEditor.App.Tools.Options;
 using FlashEditor.App.Tools.Painting;
 using FlashEditor.App.Tools.Retouch;
 using FlashEditor.App.Tools.Selecting;

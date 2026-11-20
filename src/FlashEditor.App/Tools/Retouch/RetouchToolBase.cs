@@ -2,7 +2,6 @@ using System.Windows.Input;
 using FlashEditor.App.Tools.Options;
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.History;
-using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Painting;
 using FlashEditor.Core.Retouch;
 

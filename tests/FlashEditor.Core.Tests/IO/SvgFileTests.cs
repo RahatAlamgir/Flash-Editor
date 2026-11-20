@@ -2,7 +2,6 @@ using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.IO.Svg;
 using FlashEditor.Core.Objects;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.IO;
 

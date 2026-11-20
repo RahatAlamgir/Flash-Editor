@@ -1,5 +1,3 @@
-using FlashEditor.Core.Imaging;
-
 namespace FlashEditor.Core.IO;
 
 /// <summary>What to do with every picture in a folder.</summary>

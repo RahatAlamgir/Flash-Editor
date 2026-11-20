@@ -4,7 +4,6 @@ using FlashEditor.Core.IO.Project;
 using FlashEditor.Core.Objects;
 using FlashEditor.Core.Barcodes;
 using FlashEditor.Core.Qr;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.Objects;
 

@@ -2,8 +2,6 @@ using System.Text;
 using FlashEditor.Core.Documents;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.IO.Psd;
-using FlashEditor.Core.Painting;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.IO;
 

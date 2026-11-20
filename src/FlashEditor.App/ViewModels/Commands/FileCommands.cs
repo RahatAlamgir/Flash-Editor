@@ -2,8 +2,6 @@ using System.IO;
 using FlashEditor.App.Services;
 using FlashEditor.App.ViewModels.Infrastructure;
 using FlashEditor.Core.Documents;
-using FlashEditor.Core.Effects;
-using FlashEditor.Core.History;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.IO;
 using FlashEditor.Core.Transforms;

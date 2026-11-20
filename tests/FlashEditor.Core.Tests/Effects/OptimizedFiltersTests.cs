@@ -1,5 +1,4 @@
 using FlashEditor.Core.Documents;
-using FlashEditor.Core.Effects;
 using FlashEditor.Core.Effects.Filters;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.Painting;

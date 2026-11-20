@@ -67,7 +67,6 @@ public sealed class EditCommands
     public RelayCommand SelectLayerContentCommand { get; }
 
     private Document Doc => _main.Document.Model;
-    private HistoryManager History => Doc.History;
 
     /// <summary>Copies the selected pixels (or the whole layer) of the active layer.</summary>
     private void Copy(bool cut)

@@ -253,64 +253,6 @@ public static class DemoProject
 
     // ------------------------------------------------------------------ pictures for the photo pages
 
-    /// <summary>Blends a color over a pixel (straight alpha), so shapes with soft edges can be drawn into a see-through picture.</summary>
-    private static void Over(PixelBuffer b, int x, int y, ColorRgba src, double coverage)
-    {
-        if (x < 0 || y < 0 || x >= b.Width || y >= b.Height || coverage <= 0) return;
-        var dst = b.GetPixel(x, y);
-        double sa = src.A / 255.0 * Math.Min(1, coverage), da = dst.A / 255.0, a = sa + da * (1 - sa);
-        if (a <= 0) return;
-        byte Mix(byte s, byte d) => (byte)Math.Round((s * sa + d * da * (1 - sa)) / a);
-        b.SetPixel(x, y, new ColorRgba(Mix(src.R, dst.R), Mix(src.G, dst.G), Mix(src.B, dst.B), (byte)Math.Round(a * 255)));
-    }
-
-    /// <summary>A filled ellipse with soft (smooth) edges.</summary>
-    private static void Disc(PixelBuffer b, double cx, double cy, double rx, double ry, ColorRgba color)
-    {
-        for (int y = (int)(cy - ry - 2); y <= cy + ry + 2; y++)
-            for (int x = (int)(cx - rx - 2); x <= cx + rx + 2; x++)
-            {
-                double dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry, d = Math.Sqrt(dx * dx + dy * dy);
-                Over(b, x, y, color, (1 - d) * Math.Min(rx, ry) + 0.5);
-            }
-    }
-
-    /// <summary>A red apple with a leaf, on a see-through background (the thing to cut out).</summary>
-    private static PixelBuffer Apple(int size)
-    {
-        var b = new PixelBuffer(size, size);
-        double s = size / 200.0;
-        Disc(b, 70 * s, 118 * s, 56 * s, 58 * s, C(220, 38, 38));
-        Disc(b, 124 * s, 118 * s, 56 * s, 58 * s, C(220, 38, 38));
-        Disc(b, 96 * s, 130 * s, 58 * s, 52 * s, C(220, 38, 38));
-        Disc(b, 64 * s, 96 * s, 14 * s, 18 * s, C(252, 165, 165));
-        Disc(b, 98 * s, 66 * s, 5 * s, 20 * s, C(120, 53, 15));
-        Disc(b, 122 * s, 56 * s, 24 * s, 11 * s, C(34, 197, 94));
-        return b;
-    }
-
-    private static PixelBuffer Checker(int width, int height)
-    {
-        var b = new PixelBuffer(width, height);
-        for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
-                b.SetPixel(x, y, ((x / 10 + y / 10) % 2 == 0) ? C(226, 232, 240) : C(255, 255, 255));
-        return b;
-    }
-
-    /// <summary>The picture with another one laid over it (the see-through parts show what is below).</summary>
-    private static PixelBuffer WithOver(PixelBuffer baseImage, PixelBuffer top, int x, int y)
-    {
-        var result = baseImage.Clone();
-        for (int j = 0; j < top.Height; j++)
-            for (int i = 0; i < top.Width; i++)
-            {
-                var c = top.GetPixel(i, j);
-                if (c.A > 0) Over(result, x + i, y + j, c, 1);
-            }
-        return result;
-    }
-
     private static PixelBuffer Fx(PixelBuffer source, Core.Effects.ImageEffect effect, params (string Key, double Value)[] values)
     {
         var v = effect.CreateDefaultValues();
@@ -320,15 +262,6 @@ public static class DemoProject
 
     /// <summary>A picture object with its top-left corner at (x, y), shown at the given size.</summary>
     private static ImageObject Pic(PixelBuffer image, double x, double y, double w, double h, string name) => new(new ObjectBox(x, y, w, h), image, name);
-
-    private static void BeforeAfter(Page p, string label, string afterText, PixelBuffer before, PixelBuffer after, double y, ColorRgba accent, Action<Page, double>? extraAfter = null)
-    {
-        p.Add(Pic(before, 656, y, 214, 140, "Before: " + label), "Before: " + label);
-        p.Shape("Arrow", ShapeKind.Arrow, 880, y + 54, 44, 32, accent);
-        if (extraAfter != null) extraAfter(p, y); else p.Add(Pic(after, 934, y, 214, 140, "After: " + label), "After: " + label);
-        p.Text("Before", 763, y + 144, 14, Subtle, center: true);
-        p.Text(afterText, 1041, y + 144, 14, Subtle, center: true);
-    }
 
     /// <summary>A before picture, an arrow and an after picture (square), with what was done written under them.</summary>
     private static void Pair(Page p, double x, double y, string label, PixelBuffer before, PixelBuffer after, ColorRgba accent, double tilt = 0, double inset = 0)

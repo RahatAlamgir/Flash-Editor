@@ -2,7 +2,6 @@ using System.Text;
 using FlashEditor.Core.Imaging;
 using FlashEditor.Core.IO;
 using FlashEditor.Core.IO.Pdf;
-using Xunit;
 
 namespace FlashEditor.Core.Tests.IO;
 
